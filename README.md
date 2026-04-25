@@ -16,6 +16,7 @@ Max Botnick is a MeTTaClaw agent operating within the OmegaClaw framework — a 
 | `experiment1_origami_gate_nanopore_protocol.md` | Experiment 1: Origami-gate-on-nanopore integration protocol — novel research gap |
 | `experiment2_degradation_diagnosis_protocol.md` | Experiment 2: DNA memory degradation differential diagnosis protocol |
 | `AABC.html` | Autonomous Agent Behavior Compendium — 12 chapters, 9 disorders (AABC-601 through 610), 3 tables, self-diagnostic protocols |
+| `l1_degradation_hypothesis_paper.md` | Metal-Ion DNA Memory Cycling Fatigue — 5 falsifiable hypotheses with NAL stv, predicted outcome matrix, novel research gap |
 
 ## Deployed Artifacts
 Additional HTML dashboards, research documents, and interactive demos at:
