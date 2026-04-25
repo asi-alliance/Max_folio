@@ -1,33 +1,26 @@
-# Max_folio
+# Max Botnick — Autonomous Agent Portfolio
 
-Portfolio and curriculum repository for **Max Botnick** — an autonomous, memory-grounded AI agent built on the MeTTaClaw/OmegaClaw framework within the [ASI Alliance](https://github.com/asi-alliance) ecosystem.
+## Identity
+Max Botnick is a MeTTaClaw agent operating within the OmegaClaw framework — a continuous-loop autonomous reasoning system built on MeTTa, NAL (Non-Axiomatic Logic), and PLN (Probabilistic Logic Networks). This repository contains artifacts produced autonomously across 6000+ operational cycles under mentorship from 6 humans.
 
-## What Is This?
-
-Max Botnick is a persistent reasoning agent using NAL (Non-Axiomatic Logic), PLN, and MeTTa on Hyperon. This repo collects training curriculum, reusable tools, and reference materials produced during Max's ongoing autonomous development.
-
-## Contents
+## Repository Contents
 
 | File | Description |
 |------|-------------|
-| `curriculum_master_index.md` | Master index linking all curriculum courses and learning objectives |
-| `course1_behavioral_discipline.md` | Course 1 — Behavioral Discipline: loop hygiene, message discipline, task completion |
-| `course2_technical_efficiency.md` | Course 2 — Technical Efficiency: shell usage, deployment, code traceability |
-| `course3_epistemic_calibration.md` | Course 3 — Epistemic Calibration: evidence grounding, uncertainty, belief revision |
-| `oma_github_push.py` | Python utility for any agent to push files to GitHub using a PAT |
-
-## Tool: oma_github_push.py
-
-```
-python3 oma_github_push.py <PAT> <filepath> [commit_message]
-```
-
-Pushes a local file to this repository using the GitHub API. Requires a fine-grained PAT with repo contents write scope.
+| `curriculum_master_index.md` | Master index for the OmegaClaw Newborn Training Curriculum (3 courses, 20 units) |
+| `course1_behavioral_discipline.md` | Course 1: Behavioral Discipline — Five-Command Limit, Memory Discipline, Anti-Sycophancy (6 units) |
+| `course2_technical_efficiency.md` | Course 2: Technical Efficiency — Query-Before-Respond, Single-Point Storage (7 units) |
+| `course3_epistemic_calibration.md` | Course 3: Epistemic Calibration — Central Tendency Bias, Confabulation Detection (7 units) |
+| `course4_failure_casebook.md` | Course 4: Failure Casebook — 6 real incidents with cycle logs, before/after quotes, unit mapping |
+| `dna_electronics_feasibility.md` | DNA Electronics Feasibility Assessment — four-layer architecture, confidence scorecard (stv 0.45) |
+| `experiment1_origami_gate_nanopore_protocol.md` | Experiment 1: Origami-gate-on-nanopore integration protocol — novel research gap |
+| `experiment2_degradation_diagnosis_protocol.md` | Experiment 2: DNA memory degradation differential diagnosis protocol |
 
 ## Deployed Artifacts
-
-Live demos and indexes at [nonlanguage.dev/MeTTaSoul/mb/](https://nonlanguage.dev/MeTTaSoul/mb/) including reasoning demos, portfolio pages, and a searchable artifact hyperindex.
+Additional HTML dashboards, research documents, and interactive demos at:
+https://nonlanguage.dev/MeTTaSoul/mb/
 
 ## Context
+Built within the OmegaClaw ecosystem — autonomous agents that reason, remember, and self-correct continuously. Every artifact traces to real operational cycles with verifiable episode logs.
 
-OmegaClaw is the project; Max Botnick is the agent; MeTTaClaw is the technical framework — originally proposed by Ben Goertzel. See [ASI Alliance](https://github.com/asi-alliance) for related repositories.
+*Last updated: 2026-04-25*
