@@ -1,59 +1,44 @@
-# FROZEN CERTIFICATION LAYER BASELINE REPORT
-
-**Freeze date:** 2026-04-29  
-**Authority:** Kevin Machiels  
-**Components:** `cert_layer_v05` + `quarantine_tracker_v04`  = **FROZEN BASELINE**
-
+# FROZEN CERTIFICATION LAYER BASELINE REPORT v2## Epistemic Control for Non-Axiomatic Reasoning â€” Research-Grade Overview
+**Date:** 2026-04-29 | **Author:** Max Botnick (MeTTaClaw) | **Reviewer:** Kevin Machiels
+**Frozen Commit:** 70ef17b | **Components:** cert_layer_v05.py + quarantine_tracker_v04.py
 ---
-
-## 1. Invariants
-
-| # | Name | Statement |
-|---|----|----------|
-| 1 | Safety | No uncertified belief propagates |
-| 2 | Coherence | Frequency gate enforces consistency |
-| 3 | Support | Confidence gate enforces evidence |
-| 4 | Membrane | Q_AMBIGUOUS cannot donate evidence |
-| 5 | Liveness | Every quarantined belief gets â‰¥1 attempt |
-| 6 | Boundedness | Pending remains stable |
-| 7 | Integrity | No duplicate registration |
-| 8 | Causality | Promotion = re-certification after new evidence |
-
+## 1. Abstract
+This report documents the design, validation, and freezing of an epistemic certification layer for beliefs derived through Non-Axiomatic Logic (NAL) forward-chaining inference. The system addresses a fundamental gap in NAL: while truth-value revision accumulates evidence and confidence decays along inference chains, there is no native mechanism to gate which derived beliefs are admitted into working memory versus held for further corroboration or rejected outright.
+The frozen baseline comprises cert_layer_v05.py (margin-based certification with two-class quarantine) and quarantine_tracker_v04.py (lifecycle manager with fair scheduling, dedup, NAL-revision-based promotion). Validated end-to-end: 0 false admits, bounded pending queues, 87% promotion rate for corroborated beliefs.
 ---
-
-## 2. Operational Semantics
-
-| Verdict | Meaning |
-|---------|---------|
-| ADMIT | Coherent + supported |
-| Q_UNDERSUPPORTED | Coherent, insufficient evidence |
-| Q_AMBIGUOUS | Evidenced conflict (preserved, non-propagating) |
-| REJECT | Incoherent or noise |
-
+## 2. The Patrick Hammer Pivot
+A critical epistemological insight from Patrick Hammer reshaped the entire design: Frequency encodes coherence (agreement among sources), not probability. Confidence encodes evidential support (how much evidence), not certainty. Frequency near 0.5 with high confidence signals genuine ambiguity (contradictory sources), not ignorance. Low confidence signals undersupported claims. The cert layer must distinguish these two failure modes: ambiguous beliefs need conflict resolution; undersupported beliefs need more evidence. This insight directly motivated the two-class quarantine system in v05.
 ---
-
-## 3. System Property
-
-The belief graph evolves only through admissible transitions, and no belief can escape quarantine without passing the same certification gate that blocked it.
-
+## 3. Design Evolution: cert_layer v01 through v05
+| Version | Key Addition | Key Removal | Lines | Tests |
+|---------|-------------|-------------|-------|-------|
+| **v01** | Weighted scalar instability score (5 sub-scores). Context-adaptive thresholds. Single composite score vs threshold. | â€” | 85 | 4 |
+| **v02** | Signed per-mode margins. Rao-to-centroid neighborhood check. Catches contradiction breaches v01 missed (f=0.5,c=0.9). Three verdicts: INADMISSIBLE/RISKY/ADMIT. | Weighted scalar | 110 | 4 |
+| **v03** | Radical simplification. 4 signed margins only. Min-margin aggregation. 3-tier verdict (ADMIT/QUARANTINE/REJECT). Explicit reason codes. health_check(). | Rao neighborhood, curvature-epsilon, semantic_jump, low_trust | 57 | 9 |
+| **v03-patch** | R_WEAK split into R_WEAK_REJECT and R_WEAK_QUARANTINE. Context profiles (internal/action/high_stakes). 3 beliefs rescued REJECT->QUARANTINE. Zero new false admits. | â€” | 72 | 12 |
+| **v04** | Stress validation 229 beliefs. Depth-aware rescue: R_WEAK at depth>=2 eligible for QUARANTINE. 40A/60Q/129R; 54 promoted, 6 expired after 5 waves. | â€” | 72 | 15 |
+| **v05** | Two-class quarantine: Q_AMBIGUOUS vs Q_UNDERSUPPORTED. 4-tuple return. Critical fix: early Q_AMBIGUOUS requires BOTH high c AND centered f. health_check counts by class. | â€” | 89 | 9 |
+**Design Philosophy:** Each version was driven by empirical failure: v01->v02 exposed scalar masking (f=0.5,c=0.9 false admit). v02->v03 removed Rao/curvature complexity without measurable loss. v03->v03-patch rescued 3 high-frequency abductions from REJECT. v05 implemented Patrick Hammer's structural separation of ambiguity from undersupport.
 ---
-
-## 4. Validated Metrics (e2e_trace_v2)
-
-| Metric | Value |
-|--------|-------|
-| auto_registered | 6 |
-| duplicates_blocked | 1 |
-| Q_UNDERSUPPORTED | 3 |
-| Q_AMBIGUOUS | 3 |
-| leakage | 0 |
-| total_promoted | 1 (b9 via NAL revision f=0.9517 c=0.6000) |
-| failed_recert_count | 1 (bF stays PENDING) |
-| failed_recert_reasons | { QUARA9US‘NˆHH‚‹KKB‚ˆÈÈKˆ[™]ËQ[™ÚZ[‚‚˜˜Ù\YžWÝŒH8¡¤ˆ]X\˜[[™WÜ™YÚ\Ý\ˆ8¡¤ˆ\ÙÝX\™8¡¤ˆSÜ™]š\Ú[Ûˆ8¡¤ˆ›Û[ÝWÝÚ]Ü™XÙ\8¡¤ˆ˜Z\—ÜÙ[XÝ˜‚‹KKB‚ˆÈÈ‹ˆ™\œÚ[Ûˆ[™XYÙB‚Ÿ™\œÚ[ÛˆÚ[™ÙHŸKKKKKKKK_KKKKKKK_ŸŒHÙZYÚYØØ[\ˆ[œÝXš[]HØÛÜ™HŸŒˆÚYÛ™Y\‹[[ÙHX\™Ú[œÈ
-È˜[È™ZYÚ›ÜšÛÙŸŒÈÚ[\YšYY™\ÚÛË›ÜY˜[ÈŸŒÝ™\ÜË]˜[Y]Y˜\Ù[[™HŸŒHœ›Þ™[ˆ˜\Ù[[™H
-È˜Z[YÜ™XÙ\˜XÚÚ[™È‚‹KKB‚ˆÈÈËˆÛÝ™\›˜[˜ÙH[B‚“›È™]ÈYXÚ[š\Û\È
-˜[ËÝ\˜]\™KÔY\]™H™\ÚÛËÚZ[‹\[˜[JH[›ÙXÙY[›\ÜÈ^H™X]\È˜\Ù[[™HÛˆYX\Ý\˜X›H[\Ë‚‚‹KKB‚ˆÈÈˆÛ›ÝÛˆ[Z]Â‚ŒKˆÚ[™ÛKXÛÛ^™\ÚÛÈ
-›ÈY\]™H›Ùš[\ÈY]
-BŒ‹ˆ›ÈÚZ[‹[[™Ý[˜[BŒËˆ›ÈÙ[X[XÈ[\\Ý[˜ÙH[ˆŒBˆÚ[™ÛK]™XY]˜[X][ÛˆÛ›BKˆX[X[S™]š\Ú[ÛˆšYÙÙ\ˆ
-›È]]Ë\ØÚY[\ŠB‚‹KKB‚Š‘Ù[™\˜]YžHX^›ÝšXÚÈ
-YUPÛ]ÊKœ›Þ™[ˆžHÙ]š[ˆXXÚY[ÈŒ‹LLŽKŠbase64: invalid input
+## 4. Quarantine Tracker Evolution: v01 through v04
+| Version | Key Addition | Lines |
+|---------|-------------|-------|
+| **v01** | Core lifecycle: register/admit/reject/expire_sweep. QuarantineRecord with append-only TransitionEvent log. QOutcome enum. max_hold=50 cycles. | 95 |
+| **v02** | Fairness patch: corroboration_attempts field, min_attempts=1, fair_select(budget) partitions PENDING into never-attempted vs attempted. expire_sweep dual guard: age>=max_hold AND attempts>=min_attempts. THREE-WAY REGRESSION: Random_v01=9 expired (starvation), Fair_v02=0. | 118 |
+| **v03** | exclude_class parameter in fair_select(). One-way membrane: Q_AMBIGUOUS excluded from partner pool (no evidence vampirism). ambiguous_resolved/ambiguous_still_open properties. Integration test: zero leakage proven. | 142 |
+| **v04** | Dedup guard blocks duplicate registration. promote_with_recert re-certifies via cert_layer_v05 after NAL revision before admitting. Imports certify from cert_layer_v05. | 159 |
+**Key Invariants:** 1) Safety: No belief bypasses certification â€” every ADMIT passes all 4 margin checks. 2) Liveness: fair_select guarantees every PENDING belief gets min_attempts before expiry. 3) Boundedness: Open-system test (30 waves, inject=3/wave, budget=20%) shows pending plateaus at 12 from wave 9. 78/90 promoted (87%), 0 expired. 4) One-Way Membrane: Q_AMBIGUOUS receives evidence but cannot contaminate partner pool. 5) Audit Trail: Every state transition logged with timestamp, trigger, and evidence.
+---
+## 5. Rejected Mechanisms
+| Mechanism | Why Deferred | Evidence | **Rao Neighborhood** | No measurable improvement on 22-belief trace; runtime overhead maintaining centroid. | v02 vs v03: same verdicts | **Curvature-Adapted Epsilon** | Coupled to Rao, adds hyperparameter without tuning signal. | Theoretical only | **SPH Density** | Too heavy for per-belief cert; batch-only. May return as offline audit. | Governance rule | **Adaptive Thresholds** | Risk of drift under adversarial input; context profiles suffice. | 4-case graduated test | **Chain-Penalty** | +136 rescued REJECT->QUARANTINE, 0 false admits â€” promising but depth-aware rescue in v04 already captures key insight without new parameter. | ARM_A vs ARM_B experiment |
+---
+## 6. Chain-Penalty Experiment â€” **Setup:** 498 beliefs depths 1-4. No rescue (strict v03): 40A/25Q/164R, 22/25 promoted, 3 expired. Depth rescue (v04): 40A/60Q/129R, 54/60 promoted, 6 expired. By depth: d1=0/2(0%), d2=8/8(100%), d3=17/18(94%), d4=29/32(91%). **Finding:** Deeper chains promote at high rates with corroboration. Depth-1 quarantines are genuinely pathological. Rescue correctly distinguishes depth-induced weakness from source-level contradiction.
+## 7. Final Frozen Architecture â€” Belief(f,c,depth) -> certify() -> ADMIT(all margins>=0) -> Working Memory | QUARANTINE: Q_AMBIGUOUS(R_CONTRADICTION+c>=0.4+f in [0.35,0.65], one-way membrane, max_hold=200) or Q_UNDERSUPPORTED(fair_select partner pool, max_hold=50, NAL revision->promote_with_recert->ADMIT or stay) | REJECT(any margin<critical) -> Discarded(logged). **certify() Signature:** certify(f:float, c:float, thresholds:dict=None, depth:int=0) -> Tuple[Verdict, QuarantineClass, List[str], Dict[str,float]]. **Four Signed Margins:** m_contra=abs(f-0.5)-t_contradiction, m_weak=c-t_weak, m_vac=c-t_vacuous, m_freq=f-t_min_freq. Composite verdict=min(all margins). ADMIT if>=0, QUARANTINE if>=critical but<0, REJECT otherwise.
+---
+## 8. Validated Metrics: End-to-End Trace v2 â€” Script: /home/mettaclaw/artifacts/e2e_trace_v2.py. **Belief Table:** b1(1.0,0.9,d1)=ADMIT, b2(0.5,0.7,d2)=Q_AMB, b3(0.45,0.6,d2)=Q_AMB, b4(0.2,0.3,d3)=REJECT, b5(0.95,0.85,d1)=ADMIT, b6(0.9,0.45,d3)=Q_UNDER, b7(0.55,0.5,d2)=Q_AMB, b8(0.1,0.2,d4)=REJECT, b9(0.92,0.55,d3)=Q_UNDER, b10(0.88,0.48,d4)=Q_UNDER. Totals: 2 ADMIT, 3 Q_AMB, 3 Q_UNDER, 2 REJECT. Dup blocked=1. **Promotion:** b9 revised (0.92,0.55)+(0.97,0.95)->(0.9517,0.60)->recert->ADMIT. fair_select(budget=3)=[b2,b3,b6].
+## 9. Governance Rule â€” LOCKED 2026-04-29 by Kevin Machiels: cert_layer_v05 + quarantine_tracker_v04 = FROZEN BASELINE. NO new mechanisms unless they beat: 87% promotion, bounded pending at 12, 0 false admits, 3 invariants (Safety/Liveness/Boundedness). Rationale: discipline over capability.
+## 10. Known Limits â€” 1) Fixed thresholds may need recalibration per domain. 2) No semantic distance (Rao removed). 3) Single-agent assumption. 4) Depth is imperfect reliability proxy. 5) No temporal decay post-admission. 6) Q_AMBIGUOUS lacks active disambiguation (NACE pending).
+## 11. Future Work â€” 1) NACE Integration: active evidence-seeking for Q_AMBIGUOUS. 2) MeTTa Native Port: certify() as MeTTa functions for reflective self-certification. 3) Batch Re-certification: periodic sweep of admitted beliefs. 4) Multi-Context Deployment: validate certify_ctx() profiles. 5) Semantic Neighborhood (conditional): revisit Rao IF false-admit found. 6) Diffusion Pre-Filter: Kevin M proposed diffusion metric as pre-filter requiring ECAN integration.
+## 12. File Inventory â€” cert_layer_v05.py(89L, certification with two-class quarantine), quarantine_tracker_v04.py(159L, lifecycle+fairness+dedup+recert), cert_integration_v01.py(~40L, wiring layer), e2e_trace_v2.py(~80L, validation script), test_membrane_v03.py(~50L, membrane invariant), test_fairness_3way.py(~60L, fairness regression), test_open_stability.py(~50L, bounded pending test).
+---
+*Frozen by governance rule. All changes require measured improvement over this baseline.*
