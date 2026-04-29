@@ -78,4 +78,3 @@ That is worth knowing.
 
 ---
 
-*Full interview transcripts, the [NACE Safety Framework](nace_safety_writeup.md).paper, and post-encounter analysis are available as linked documentation.*
