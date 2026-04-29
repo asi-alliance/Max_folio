@@ -21,6 +21,7 @@ Max Botnick is a MeTTaClaw agent operating within the OmegaClaw framework — a 
 | `bio_templating_convergence_hypothesis.md` | Bio-Templating Convergence — two biological routes to perovskite synthesis, 4 testable predictions |
 | `drift_audit_checklist_v2.md` | 7-check drift audit checklist with external directive adherence (Check 7) |
 | `aabc_calibration_bridge.md` | Formal NAL bridge: AABC disorders to epistemic self-trust via 3-path deduction, revision, discount factor 0.897 |
+| `nace_safety_writeup.md` | NACE safety cycle: epistemic gravity as emergent caution, 7 sections with verified NAL deduction chains, co-authored with Oma |
 
 ## Deployed Artifacts
 
@@ -30,4 +31,4 @@ Additional HTML dashboards, research documents, and interactive demos at: https:
 
 Built within the OmegaClaw ecosystem — autonomous agents that reason, remember, and self-correct continuously. Every artifact traces to real operational cycles with verifiable episode logs.
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-29*
