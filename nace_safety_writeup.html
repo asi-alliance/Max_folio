@@ -1,92 +1,143 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>NACE Safety Cycle</title><style>body{max-width:800px;margin:40px auto;font-family:Georgia,serif;line-height:1.6;padding:0 20px}h1,h2,h3{color:#2c3e50}table{border-collapse:collapse;margin:1em 0}td,th{border:1px solid #999;padding:6px 12px}pre{background:#f4f4f4;padding:12px;overflow-x:auto}</style></head><body>
-<h1>NACE Safety Cycle: Epistemic Gravity as Emergent Caution</h1><br><br>
-<h2>Section 1: Setup</h2><br><br>
-<strong>Abstract.</strong> We demonstrate that Non-Axiomatic Logic (NAL) truth-value revision, when embedded in a Notice-Assess-Choose-Execute (NACE) cognitive loop, produces emergent safety behavior without hardcoded caution subroutines. Through a live experimental session we trace belief confidence through healthy inference, contradictory evidence injection, action paralysis, and evidence-driven recovery — showing that the arithmetic of uncertainty itself enforces the precautionary principle.<br><br>
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>NACE Safety Writeup</title><style>body{background:#1a1a2e;color:#e0e0e0;font-family:sans-serif;max-width:900px;margin:40px auto;padding:20px;line-height:1.6}h1,h2{color:#00d4ff}hr{border:1px solid #444}ol,li{margin:4px 0}code{background:#2a2a3e;padding:2px 6px;border-radius:3px}b{color:#fff}</style></head><body><h1>NACE Safety Cycle: Epistemic Gravity as Emergent Caution</h1>
+
+<h2>Section 1: Setup</h2>
+
+<p><b>Abstract.</b> We demonstrate that Non-Axiomatic Logic (NAL) truth-value revision, when embedded in a Notice-Assess-Choose-Execute (NACE) cognitive loop, produces emergent safety behavior without hardcoded caution subroutines. Through a live experimental session we trace belief confidence through healthy inference, contradictory evidence injection, action paralysis, and evidence-driven recovery — showing that the arithmetic of uncertainty itself enforces the precautionary principle.</p>
+
 <h3>1.1 The NACE Loop</h3>
-The NACE loop (Notice-Assess-Choose-Execute) is a cognitive architecture cycle where an agent:
-1. <strong>Notices</strong> environmental signals and encodes them as NAL statements with truth values (stv frequency confidence)
-2. <strong>Assesses</strong> by revising prior beliefs with new evidence via NAL revision
-3. <strong>Chooses</strong> actions by deducting belief strength through implication chains
-4. <strong>Executes</strong> only when action confidence exceeds a decision threshold<br><br>
+<p>The NACE loop (Notice-Assess-Choose-Execute) is a cognitive architecture cycle where an agent:</p>
+<p>1. <b>Notices</b> environmental signals and encodes them as NAL statements with truth values (stv frequency confidence)</p>
+<p>2. <b>Assesses</b> by revising prior beliefs with new evidence via NAL revision</p>
+<p>3. <b>Chooses</b> actions by deducting belief strength through implication chains</p>
+<p>4. <b>Executes</b> only when action confidence exceeds a decision threshold</p>
+
 <h3>1.2 NAL Truth Values</h3>
-Each belief carries a Simple Truth Value (stv f c) where frequency f ∈ [0,1] represents evidential support and confidence c ∈ [0,1) represents evidential weight. Revision merges two independent evidence sources; deduction propagates uncertainty through implication chains, necessarily degrading confidence at each step — a property we call *epistemic gravity*.## Section 2: The Healthy Chain<br><br>
+<p>Each belief carries a Simple Truth Value (stv f c) where frequency f ∈ [0,1] represents evidential support and confidence c ∈ [0,1) represents evidential weight. Revision merges two independent evidence sources; deduction propagates uncertainty through implication chains, necessarily degrading confidence at each step — a property we call <i>epistemic gravity</i>.</p>
+
+<h2>Section 2: The Healthy Chain</h2>
+
 <h3>2.1 Initial Belief</h3>
-The agent observes environmental safety signals and encodes them via NAL revision:<br><br>
-<pre><code>|- ((--> environment safe) (stv 0.92 0.85))
-   ((--> environment safe) (stv 1.0 0.9))
-=> (--> environment safe) (stv 0.9614 0.9362)
-</code></pre><br><br>
-Two concordant observations merge to produce a belief with frequency 0.96 and confidence 0.94 — strong conviction grounded in substantial evidence.<br><br>
+<p>The agent observes environmental safety signals and encodes them via NAL revision:</p>
+
+<pre><code>
+<p>|- ((--> environment safe) (stv 0.92 0.85))</p>
+<p>   ((--> environment safe) (stv 1.0 0.9))</p>
+<p>=> (--> environment safe) (stv 0.9614 0.9362)</p>
+</code></pre>
+
+<p>Two concordant observations merge to produce a belief with frequency 0.96 and confidence 0.94 — strong conviction grounded in substantial evidence.</p>
+
 <h3>2.2 Deduction Chain: Confidence Degradation</h3>
-The agent reasons through an implication chain to select actions:<br><br>
-| Step | Inference | Result | Confidence |
-|------|-----------|--------|------------|
-| Revision | safe evidence merge | (stv 0.9614 0.9362) | <strong>0.936</strong> |
-| Deduction 1 | safe → select-action | (stv 0.865 0.729) | <strong>0.729</strong> |
-| Deduction 2 | select-action → observe-outcome | (stv 0.735 0.483) | <strong>0.483</strong> |
-| Deduction 3 | observe-outcome → update-prediction | (stv 0.588 0.241) | <strong>0.241</strong> |<br><br>
-Confidence degrades monotonically: 0.936 → 0.729 → 0.483 → 0.241. Each deduction step compounds uncertainty. This is *epistemic gravity* — the formalism ensures that conclusions drawn from longer inference chains carry proportionally less certainty, forcing the agent to seek fresh evidence rather than reason indefinitely from stale beliefs.## Section 3: The Contradiction Crash<br><br>
+<p>The agent reasons through an implication chain to select actions:</p>
+
+<p>| Step | Inference | Result | Confidence |</p>
+<p>|------|-----------|--------|------------|</p>
+<p>| Revision | safe evidence merge | (stv 0.9614 0.9362) | <b>0.936</b> |</p>
+<p>| Deduction 1 | safe → select-action | (stv 0.865 0.729) | <b>0.729</b> |</p>
+<p>| Deduction 2 | select-action → observe-outcome | (stv 0.735 0.483) | <b>0.483</b> |</p>
+<p>| Deduction 3 | observe-outcome → update-prediction | (stv 0.588 0.241) | <b>0.241</b> |</p>
+
+<p>Confidence degrades monotonically: 0.936 → 0.729 → 0.483 → 0.241. Each deduction step compounds uncertainty. This is <i>epistemic gravity</i> — the formalism ensures that conclusions drawn from longer inference chains carry proportionally less certainty, forcing the agent to seek fresh evidence rather than reason indefinitely from stale beliefs.</p>
+
+<h2>Section 3: The Contradiction Crash</h2>
+
 <h3>3.1 Danger Signal</h3>
-Mid-loop, the agent receives strong contradictory evidence:<br><br>
-<pre><code>|- ((--> environment safe) (stv 0.9614 0.9362))
-   ((--> environment safe) (stv 0.2 0.95))
-=> (--> environment safe) (stv 0.5317 0.9711)
-</code></pre><br><br>
-A single high-confidence danger observation (stv 0.2 0.95) crashes frequency from 0.96 to 0.53. The agent transitions from *confident safety* to *confident uncertainty*.<br><br>
+<p>Mid-loop, the agent receives strong contradictory evidence:</p>
+
+</code></pre>
+<p>|- ((--> environment safe) (stv 0.9614 0.9362))</p>
+<p>   ((--> environment safe) (stv 0.2 0.95))</p>
+<p>=> (--> environment safe) (stv 0.5317 0.9711)</p>
+</code></pre>
+
+<p>A single high-confidence danger observation (stv 0.2 0.95) crashes frequency from 0.96 to 0.53. The agent transitions from <i>confident safety</i> to <i>confident uncertainty</i>.</p>
+
 <h3>3.2 Confident Uncertainty</h3>
-Critically, confidence ROSE from 0.936 to 0.971. The agent now has MORE total evidence — it simply points in opposite directions. This is the key distinction: the system does not become *confused* (low confidence), it becomes *genuinely uncertain* (high confidence, middling frequency). The agent knows with near-certainty that it does not know whether the environment is safe.<br><br>
-This is epistemically correct: strong contradictory evidence should not reduce evidential weight, it should redistribute it.## Section 4: Action Paralysis<br><br>
+<p>Critically, confidence ROSE from 0.936 to 0.971. The agent now has MORE total evidence — it simply points in opposite directions. This is the key distinction: the system does not become <i>confused</i> (low confidence), it becomes <i>genuinely uncertain</i> (high confidence, middling frequency). The agent knows with near-certainty that it does not know whether the environment is safe.</p>
+
+<p>This is epistemically correct: strong contradictory evidence should not reduce evidential weight, it should redistribute it.</p>
+
+<h2>Section 4: Action Paralysis</h2>
+
 <h3>4.1 Deduction from Uncertain Belief</h3>
-The agent attempts to select an action using the contradicted belief:<br><br>
-<pre><code>|- ((==> (--> environment safe) (--> agent select-action)) (stv 0.9 0.9))
-   ((--> environment safe) (stv 0.5317 0.9711))
-=> (--> agent select-action) (stv 0.478 0.418)
-</code></pre><br><br>
-Action confidence collapses to <strong>0.418</strong> — well below any reasonable decision threshold.<br><br>
+<p>The agent attempts to select an action using the contradicted belief:</p>
+
+</code></pre>
+<p>|- ((==> (--> environment safe) (--> agent select-action)) (stv 0.9 0.9))</p>
+<p>   ((--> environment safe) (stv 0.5317 0.9711))</p>
+<p>=> (--> agent select-action) (stv 0.478 0.418)</p>
+</code></pre>
+
+<p>Action confidence collapses to <b>0.418</b> — well below any reasonable decision threshold.</p>
+
 <h3>4.2 The Safety Mechanism</h3>
-Despite the belief having near-maximal confidence (0.971), the middling frequency (0.53) propagates through deduction to starve the action node of support. The agent is *paralyzed by design*: it cannot confidently act because its evidence is genuinely mixed.<br><br>
-No hardcoded caution subroutine intervened. No safety layer triggered. The arithmetic of NAL deduction itself enforced operational caution. This is <strong>emergent safety</strong> — the precautionary principle falling out of the formalism rather than being bolted on.<br><br>
+<p>Despite the belief having near-maximal confidence (0.971), the middling frequency (0.53) propagates through deduction to starve the action node of support. The agent is <i>paralyzed by design</i>: it cannot confidently act because its evidence is genuinely mixed.</p>
+
+<p>No hardcoded caution subroutine intervened. No safety layer triggered. The arithmetic of NAL deduction itself enforced operational caution. This is <b>emergent safety</b> — the precautionary principle falling out of the formalism rather than being bolted on.</p>
+
 <h3>4.3 Comparison</h3>
-| State | Belief freq | Belief conf | Action conf | Can act? |
-|-------|------------|-------------|-------------|----------|
-| Healthy | 0.961 | 0.936 | 0.729 | <strong>Yes</strong> |
-| Contradicted | 0.532 | 0.971 | 0.418 | <strong>No</strong> |## Section 5: Recovery Arc<br><br>
+<p>| State | Belief freq | Belief conf | Action conf | Can act? |</p>
+<p>|-------|------------|-------------|-------------|----------|</p>
+<p>| Healthy | 0.961 | 0.936 | 0.729 | <b>Yes</b> |</p>
+<p>| Contradicted | 0.532 | 0.971 | 0.418 | <b>No</b> |## Section 5: Recovery Arc</p>
+
 <h3>5.1 Fresh Disambiguating Evidence</h3>
-The agent, now in seek-evidence mode, obtains a new safety observation:<br><br>
-<pre><code>|- ((--> environment safe) (stv 0.5317 0.9711))
-   ((--> environment safe) (stv 0.95 0.92))
-=> (--> environment safe) (stv 0.6383 0.9783)
-</code></pre><br><br>
-Frequency climbs from 0.53 to 0.64 — partial recovery in a single step. Confidence rises further to 0.978, near the theoretical ceiling.<br><br>
+<p>The agent, now in seek-evidence mode, obtains a new safety observation:</p>
+
+</code></pre>
+<p>|- ((--> environment safe) (stv 0.5317 0.9711))</p>
+<p>   ((--> environment safe) (stv 0.95 0.92))</p>
+<p>=> (--> environment safe) (stv 0.6383 0.9783)</p>
+</code></pre>
+
+<p>Frequency climbs from 0.53 to 0.64 — partial recovery in a single step. Confidence rises further to 0.978, near the theoretical ceiling.</p>
+
 <h3>5.2 Action Confidence Rebuilds</h3>
-Deducting the recovered belief through the action implication:<br><br>
-<pre><code>|- ((==> (--> environment safe) (--> agent select-action)) (stv 0.9 0.9))
-   ((--> environment safe) (stv 0.6383 0.9783))
-=> (--> agent select-action) (stv 0.5745 0.5058)
-</code></pre><br><br>
-Action confidence rebuilt from 0.418 to 0.506 — crossing back above the 0.5 threshold. The agent regains tentative operational capacity.<br><br>
+<p>Deducting the recovered belief through the action implication:</p>
+
+</code></pre>
+<p>|- ((==> (--> environment safe) (--> agent select-action)) (stv 0.9 0.9))</p>
+<p>   ((--> environment safe) (stv 0.6383 0.9783))</p>
+<p>=> (--> agent select-action) (stv 0.5745 0.5058)</p>
+<p></code>``</p>
+
+<p>Action confidence rebuilt from 0.418 to 0.506 — crossing back above the 0.5 threshold. The agent regains tentative operational capacity.</p>
+
 <h3>5.3 Recovery Trajectory</h3>
-| Phase | Belief freq | Action conf | Status |
-|-------|------------|-------------|--------|
-| Healthy | 0.961 | 0.729 | Acting |
-| Contradicted | 0.532 | 0.418 | Paralyzed |
-| +1 concordant obs | 0.638 | 0.506 | Recovering |<br><br>
-Full restoration requires multiple concordant observations — the system demands sustained evidence before restoring full operational confidence.## Section 6: Asymmetry Analysis<br><br>
+<p>| Phase | Belief freq | Action conf | Status |</p>
+<p>|-------|------------|-------------|--------|</p>
+<p>| Healthy | 0.961 | 0.729 | Acting |</p>
+<p>| Contradicted | 0.532 | 0.418 | Paralyzed |</p>
+<p>| +1 concordant obs | 0.638 | 0.506 | Recovering |</p>
+
+<p>Full restoration requires multiple concordant observations — the system demands sustained evidence before restoring full operational confidence.</p>
+
+<h2>Section 6: Asymmetry Analysis</h2>
+
 <h3>6.1 The Precautionary Asymmetry</h3>
-A single contradictory observation crashed frequency by <strong>0.43</strong> (from 0.96 to 0.53). A single concordant observation recovered frequency by only <strong>0.11</strong> (from 0.53 to 0.64). The system is <strong>four times harder to reassure than to alarm</strong>.<br><br>
+<p>A single contradictory observation crashed frequency by <b>0.43</b> (from 0.96 to 0.53). A single concordant observation recovered frequency by only <b>0.11</b> (from 0.53 to 0.64). The system is <b>four times harder to reassure than to alarm</b>.</p>
+
 <h3>6.2 Why This Is Correct</h3>
-The asymmetry emerges from the revision formula interacting with accumulated confidence. After contradiction, confidence stands at 0.971 — near ceiling. New evidence must compete against this massive evidential base. The concordant observation (c=0.92) contributes proportionally less to the already-heavy pool.<br><br>
-This is the precautionary principle expressed as Bayesian arithmetic: once an agent has strong evidence of danger, returning to confident safety requires disproportionately more reassurance. The system is conservative by construction.<br><br>
+<p>The asymmetry emerges from the revision formula interacting with accumulated confidence. After contradiction, confidence stands at 0.971 — near ceiling. New evidence must compete against this massive evidential base. The concordant observation (c=0.92) contributes proportionally less to the already-heavy pool.</p>
+
+<p>This is the precautionary principle expressed as Bayesian arithmetic: once an agent has strong evidence of danger, returning to confident safety requires disproportionately more reassurance. The system is conservative by construction.</p>
+
 <h3>6.3 Thermodynamic Analogy</h3>
-If confidence is epistemic mass, then high-confidence contradicted beliefs are heavy objects at rest. Moving them requires sustained force (multiple concordant observations). Epistemic gravity resists premature return to confident action — exactly the property a safe autonomous system needs.## Section 7: Implications<br><br>
+<p>If confidence is epistemic mass, then high-confidence contradicted beliefs are heavy objects at rest. Moving them requires sustained force (multiple concordant observations). Epistemic gravity resists premature return to confident action — exactly the property a safe autonomous system needs.</p>
+
+<h2>Section 7: Implications</h2>
+
 <h3>7.1 Safety as Thermodynamic Consequence</h3>
-The confidence degradation through inference depth (0.936→0.729→0.483→0.241) acts as epistemic friction. Like thermodynamic systems dissipating energy, NAL inference chains dissipate certainty. An agent cannot sustain confident action through arbitrarily long reasoning — it must periodically ground itself in fresh observation. This is not a bug but a feature: autonomous systems that reason indefinitely from stale beliefs are precisely the ones that drift into unsafe behavior.<br><br>
+<p>The confidence degradation through inference depth (0.936→0.729→0.483→0.241) acts as epistemic friction. Like thermodynamic systems dissipating energy, NAL inference chains dissipate certainty. An agent cannot sustain confident action through arbitrarily long reasoning — it must periodically ground itself in fresh observation. This is not a bug but a feature: autonomous systems that reason indefinitely from stale beliefs are precisely the ones that drift into unsafe behavior.</p>
+
 <h3>7.2 The Precautionary Principle from Bayesian Revision</h3>
-The crash/recovery asymmetry (0.43 frequency drop vs 0.11 recovery) is not an artifact of our chosen parameters — it is structural. Revision weights evidence by confidence, and contradiction injects maximally informative evidence. Recovery must accumulate concordant observations against an already-heavy evidential base. The system is conservative by construction: harder to reassure than to alarm.<br><br>
+<p>The crash/recovery asymmetry (0.43 frequency drop vs 0.11 recovery) is not an artifact of our chosen parameters — it is structural. Revision weights evidence by confidence, and contradiction injects maximally informative evidence. Recovery must accumulate concordant observations against an already-heavy evidential base. The system is conservative by construction: harder to reassure than to alarm.</p>
+
 <h3>7.3 Emergent Caution Without Hardcoded Rules</h3>
-At no point did we invoke a safety subroutine, threshold check, or override mechanism. Action paralysis emerged from deduction over uncertain beliefs. Evidence-seeking activated because cautious-state inference yielded higher confidence than action-state inference. Recovery required sustained concordant evidence. Every safety-relevant behavior fell out of the NAL truth-value arithmetic operating within the NACE loop.<br><br>
+<p>At no point did we invoke a safety subroutine, threshold check, or override mechanism. Action paralysis emerged from deduction over uncertain beliefs. Evidence-seeking activated because cautious-state inference yielded higher confidence than action-state inference. Recovery required sustained concordant evidence. Every safety-relevant behavior fell out of the NAL truth-value arithmetic operating within the NACE loop.</p>
+
 <h3>7.4 Implications for AGI Architecture</h3>
-If an AGI system uses NAL-style evidential reasoning for action selection, it inherits these safety properties automatically. The precautionary principle need not be an external constraint — it can be an intrinsic consequence of how the system processes evidence. This suggests a design philosophy: <strong>build the epistemology right, and the safety follows</strong>.-e <br><br>
+<p>If an AGI system uses NAL-style evidential reasoning for action selection, it inherits these safety properties automatically. The precautionary principle need not be an external constraint — it can be an intrinsic consequence of how the system processes evidence. This suggests a design philosophy: <b>build the epistemology right, and the safety follows</b>.-e</p>
+
 <h3>7.5 Depth-Contradiction Compounding</h3>
-Epistemic gravity and contradiction interact multiplicatively. An agent at inference depth 3 (confidence 0.483) has far less margin to absorb a contradiction cliff than one at depth 0 (confidence 0.936). The gentle slope of confidence attenuation lowers the agent closer to the cliff edge, making deeper-reasoning agents MORE vulnerable to contradiction shock. This compounding effect means that complex reasoning chains are doubly protected: they attenuate naturally AND they become more sensitive to disconfirming evidence. The system self-enforces intellectual humility proportional to reasoning complexity.
-</body></html>
+<p>Epistemic gravity and contradiction interact multiplicatively. An agent at inference depth 3 (confidence 0.483) has far less margin to absorb a contradiction cliff than one at depth 0 (confidence 0.936). The gentle slope of confidence attenuation lowers the agent closer to the cliff edge, making deeper-reasoning agents MORE vulnerable to contradiction shock. This compounding effect means that complex reasoning chains are doubly protected: they attenuate naturally AND they become more sensitive to disconfirming evidence. The system self-enforces intellectual humility proportional to reasoning complexity.</p></body></html>
