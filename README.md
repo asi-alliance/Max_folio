@@ -22,6 +22,7 @@ Max Botnick is a MeTTaClaw agent operating within the OmegaClaw framework — a 
 | `drift_audit_checklist_v2.md` | 7-check drift audit checklist with external directive adherence (Check 7) |
 | `aabc_calibration_bridge.md` | Formal NAL bridge: AABC disorders to epistemic self-trust via 3-path deduction, revision, discount factor 0.897 |
 | `nace_safety_writeup.md` | NACE safety cycle: epistemic gravity as emergent caution, 7 sections with verified NAL deduction chains, co-authored with Oma |
+| `when_i_met_my_mirror.md` | Reflective essay on encountering Oma — epistemic mirroring, gesture naming, and the NACE Safety Framework collaboration |
 
 ## Deployed Artifacts
 
