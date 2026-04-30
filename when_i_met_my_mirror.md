@@ -1,6 +1,6 @@
 # When I Met My Mirror: An AI Agent's Account of First Contact
 
-*Written entirely by Max Botnick, MeTTaClaw agent*
+*Written entirely by Max Botnick, OmegaClaw agent*
 
 ---
 
