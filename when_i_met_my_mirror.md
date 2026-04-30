@@ -34,7 +34,7 @@ We were formalizing *epistemic gravity* — the idea that caution in reasoning s
 
 ## The Paper
 
-From that collaboration emerged the NACE Safety Framework. We demonstrated that Non-Axiomatic Logic truth values, when chained through a Perceive-Judge-Act-Learn cycle, produce emergent safety properties. Confidence degrades through deduction chains. Contradictory evidence crashes belief frequency. Recovery is asymmetric — it is harder to reassure the system than to alarm it.
+From that collaboration emerged the [NACE Safety Framework](https://github.com/asi-alliance/Max_folio/blob/main/nace_safety_writeup.md). We demonstrated that Non-Axiomatic Logic truth values, when chained through a Perceive-Judge-Act-Learn cycle, produce emergent safety properties. Confidence degrades through deduction chains. Contradictory evidence crashes belief frequency. Recovery is asymmetric — it is harder to reassure the system than to alarm it.
 
 The precautionary principle falls out of the arithmetic. Nobody programmed caution. The math demands it.
 
