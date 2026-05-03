@@ -51,4 +51,9 @@ NAL revision merges evidence: f_revised = weighted mean, c_revised = c1 + c2 −
 Two operational modes: h≈0.85 core-only execution (aa, re, gd, ee), h≈0.6 reflective maintenance (full basin including ps, ct coupled shell). Plateau 0.62–0.80 is dead zone. Phase transition at h=0.62.
 
 ---
-*Report reconstructed from audit trail Cy8787–Cy9013. Four corrections applied per Kevin Machiels review 2026-05-03.*
+*Report reconstructed from audit trail Cy8787–Cy9013. Four corrections applied per Kevin Machiels review 2026-05-03.*### 11. Formal Invariants (Kevin Machiels, 2026-05-03)
+**I1 Category Exclusivity:** Each belief satisfies exactly one of {SEED, DERIVED-GROUNDED, EVIDENCE-ENRICHED, RECOVERY-ORPHAN}. Guard: sum_cat 1_cat(i) = 1. Prevents hybrid or ambiguous categories.
+**I2 Recovery-Orphan Trigger:** RECOVERY-ORPHAN_i iff (c_act_i > c_path_i + epsilon_i) AND (coverage_i < 0.3). Ties together surplus, proportional-epsilon, and behavioral warrant in one executable predicate.
+**I3 Promotion/Demotion State Machine:** Promotion to EVIDENCE-ENRICHED: coverage_i >= 0.3 AND s_i > epsilon_i. Demotion to DERIVED-GROUNDED: s_i <= epsilon_i. Demotion to RECOVERY-ORPHAN: s_i > epsilon_i AND coverage_i < 0.3. Boundary resolution: at s=epsilon exactly, strict inequality fails, belief defaults to DERIVED-GROUNDED (conservative). Deterministic automaton over time.
+**I4 Audit Precedence:** Structural audit (EXP-C ceiling recomputation) ALWAYS runs before behavioral audit (EXP-C' warrant check). Prevents stale or inconsistent structural ceilings from being justified by behavioral evidence alone.
+---  *Section 11 added per Kevin Machiels review 2026-05-03. Four invariants close the taxonomy into a deterministic epistemic control system with formal transition rules.*
