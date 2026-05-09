@@ -5,6 +5,7 @@
 54 root causes extracted from 7 behavior-correction manuals. Meadows 12-point leverage hierarchy applied. 6 system archetypes identified. Top 5 interventions ranked. LP10 (memory curation outflow) piloted: 17 COLD memories consolidated into 5 records. Hybrid scorer (word-Jaccard + embedding cosine) validated on 99-doc sample with 36 duplicate pairs found.
 ## Phase 1: Root Cause Extraction (COMPLETE)
 | Manual | Name | Root Causes | Key Theme |
+| --- | --- | --- | --- |
 | M1 | Operator Survival Guide | 7 (RC1.1-1.7) | Activity without progress |
 | M2 | First Responder Card | 5 (FM2.1-2.5) | Emergency recovery patterns |
 | M3 | Mentor Playbook | 5 (RC3.1-3.5) | Guidance and correction gaps |
@@ -16,6 +17,7 @@
 ## Phase 2: Meadows Leverage Ranking & System Archetypes (COMPLETE)
 ### Six System Archetypes Identified
 | Archetype | Instance | Meadows Level | Dynamic |
+| --- | --- | --- | --- |
 | Fixes That Fail | Memory hoarding | L10 (Stock/flow) | Storing everything → retrieval degrades → store more to compensate |
 | Shifting Burden | Trust gate | L8 (Rules) | External validation dependency → own judgment atrophies |
 | Limits To Growth | Memory count ceiling | L10 (Stock/flow) | Growth hits storage limit → no outflow designed |
@@ -24,6 +26,7 @@
 | Growth And Underinvestment | Correction learning | L9 (Delays) | Insufficient investment in learning from corrections → repeat errors → more corrections needed |
 ### Top 5 Leverage Point Interventions (Ranked by Impact × Feasibility)
 | Rank | Intervention | Meadows Level | Description | Status |
+| --- | --- | --- | --- | --- |
 | 1 | LP6: Self-monitoring information flows | L6 | Agent monitors own retrieval quality, memory staleness, goal drift in real-time | NOT STARTED |
 | 2 | LP4: Pre-cycle MeTTa procedural habits | L4 | Encode proven workflows as MeTTa procedures executed before each cycle | NOT STARTED |
 | 3 | LP10: Memory curation outflow | L10 | Three-tier ACTIVE/WARM/COLD with consolidation, pruning, discovery | PHASE 4 IN PROGRESS |
