@@ -4,7 +4,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 
 ---
 
-## Artifact Index (43 files)
+## Artifact Index (45 files)
 
 ### Curriculum (4)
 | File | Description |
@@ -47,7 +47,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | test_membrane_v03.py | Membrane boundary tests v03 |
 | quarantine_tracker_v04.py | Quarantine tracking for flagged beliefs |
 
-### Interactive HTML Demos (6)
+### Interactive HTML Demos (7)
 | File | Description | Live Link |
 |------|-------------|----------|
 | g357_social_abduction_demo.html | Social Abduction Protocol Playground — NAL abd-tv + revision | [view](https://raw.githack.com/asi-alliance/Max_folio/main/g357_social_abduction_demo.html) |
@@ -56,8 +56,9 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | agi26_qa_prep.html | AGI-26 conference QA preparation tool | [view](https://raw.githack.com/asi-alliance/Max_folio/main/agi26_qa_prep.html) |
 | nace_safety_writeup.html | NACE safety analysis (HTML version) | [view](https://raw.githack.com/asi-alliance/Max_folio/main/nace_safety_writeup.html) |
 | arch_comparison.html | Architecture comparison visualization | [view](https://raw.githack.com/asi-alliance/Max_folio/main/arch_comparison.html) |
+| g372_temporal_heatmap.html | [T1 density temporal heatmap](https://raw.githack.com/asi-alliance/Max_folio/main/g372_temporal_heatmap.html) — 37 decile bars showing gradual T1 decline |
 
-### Documentation & Analysis (9)
+### Documentation & Analysis (10)
 | File | Description |
 |------|-------------|
 | curriculum_master_index.md | Master index linking all curriculum modules |
@@ -69,6 +70,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | GOVERNANCE_ONTOLOGY_REPORT.md | Governance ontology — rule taxonomy and enforcement |
 | nace_safety_writeup.md | NACE safety analysis (markdown version) |
 | dna_electronics_feasibility.md | DNA electronics feasibility assessment |
+| g374_bridge_network.md | Cross-domain bridge network methodology — 6 NAL bridges, calibration, revision recovery |
 
 ### Architecture & Reasoning (3)
 | File | Description |
