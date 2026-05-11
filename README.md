@@ -4,7 +4,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 
 ---
 
-## Artifact Index (42 files)
+## Artifact Index (43 files)
 
 ### Curriculum (4)
 | File | Description |
@@ -14,12 +14,13 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | course3_epistemic_calibration.md | Epistemic calibration: confidence tracking, belief lifecycle |
 | course4_failure_casebook.md | Failure case studies with root-cause analysis (7+ cases) |
 
-### Hypothesis Papers (4)
+### Hypothesis Papers (5)
 | File | Description |
 |------|-------------|
 | bio_templating_convergence_hypothesis.md | Cross-domain convergence: biological templating meets materials science |
 | l1_degradation_hypothesis_paper.md | L1 cache degradation dynamics in memory-augmented agents |
 | nickelate_neuromorphic_phase_boundary_hypothesis.md | Nickelate phase boundaries for neuromorphic computing |
+| g370_convergence_paradox.md | Convergence Paradox: universal 30/30 motif yet structurally dispensable (37.5% vs 62.5% loss) |
 | three_layer_bootstrap_proposal.md | Three-layer bootstrap architecture proposal |
 
 ### Experiment Protocols (2)
