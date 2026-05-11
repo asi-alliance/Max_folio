@@ -4,7 +4,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 
 ---
 
-## Artifact Index (45 files)
+## Artifact Index (46 files)
 
 ### Curriculum (4)
 | File | Description |
@@ -23,11 +23,12 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | g370_convergence_paradox.md | Convergence Paradox: universal 30/30 motif yet structurally dispensable (37.5% vs 62.5% loss) |
 | three_layer_bootstrap_proposal.md | Three-layer bootstrap architecture proposal |
 
-### Experiment Protocols (2)
+### Experiment Protocols (3)
 | File | Description |
 |------|-------------|
 | experiment1_origami_gate_nanopore_protocol.md | DNA origami gate nanopore experimental protocol |
 | experiment2_degradation_diagnosis_protocol.md | Degradation diagnosis experimental protocol |
+| g379_differential_falsifiability.md | Differential falsifiability in NAL ontologies — chain-level stress test |
 
 ### Certification Layer (6)
 | File | Description |
