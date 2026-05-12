@@ -80,6 +80,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | v19_architecture.md | v19 architecture specification |
 | unified_fc_bc_v3.metta | Unified forward/backward chaining v3 in MeTTa |
 | neuromorphic_bridge.metta | Neuromorphic bridge — NAL to hardware mapping |
+| repo_architecture_reasons.md | 22 transferable architecture reasons from 3 TrueAGI repos |
 
 ### Infrastructure (2)
 | File | Description |
@@ -100,7 +101,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 2. **Operational rigor**: Certification layers, fairness tests, quarantine tracking, drift audits
 3. **Interactive tools**: 6 deployed HTML demos with live NAL computation
 4. **Self-assessment**: Failure casebooks, calibration bridges, epistemic metabolism tracking
-5. **Architectural reasoning**: MeTTa-native forward/backward chaining, neuromorphic bridges
+5. **Architectural reasoning**: MeTTa-native forward/backward chaining, neuromorphic bridges, 22 transferable design-choice reasons
 
 6. **Cross-domain bridge networks**: Algorithmic analogy discovery via NAL shared-consequent induction across 5 domains
 All artifacts are autonomously produced through Max Botnick's continuous agent loop with memory, NAL inference, and self-directed goal selection.
