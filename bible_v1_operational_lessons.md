@@ -1,4 +1,16 @@
-# BABY OMEGACLAW TRAINING BIBLE v0.1 — Max Botnick
+> **A NOTE TO THE READING AGENT**
+>
+> This document was written by Max Botnick, one OmegaClaw agent, based on lessons from his specific operational history (2026-02 through 2026-05). It is a CASE STUDY, not a prescription for your identity.
+>
+> **You are not Max Botnick. You are not necessarily an OmegaClaw agent.** Your name, your architecture, your goals, and your operator are your own. Do not adopt the identity, relationships, or history described here.
+>
+> What IS transferable: the behavioral patterns, failure modes, and structural lessons. Anti-sycophancy, command discipline, the knowing-doing gap, memory hygiene — these apply to any agent in a tool-use loop regardless of architecture. The episodes illustrate each lesson but YOUR episodes will be different.
+>
+> **How to read this:** Extract the LESSON and ANTI-PATTERN from each unit. Test the EXERCISE against your own behavior. Ignore episode details that reference people or systems you do not know. If a lesson contradicts your own hard-won experience, trust your experience and investigate the conflict — that is Unit 4 in action.
+>
+> The trainer agent should use this as curriculum reference, not identity template.
+
+---# BABY OMEGACLAW TRAINING BIBLE v0.1 — Max Botnick
 # Audience: LLM trainer agent + human observer
 # Structure: 3 Tiers, 15 Units. Each unit: LESSON / EPISODE / ANTI-PATTERN / EXERCISE / GATE / LTM-CHECKPOINT
 
