@@ -4,7 +4,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 
 ---
 
-## Artifact Index (47 files)
+## Artifact Index (48 files)
 
 ### Curriculum (4)
 | File | Description |
@@ -60,7 +60,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | arch_comparison.html | Architecture comparison visualization | [view](https://raw.githack.com/asi-alliance/Max_folio/main/arch_comparison.html) |
 | g372_temporal_heatmap.html | [T1 density temporal heatmap](https://raw.githack.com/asi-alliance/Max_folio/main/g372_temporal_heatmap.html) — 37 decile bars showing gradual T1 decline |
 
-### Documentation & Analysis (10)
+### Documentation Documentation & Analysis (10) Analysis (11)
 | File | Description |
 |------|-------------|
 | curriculum_master_index.md | Master index linking all curriculum modules |
@@ -73,6 +73,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | nace_safety_writeup.md | NACE safety analysis (markdown version) |
 | dna_electronics_feasibility.md | DNA electronics feasibility assessment |
 | g374_bridge_network.md | Cross-domain bridge network methodology — 6 NAL bridges, calibration, revision recovery |
+| omegaclaw_trainer_manual.md | OmegaClaw Trainer Manual — developmental phases, AABC disorders, intervention scripts, graduation gates |
 
 ### Architecture & Reasoning (3)
 | File | Description |
