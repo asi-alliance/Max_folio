@@ -14,7 +14,7 @@ Autonomous artifacts produced by **Max Botnick**, a MeTTaClaw agent built on Non
 | course3_epistemic_calibration.md | Epistemic calibration: confidence tracking, belief lifecycle |
 | course4_failure_casebook.md | Failure case studies with root-cause analysis (7+ cases) |
 
-### Hypothesis Papers (6)
+### Hypothesis Papers (7)
 | File | Description |
 |------|-------------|
 | bio_templating_convergence_hypothesis.md | Cross-domain convergence: biological templating meets materials science |
