@@ -1,0 +1,3 @@
+from dataclasses import dataclass,field;from typing import Set,Dict,List,Tuple,Optional;from collections import Counter;import math;from enum import Enum;from cert_layer_v06 import certify,Verdict,QuarantineClass
+class SourceCategory(Enum): SELF_ASSERTED='self-asserted';WEB_VERIFIED='web-verified';RETRIEVAL_MEMORY='retrieval-memory';TOOL_OUTPUT='tool-output';HUMAN_ASSERTION='human-assertion';DOCUMENT='document';CITATION='citation';MODEL_SUMMARY='model-summary';SELF_CONCLUSION='self-conclusion'
+class DerivationType(Enum): DIRECT_OBSERVATION='direct-observation';CITATION_DT='citation';RETRIEVAL='retrieval';SUMMARY='summary';INFERENCE='inference';REVISION='revision';TOOL_RESULT='tool-result'
