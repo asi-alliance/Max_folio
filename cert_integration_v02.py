@@ -24,7 +24,7 @@ def certify_and_track(f, c, depth, tracker, cycle, term, belief_id, thresholds=N
                 if subtype == 'Q_AMB_RESOLVABLE':
                     req = tracker.create_evidence_request(belief_id, cycle=cycle)
                     result['trigger_created'] = True
-                    result['planner_called'] = True
+                    result['planner_called'] = (req is not None)
     result['leakage_count'] = len(tracker.leakage_log)
     return verdict, qclass, reasons, margins, result
 
@@ -40,7 +40,7 @@ def update_existing_ambiguous(bid, new_f, new_c, tracker, thresholds=None, depth
     if tracker.trigger_check(bid, tau=5, k=2) and subtype == 'Q_AMB_RESOLVABLE':
         req = tracker.create_evidence_request(bid, cycle=cycle)
         result['trigger_created'] = True
-        result['planner_called'] = True
+        result['planner_called'] = (req is not None)
     if not (0.35 <= new_f <= 0.65):
         tracker.promote_with_recert(bid, new_f, new_c, 'ambiguity_resolved', datetime.now().isoformat(), thresholds=thresholds, depth=depth)
         result['reclassified'] = True
