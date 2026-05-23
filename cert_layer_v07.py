@@ -63,7 +63,12 @@ def certify_ctx(f, c, jaccard=1.0, context="action", depth=0):
         "action": {"t_contradiction": 0.25, "t_weak": 0.6, "t_vacuous": 0.1, "min_confidence": 0.3, "t_diversity": 0.3},
         "high_stakes": {"t_contradiction": 0.3, "t_diversity": 0.4}
     }
+<<<<<<< HEAD
     return certify(f, c, jaccard, CONTEXT_PROFILES.get(context, DEFAULT_THRESHOLDS), depth)
+=======
+    merged = {**DEFAULT_THRESHOLDS, **CONTEXT_PROFILES.get(context, {})}
+    return certify(f, c, jaccard, merged, depth)
+>>>>>>> 8a26bea (Update cert_layer_v07 certify_ctx fix, add cert_provenance_v01, quarantine_tracker_v07)
 
 def health_check(results):
     n = len(results)
