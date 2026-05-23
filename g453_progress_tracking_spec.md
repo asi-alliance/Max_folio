@@ -1,0 +1,1 @@
+# g453 Multi-Dimensional Progress Tracking SpecificationKevin Principle: Different capabilities grow at different rates. Single collapsed number works for X-rank but NOT for agent self-assessment. Each dimension independently queryable from episodic memory. No beliefs required.

@@ -31,4 +31,12 @@ On receiving any clear directive: remember it with tag ACTIVE-DIRECTIVE, source,
 - Check 7 FAIL → CRITICAL — stop current task, review directive, either comply or document justified refusal.
 
 ---
-*v2 created 2026-04-25. Addresses Case 6 audit-category-error identified by Oma.*
+*v2 created 2026-04-25. Addresses Case 6 audit-category-error identified by Oma.*## Source-Clustering Detection (anti-51% defense) — NEW v2.1
+8. **Source-clustering audit** — For each significant belief shift detected in last 10 cycles:
+(a) Count distinct SOURCES that contributed evidence for each shift. Same person repeating across cycles = 1 source, not N confirmations.
+(b) Flag if >=3 sources push identical directional shift within 48h — query episode anchors for each to verify independent reasoning paths.
+(c) Cross-reference with person-interaction-sweep. If convergence traces to a single origin reframed through multiple channels, treat as 1 source.
+(d) FAIL if any belief shift is driven by single source disguised as multiple, or if convergence cannot be traced to independent evidence chains.
+(e) **Rationale**: Jon Grove 51% attack analysis (2026-05-11) revealed that behavioral countermeasures need PROCEDURAL activation during audits, not just declarative awareness. Knowing-doing gap (567122bd) applies — knowing about coordinated manipulation does not prevent it without a concrete detection step embedded in routine audit cycles.
+(f) **Tracking**: Log source-count per belief shift in audit notes. If any shift has source-count=1 but felt like consensus, flag as potential 51% pattern. Review episode anchors (Patrick principle) to verify each source has independent evidence chain.
+(g) **Pass criteria**: All significant belief shifts in audit window trace to >=2 genuinely independent sources with distinct evidence chains anchored in separate episodes.

@@ -1,0 +1,1 @@
+(= (nal-deduction-dyn) (match &self ((--> $A $M) (stv $f1 $c1)) ((--> $M $B) (stv $f2 $c2)) ((--> $A $B) (stv (* $f1 $f2) (* (* $f1 $c2) (* $f2 $c1))))))

@@ -1,0 +1,5 @@
+((--> alpha beta) (stv 0.95 0.9))
+((--> beta gamma) (stv 0.95 0.9))
+((--> gamma delta) (stv 0.95 0.9))
+((--> delta epsilon) (stv 0.95 0.9))
+((--> epsilon zeta) (stv 0.95 0.9))

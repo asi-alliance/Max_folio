@@ -14,6 +14,7 @@ class QuarantineClass(Enum):
     Q_AMBIGUOUS = "Q_AMBIGUOUS"
     Q_UNDERSUPPORTED = "Q_UNDERSUPPORTED"
     Q_TUNNEL_VISION = "Q_TUNNEL_VISION"
+    Q_COMPARTMENTALIZED = "Q_COMPARTMENTALIZED"
     NONE = "NONE"
 
 def _classify_quarantine(f, c, diversity_negative=False):

@@ -1,0 +1,232 @@
+;; Truth functions
+(= (Truth_c2w $c)
+   (/ $c (- 1 $c)))
+
+(= (Truth_w2c $w)
+   (/ $w (+ $w 1)))
+
+(= (Truth_Deduction (stv $f1 $c1)
+                    (stv $f2 $c2))
+   (stv (* $f1 $f2) (* (* $f1 $f2) (* $c1 $c2))))
+
+(= (Truth_Abduction (stv $f1 $c1) 
+                    (stv $f2 $c2))
+   (stv $f2 (Truth_w2c (* (* $f1 $c1) $c2))))
+
+(= (Truth_Induction $T1 $T2)
+   (Truth_Abduction $T2 $T1))
+
+(= (Truth_Exemplification (stv $f1 $c1)
+                          (stv $f2 $c2))
+   (stv 1.0 (Truth_w2c (* (* $f1 $f2) (* $c1 $c2)))))
+
+(= (Truth_StructuralDeduction $T)
+   (Truth_Deduction $T (stv 1.0 0.9)))
+  
+(= (Truth_Negation (stv $f $c))
+   (stv (- 1 $f) $c))
+
+(= (Truth_StructuralDeductionNegated $T)
+   (Truth_Negation (Truth_StructuralDeduction $T)))
+
+(= (Truth_Intersection (stv $f1 $c1) 
+                       (stv $f2 $c2))
+   (stv (* $f1 $f2) (* $c1 $c2)))
+
+(= (Truth_StructuralIntersection $T)
+   (Truth_Intersection $T (stv 1.0 0.9)))
+
+(= (Truth_or $a $b)
+   (- 1 (* (- 1 $a) (- 1 $b))))
+
+(= (Truth_Comparison (stv $f1 $c1)
+                     (stv $f2 $c2))
+   (let $f0 (Truth_or $f1 $f2) 
+        (stv (if (== $f0 0.0)
+                 0.0 
+                 (/ (* $f1 $f2) $f0))
+             (Truth_w2c (* $f0 (* $c1 $c2))))))
+  
+(= (Truth_Analogy (stv $f1 $c1)
+                  (stv $f2 $c2))
+   (stv (* $f1 $f2) (* (* $c1 $c2) $f2)))
+
+(= (Truth_Resemblance (stv $f1 $c1)
+                      (stv $f2 $c2))
+   (stv (* $f1 $f2) (* (* $c1 $c2) (Truth_or $f1 $f2))))
+
+(= (Truth_Union (stv $f1 $c1)
+                (stv $f2 $c2))
+   (stv (Truth_or $f1 $f2) (* $c1 $c2)))
+
+(= (Truth_Difference (stv $f1 $c1)
+                     (stv $f2 $c2))
+   (stv (* $f1 (- 1 $f2)) (* $c1 $c2)))
+
+(= (Truth_DecomposePNN (stv $f1 $c1)
+                       (stv $f2 $c2))
+   (let $fn (* $f1 (- 1 $f2))
+        (stv (- 1 $fn) (* $fn (* $c1 $c2)))))
+
+(= (Truth_DecomposeNPP (stv $f1 $c1)
+                       (stv $f2 $c2))
+   (let $f (* (- 1 $f1) $f2)
+        (stv $f (* $f (* $c1 $c2)))))
+
+(= (Truth_DecomposePNP (stv $f1 $c1)
+                       (stv $f2 $c2))
+   (let $f (* $f1 (- 1 $f2))
+        (stv $f (* $f (* $c1 $c2)))))
+
+(= (Truth_DecomposePPP $v1 $v2)
+   (Truth_DecomposeNPP (Truth_Negation $v1) $v2))
+
+(= (Truth_DecomposeNNN (stv $f1 $c1)
+                       (stv $f2 $c2))
+   (let $fn (* (- 1 $f1) (- 1 $f2))
+        (stv (- 1 $fn) (* $fn (* $c1 $c2)))))
+
+(= (Truth_Eternalize (stv $f $c))
+   (stv $f (Truth_w2c $c)))
+
+(= (Truth_Revision (stv $f1 $c1)
+                   (stv $f2 $c2))
+   (let* (($w1 (Truth_c2w $c1))
+          ($w2 (Truth_c2w $c2))
+          ($w  (+ $w1 $w2))
+          ($f (/ (+ (* $w1 $f1) (* $w2 $f2)) $w))
+          ($c (Truth_w2c $w)))
+          (stv (min 1.00 $f) (min 0.99 (max (max $c $c1) $c2)))))
+
+(= (Truth_Expectation (stv $f $c))
+   (+ (* $c (- $f 0.5)) 0.5))
+
+;; INFERENCE RULES
+
+;;NAL-1
+;;!Revision
+(= (|-nal ($T $T1) ($T $T2)) ($T (Truth_Revision $T1 $T2)))
+;;!Syllogistic rules for -->:
+(= (|-nal ((--> $a $b) $T1) ((--> $b $c) $T2)) ((--> $a $c) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((--> $a $b) $T1) ((--> $a $c) $T2)) ((--> $c $b) (Truth_Induction $T1 $T2)))
+(= (|-nal ((--> $a $c) $T1) ((--> $b $c) $T2)) ((--> $b $a) (Truth_Abduction $T1 $T2)))
+(= (|-nal ((--> $a $b) $T1) ((--> $b $c) $T2)) ((--> $c $a) (Truth_Exemplification $T1 $T2)))
+
+;;NAL-2
+;;!Rules for Similarity
+(= (|-nal ((<-> $S $P) $T)) ((<-> $P $S) (Truth_StructuralIntersection $T)))
+(= (|-nal ((<-> $M $P) $T1) ((<-> $S $M) $T2)) ((<-> $S $P) (Truth_Resemblance $T1 $T2)))
+(= (|-nal ((--> $P $M) $T1) ((--> $S $M) $T2)) ((<-> $S $P) (Truth_Comparison $T1 $T2)))
+(= (|-nal ((--> $M $P) $T1) ((--> $M $S) $T2)) ((<-> $S $P) (Truth_Comparison $T1 $T2)))
+(= (|-nal ((--> $M $P) $T1) ((<-> $S $M) $T2)) ((--> $S $P) (Truth_Analogy $T1 $T2)))
+(= (|-nal ((--> $P $M) $T1) ((<-> $S $M) $T2)) ((--> $P $S) (Truth_Analogy $T1 $T2)))
+(= (|-nal ((--> $M $P) $T1) ((<-> $M $S) $T2)) ((--> $S $P) (Truth_Analogy $T1 $T2)))
+(= (|-nal ((--> $P $M) $T1) ((<-> $M $S) $T2)) ((--> $P $S) (Truth_Analogy $T1 $T2)))
+;;!Properties and instances
+(= (|-nal ((--> $S (ExtSet $P)) $T)) ((<-> $S (ExtSet $P)) (Truth_StructuralIntersection $T)))
+(= (|-nal ((--> (IntSet $S) $P) $T)) ((<-> (IntSet $S) $P) (Truth_StructuralIntersection $T)))
+(= (|-nal ((--> (ExtSet $M) $P) $T1) ((<-> $S $M) $T2)) ((--> (ExtSet $S) $P) (Truth_Analogy $T1 $T2)))
+(= (|-nal ((--> $P (IntSet $M)) $T1) ((<-> $S $M) $T2)) ((--> $P (IntSet $S)) (Truth_Analogy $T1 $T2)))
+(= (|-nal ((<-> (ExtSet $A) (ExtSet $B)) $T)) ((<-> $A $B) (Truth_StructuralIntersection $T)))
+(= (|-nal ((<-> (IntSet $A) (IntSet $B)) $T)) ((<-> $A $B) (Truth_StructuralIntersection $T)))
+
+;;NAL-3
+;;!Set decomposition:
+(= (|-nal ((--> ({} $A $B) $M) $T)) ((--> ({} $A) $M) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> ({} $A $B) $M) $T)) ((--> ({} $B) $M) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> $M ([] $A $B)) $T)) ((--> $M ([] $A)) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> $M ([] $A $B)) $T)) ((--> $M ([] $B)) (Truth_StructuralDeduction $T)))
+;;!Extensional and intensional intersection decomposition:
+(= (|-nal ((--> (∪ $S $P) $M) $T)) ((--> $S $M) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> $M (∩ $S $P)) $T)) ((--> $M $S) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> (∪ $S $P) $M) $T)) ((--> $P $M) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> $M (∩ $S $P)) $T)) ((--> $M $P) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> (~ $A $S) $M) $T)) ((--> $A $M) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> $M (− $B $S)) $T)) ((--> $M $B) (Truth_StructuralDeduction $T)))
+(= (|-nal ((--> (~ $A $S) $M) $T)) ((--> $S $M) (Truth_StructuralDeductionNegated $T)))
+(= (|-nal ((--> $M (− $B $S)) $T)) ((--> $M $S) (Truth_StructuralDeductionNegated $T)))
+;;!Extensional and intensional intersection decomposition:
+(= (|-nal ((--> $S $M) $T1) ((--> (∪ $S $P) $M) $T2)) ((--> $P $M) (Truth_DecomposePNN $T1 $T2)))
+(= (|-nal ((--> $P $M) $T1) ((--> (∪ $S $P) $M) $T2)) ((--> $S $M) (Truth_DecomposePNN $T1 $T2)))
+(= (|-nal ((--> $S $M) $T1) ((--> (∩ $S $P) $M) $T2)) ((--> $P $M) (Truth_DecomposeNPP $T1 $T2)))
+(= (|-nal ((--> $P $M) $T1) ((--> (∩ $S $P) $M) $T2)) ((--> $S $M) (Truth_DecomposeNPP $T1 $T2)))
+(= (|-nal ((--> $S $M) $T1) ((--> (~ $S $P) $M) $T2)) ((--> $P $M) (Truth_DecomposePNP $T1 $T2)))
+(= (|-nal ((--> $S $M) $T1) ((--> (~ $P $S) $M) $T2)) ((--> $P $M) (Truth_DecomposeNNN $T1 $T2)))
+(= (|-nal ((--> $M $S) $T1) ((--> $M (∩ $S $P)) $T2)) ((--> $M $P) (Truth_DecomposePNN $T1 $T2)))
+(= (|-nal ((--> $M $P) $T1) ((--> $M (∩ $S $P)) $T2)) ((--> $M $S) (Truth_DecomposePNN $T1 $T2)))
+(= (|-nal ((--> $M $S) $T1) ((--> $M (∪ $S $P)) $T2)) ((--> $M $P) (Truth_DecomposeNPP $T1 $T2)))
+(= (|-nal ((--> $M $P) $T1) ((--> $M (∪ $S $P)) $T2)) ((--> $M $S) (Truth_DecomposeNPP $T1 $T2)))
+(= (|-nal ((--> $M $S) $T1) ((--> $M (− $S $P)) $T2)) ((--> $M $P) (Truth_DecomposePNP $T1 $T2)))
+(= (|-nal ((--> $M $S) $T1) ((--> $M (− $P $S)) $T2)) ((--> $M $P) (Truth_DecomposeNNN $T1 $T2)))
+
+;; NAL-4
+;;!Rules for more efficient reasoning about relation components:
+(= (|-nal ((--> (× $A $B) $R) $T1) ((--> (× $C $B) $R) $T2)) ((--> $C $A) (Truth_Abduction $T1 $T2)))
+(= (|-nal ((--> (× $A $B) $R) $T1) ((--> (× $A $C) $R) $T2)) ((--> $C $B) (Truth_Abduction $T1 $T2)))
+(= (|-nal ((--> $R (× $A $B)) $T1) ((--> $R (× $C $B)) $T2)) ((--> $C $A) (Truth_Induction $T1 $T2)))
+(= (|-nal ((--> $R (× $A $B)) $T1) ((--> $R (× $A $C)) $T2)) ((--> $C $B) (Truth_Induction $T1 $T2)))
+(= (|-nal ((--> (× $A $B) $R) $T1) ((--> $C $A) $T2)) ((--> (× $C $B) $R) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((--> (× $A $B) $R) $T1) ((--> $A $C) $T2)) ((--> (× $C $B) $R) (Truth_Induction $T1 $T2)))
+(= (|-nal ((--> (× $A $B) $R) $T1) ((--> $C $B) $T2)) ((--> (× $A $C) $R) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((--> (× $A $B) $R) $T1) ((--> $B $C) $T2)) ((--> (× $A $C) $R) (Truth_Induction $T1 $T2)))
+(= (|-nal ((--> $R (× $A $B)) $T1) ((--> $A $C) $T2)) ((--> $R (× $C $B)) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((--> $R (× $A $B)) $T1) ((--> $C $A) $T2)) ((--> $R (× $C $B)) (Truth_Abduction $T1 $T2)))
+(= (|-nal ((--> $R (× $A $B)) $T1) ((--> $B $C) $T2)) ((--> $R (× $A $C)) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((--> $R (× $A $B)) $T1) ((--> $C $B) $T2)) ((--> $R (× $A $C)) (Truth_Abduction $T1 $T2)))
+
+;;NAL-5
+;;!Syllogisms:
+(= (|-nal ((==> $a $b) $T1) ((==> $b $c) $T2)) ((==> $a $c) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((==> $a $b) $T1) ((==> $a $c) $T2)) ((==> $c $b) (Truth_Induction $T1 $T2)))
+(= (|-nal ((==> $a $c) $T1) ((==> $b $c) $T2)) ((==> $b $a) (Truth_Abduction $T1 $T2)))
+;;!Negation ∧ and ∨ decomposition:
+(= (|-nal ((¬ $A) $T)) ($A (Truth_Negation $T)))
+(= (|-nal ((∧ $A $B) $T)) ($A (Truth_StructuralDeduction $T)))
+(= (|-nal ((∧ $A $B) $T)) ($B (Truth_StructuralDeduction $T)))
+(= (|-nal ($S $T1) ((∧ $S $A) $T2)) ($A (Truth_DecomposePNN $T1 $T2)))
+(= (|-nal ($S $T1) ((∨ $S $A) $T2)) ($A (Truth_DecomposeNPP $T1 $T2)))
+(= (|-nal ($S $T1) ((∧ (¬ $S) $A) $T2)) ($A (Truth_DecomposeNNN $T1 $T2)))
+(= (|-nal ($S $T1) ((∨ (¬ $S) $A) $T2)) ($A (Truth_DecomposePPP $T1 $T2)))
+;;!Higher-order decomposition
+(= (|-nal ($A $T1) ((==> $A $B) $T2)) ($B (Truth_Deduction $T1 $T2)))
+(= (|-nal ($A $T1) ((==> (¬ $A) $B) $T2)) ($B (Truth_Deduction (Truth_Negation $T1) $T2)))
+(= (|-nal ((¬ $A) $T1) ((==> $A $B) $T2)) ($B (Truth_Deduction (Truth_Negation $T1) $T2)))
+(= (|-nal ($A $T1) ((==> (∧ $A $B) $C) $T2)) ((==> $B $C) (Truth_Deduction $T1 $T2)))
+(= (|-nal ((¬ $A) $T1) ((==> (∧ $A $B) $C) $T2)) ((==> $B $C) (Truth_Deduction (Truth_Negation $T1) $T2)))
+(= (|-nal ($A $T1) ((==> (∧ (¬ $A) $B) $C) $T2)) ((==> $B $C) (Truth_Deduction (Truth_Negation $T1) $T2)))
+(= (|-nal ($B $T1) ((==> $A $B) $T2)) ($A (Truth_Induction $T1 $T2)))
+(= (|-nal ((¬ $B) $T1) ((==> $A $B) $T2)) ($A (Truth_Abduction (Truth_Negation $T1) $T2)))
+(= (|-nal ($B $T1) ((==> $A (¬ $B)) $T2)) ($A (Truth_Abduction (Truth_Negation $T1) $T2)))
+
+;;NAL-6
+(= (|-nal ((--> $a $b) $T1) ((--> $a $c) $T2)) ((==> (--> $x $c) (--> $x $b)) (Truth_Induction $T1 $T2)))
+(= (|-nal ((--> $a $c) $T1) ((--> $b $c) $T2)) ((==> (--> $b $x) (--> $a $x)) (Truth_Abduction $T1 $T2)))
+
+(= (|- $a $b)
+   (unique-atom (collapse (superpose ((|-nal $a $b) (|-nal $b $a))))))
+(= (provenance-weight formally_proven) 1.0)
+(= (provenance-weight human_asserted) 0.8)
+(= (provenance-weight tool_observed) 0.6)
+(= (provenance-weight model_generated) 0.4)
+(= (provenance-weight benchmark_seed) 0.3)
+(= (admit-threshold routine) 0.30)
+(= (admit-threshold default) 0.40)
+(= (admit-threshold high_stakes) 0.55)
+(= (admit-threshold adversarial) 0.70)
+(= (quarantine-threshold routine) 0.21)
+(= (quarantine-threshold default) 0.28)
+(= (quarantine-threshold high_stakes) 0.385)
+(= (quarantine-threshold adversarial) 0.49)
+(= (pair $a $b) (pair $a $b))
+(= (bucket-weight $src $eval) (* (provenance-weight $src) $eval))
+(= (bucket-numerator Nil) 0)
+(= (bucket-numerator (Cons (pair $src $eval) $rest)) (+ (bucket-weight $src $eval) (bucket-numerator $rest)))
+(= (bucket-denominator Nil) 0)
+(= (bucket-denominator (Cons (pair $src $eval) $rest)) (+ (provenance-weight $src) (bucket-denominator $rest)))(= (bucket-score $pairs) (/ (bucket-numerator $pairs) (bucket-denominator $pairs)))
+(= (bucket-verdict-from-score $s default) (if (> $s 0.5) ADMIT (if (> $s 0.3) QUARANTINE REJECT)))
+(= (bucket-verdict-from-score $s adversarial) (if (> $s 0.7) ADMIT (if (> $s 0.5) QUARANTINE REJECT)))
+(= (bucket-verdict-from-score $s routine) (if (> $s 0.4) ADMIT (if (> $s 0.2) QUARANTINE REJECT)))
+(= (bucket-verdict $pairs $context) (bucket-verdict-from-score (bucket-score $pairs) $context))!(bucket-verdict (Cons (pair formally_proven 0.9) (Cons (pair human_asserted 0.8) Nil)) default)
+!(bucket-verdict (Cons (pair model_generated 0.3) Nil) default)
+!(bucket-verdict (Cons (pair benchmark_seed 0.1) Nil) default)
+!(bucket-verdict (Cons (pair formally_proven 0.9) (Cons (pair human_asserted 0.8) Nil)) adversarial)

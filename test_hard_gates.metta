@@ -1,0 +1,8 @@
+!(cert-tier-eligible structural causal_isomorphism_proven)
+!(cert-tier-eligible structural structural_channel_evidence)
+!(cert-tier-eligible structural informal_analogy)
+!(cert-tier-eligible formal explicit_mapping_dictionary)
+!(cert-tier-eligible formal theorem_transfer_proof)
+!(cert-tier-eligible formal heuristic_similarity)
+!(cert-tier-eligible candidate any_aspect)
+!(cert-tier-eligible quarantine any_aspect)

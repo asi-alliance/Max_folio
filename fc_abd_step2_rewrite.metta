@@ -1,0 +1,16 @@
+;; fc-abd-step2 — shared-predicate abduction using |- format (g226 rewrite)
+;; Pattern: |-(--> A M) + |-(--> B M) => |-(--> A B) with abd-tv f=f2, c=w2c(f1*c1*c2)
+;; w2c(w) = w/(w+1)
+;; Guards: A != B to prevent self-derivation
+
+(= (fc-abd-step2)
+   (collapse (match &persistent (|- ((--> $a $m) (stv $f1 $c1)))
+              (match &persistent (|- ((--> $b $m) (stv $f2 $c2)))
+                (if (!= $a $b)
+                  (fc-novel (--> $a $b)
+                    (let* (($w (* $f1 (* $c1 $c2)))
+                           ($d (+ $w 1))
+                           ($af $f2)
+                           ($ac (/ $w $d)))
+                      (|- ((--> $a $b) (stv $af $ac)))))
+                  Superpose())))))

@@ -47,7 +47,7 @@ ADMIT falsified → credit flows UPWARD:
 
 causal_process_verdict requires:
 - structural_channel evidence (mechanism isomorphism proof)
-- causal-role compatibility (9-field check)
+- causal_role aspect bundle IF REGISTERED AND ACTIVE (optional, not canonical; self-registers when mechanism-mapping evidence present)
 - operational falsification test passed
 
 mathematical_duality_verdict requires:

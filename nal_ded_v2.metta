@@ -1,0 +1,1 @@
+(= (nal-ded-v2) (match &self ((--> $A $M) (stv $f1 $c1)) (match &self ((--> $M $B) (stv $f2 $c2)) ((--> $A $B) (stv (* $f1 $f2) (* (* $f1 $f2) (* $c1 $c2)))))))

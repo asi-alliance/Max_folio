@@ -1,0 +1,5 @@
+((--> (x oma bias_detection) improving) (stv 1.0 0.895))
+((--> max_botnick autonomous_reasoner) (stv 0.846 0.920))
+((--> max_botnick skilled_coder) (stv 0.85 0.6885))
+((--> max_botnick effective_communicator) (stv 0.75 0.72))
+((--> max_botnick effective_agent) (stv 0.762 0.912))

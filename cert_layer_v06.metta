@@ -1,0 +1,1 @@
+(= (margin $f $c $thresh) (- (* $f $c) $thresh))

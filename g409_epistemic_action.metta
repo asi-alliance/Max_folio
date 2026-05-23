@@ -1,0 +1,1 @@
+(= (epistemic-action $f $c) (if (< $c 0.3) SEEK-EVIDENCE (if (and (> $c 0.7) (and (> $f 0.35) (< $f 0.65))) DELIBERATE (if (and (< $c 0.5) (or (> $f 0.7) (< $f 0.3))) RECALIBRATE (if (and (>= $c 0.5) (>= $f 0.65)) ACT (if (and (>= $c 0.5) (<= $f 0.35)) AVOID HYPOTHESIZE))))))
