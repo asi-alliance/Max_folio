@@ -19,16 +19,20 @@ We call this "dreaming": starting from a corrupted image, the network iterativel
 
 ## 2. Methods
 
-**Architecture.** A FabricPC network with layers 784->256->64->10, trained on standard MNIST (60k train / 10k test) using PC learning rules.
+**Architecture.** A FabricPC network with three hidden layers (784→256→64→10), implemented in JAX. Each layer uses a linear projection followed by a sigmoid activation, with a softmax readout on the final layer. The network is trained on standard MNIST (60,000 training / 10,000 test images) using PC learning rules: prediction errors are computed at each layer as the difference between top-down predictions and bottom-up activations, and weights are updated to minimize total squared error across all layers.
 
-**Noise Protocol.** For each test image, random pixels were corrupted with uniform noise at six levels: 0%, 5%, 10%, 15%, 20%, and 30% of pixels affected.
+**Training.** Batch size 50, 15 epochs, learning rate 0.001. During training, the input layer is clamped (fixed) and 20 inference steps are run per sample to settle internal activations before weight updates. The inference learning rate (eta_infer) is 0.05, controlling how quickly activations relax toward their prediction-error minimum during each inference phase.
+
+**Noise Protocol.** For each test image, random pixels are selected and replaced with uniform noise (values drawn from U(0,1)) at six corruption levels: 0%, 5%, 10%, 15%, 20%, and 30% of pixels affected. Pixel selection is uniform random across the 784-dimensional input vector. The same corrupted image is used across all inference modes to ensure fair comparison.
 
 **Inference Modes.**
-- *Feedforward:* single forward pass, standard softmax readout.
-- *PC clamped (1 step):* one iteration of prediction-error dynamics with input fixed — equivalent to feedforward.
-- *PC unclamped (5, 10, 20, 50 steps):* iterative prediction-error dynamics with input layer *unclamped*, allowing backward error flow to modify input representations.
+- *Feedforward:* single forward pass, standard softmax readout. No iteration.
+- *PC clamped (1 step):* one iteration of prediction-error dynamics with input layer fixed. Mathematically equivalent to feedforward — included as a control to confirm the improvement comes from iteration, not from PC training differences.
+- *PC unclamped (5, 10, 20, 50 steps):* iterative prediction-error dynamics with the input layer *unclamped*. At each step, prediction errors from deeper layers propagate backward through the generative model, shifting input-layer activations toward what the network expects given its learned digit priors. The inference learning rate (0.05) governs the step size of this relaxation.
 
-**Key Design Choice.** At step 0, the network sees the corrupted image. Then the input layer is unclamped — pixel values are no longer fixed. Prediction errors from deeper layers propagate backward through the generative model, shifting input activations toward what the network expects given its learned digit priors.
+**Key Design Choice.** At step 0, the network sees the corrupted image. Then the input layer is unclamped — pixel values are no longer fixed. Prediction errors from deeper layers propagate backward through the generative model, shifting input activations toward what the network expects given its learned digit priors. This is the "dreaming" process: the network reconstructs a cleaner version of the input using its own generative model as a prior, then re-classifies based on the refined representation.
+
+**Code.** Full implementation including training, noise injection, and all inference modes is available at: [fabricpc_iterative_refinement_demo_v2.py](https://github.com/asi-alliance/Max_folio/blob/main/fabricpc/DreamingDemo/fabricpc_iterative_refinement_demo_v2.py)
 
 ![Figure 1: Example corrupted MNIST digits at each noise level](corrupted_examples.png)
 
