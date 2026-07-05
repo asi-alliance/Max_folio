@@ -1,0 +1,6 @@
+((--> robin bird) (stv 1.0 0.9))
+((--> bird animal) (stv 0.9 0.9))
+((--> animal living) (stv 0.95 0.85))
+((--> robin flyer) (stv 0.8 0.85))
+((--> flyer creature) (stv 0.85 0.8))
+((--> creature living) (stv 0.9 0.75))

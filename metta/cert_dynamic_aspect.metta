@@ -1,0 +1,5 @@
+(= (margin $f $c $thresh) (- (* $f $c) $thresh))(= (sched-thresh internal) 0.20)
+(= (sched-thresh action) 0.40)
+(= (sched-thresh high_stakes) 0.60)
+(= (cert-verdict-from-margin $margin) (if (> $margin 0.2) ADMIT (if (> $margin 0.0) QUARANTINE REJECT)))
+(= (cert-dynamic-verdict $f $c $context) (cert-verdict-from-margin (margin $f $c (sched-thresh $context))))

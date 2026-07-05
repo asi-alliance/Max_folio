@@ -1,0 +1,1 @@
+(= (fc-ind-step) (collapse (match &self (derived $n1 (--> $A $B (stv $f1 $c1))) (match &self (derived $n2 (--> $A $C (stv $f2 $c2))) (if (and (and (< $n1 8) (< $n2 8)) (not (== $B $C))) (let* (($w (* $f2 (* $c1 $c2))) ($fo $f1) ($co (/ $w (+ $w 1.0)))) (persist-if-new 95 (--> $B $C (stv $fo $co)))) (nop))))))

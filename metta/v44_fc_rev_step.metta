@@ -1,0 +1,1 @@
+(= (fc-rev-step) (collapse (match &self (derived $n1 (--> $A $B (stv $f1 $c1))) (match &self (derived $n2 (--> $A $B (stv $f2 $c2))) (if (not (== $n1 $n2)) (let* (($w1 (* $f1 $c1)) ($w2 (* $f2 $c2)) ($ws (+ $w1 $w2)) ($fr (if (> $ws 0.0) (/ (+ (* $f1 $c1) (* $f2 $c2)) $ws) 0.0)) ($cr (min 0.99 (+ $c1 $c2)))) (persist-if-new 97 (--> $A $B (stv $fr $cr)))) (nop))))))

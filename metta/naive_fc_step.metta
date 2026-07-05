@@ -1,0 +1,1 @@
+(: naive-fc-step (-> () List) (naive-fc-step (match &persistent ((--> $A $B) (stv $f1 $c1)) (match &persistent ((--> $B $C) (stv $f2 $c2)) (let $fd (* $f1 $f2) (let $cd (* $fd (* $c1 $c2)) (list DERIVED (--> $A $C) (stv $fd $cd) FROM (--> $A $B) (stv $f1 $c1) AND (--> $B $C) (stv $f2 $c2)))))))

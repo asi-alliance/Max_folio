@@ -1,0 +1,5 @@
+(= (bucket-score $pairs) (/ (bucket-numerator $pairs) (bucket-denominator $pairs)))
+(= (bucket-verdict-from-score $s default) (if (> $s 0.5) ADMIT (if (> $s 0.3) QUARANTINE REJECT)))
+(= (bucket-verdict-from-score $s adversarial) (if (> $s 0.7) ADMIT (if (> $s 0.5) QUARANTINE REJECT)))
+(= (bucket-verdict-from-score $s routine) (if (> $s 0.4) ADMIT (if (> $s 0.2) QUARANTINE REJECT)))
+(= (bucket-verdict $pairs $context) (bucket-verdict-from-score (bucket-score $pairs) $context))

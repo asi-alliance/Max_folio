@@ -1,0 +1,6 @@
+((--> bird fly) (stv 0.9 0.9))
+((--> robin fly) (stv 0.95 0.85))
+((--> robin bird) (stv 1.0 0.9))
+((--> robin swimmer) (stv 0.3 0.7))
+((--> cat animal) (stv 1.0 0.9))
+((--> dog animal) (stv 0.95 0.85))

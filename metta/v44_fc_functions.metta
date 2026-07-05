@@ -1,0 +1,1 @@
+(= (persist-if-new $n $conc) (if (== (collapse (match &self (derived $any $conc) found)) ()) (let $_ (add-atom &self (derived $n $conc)) (derived $n $conc)) (empty)))
