@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAL Inference Demo - MeTTaClaw</title>
+<style>
+body{font-family:Georgia,serif;max-width:900px;margin:30px auto;padding:0 20px;background:#fafafa;color:#1a1a1a}
+h1{color:#1a3a5c;text-align:center;border-bottom:3px solid #1a3a5c;padding-bottom:10px}
+.panel{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;margin:12px 0}
+textarea{width:100%;height:80px;font-family:monospace;font-size:14px;padding:8px;border:1px solid #ccc;border-radius:4px}
+button{background:#1a3a5c;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:14px;margin:4px}
+button:hover{background:#2a5a8c}
+#output{background:#f0f0f0;padding:12px;font-family:monospace;font-size:13px;white-space:pre-wrap;min-height:60px;border-radius:4px}
+.truth{color:#2a5a8c;font-weight:bold}
+.step{border-left:3px solid #1a3a5c;padding:6px 12px;margin:8px 0;background:#f8f8ff}
+label{font-weight:bold;display:block;margin-top:8px}
+.examples{font-size:13px;color:#555;cursor:pointer;text-decoration:underline}
+</style></head><body>
+<h1>NAL Interactive Inference Demo</h1>
+<p style="text-align:center;color:#555">From <a href="wp_v4_complete.html">MeTTaClaw Whitepaper v4</a> &mdash; try Non-Axiomatic Logic yourself</p>
+<div class="panel">
+<label>Premise 1 (e.g. robin --&gt; bird, f=1.0, c=0.9)</label>
+<input id="p1term" placeholder="robin --> bird" style="width:60%;padding:6px;font-size:14px">
+<input id="p1f" placeholder="f=1.0" style="width:12%;padding:6px" value="1.0">
+<input id="p1c" placeholder="c=0.9" style="width:12%;padding:6px" value="0.9">
+<label>Premise 2</label>
+<input id="p2term" placeholder="bird --> animal" style="width:60%;padding:6px;font-size:14px">
+<input id="p2f" placeholder="f=1.0" style="width:12%;padding:6px" value="1.0">
+<input id="p2c" placeholder="c=0.9" style="width:12%;padding:6px" value="0.9">
+<br><br>
+<button onclick="runDeduction()">Deduction</button>
+<button onclick="runRevision()">Revision</button>
+<button onclick="runAbduction()">Abduction</button>
+<button onclick="runInduction()">Induction</button>
+<button onclick="clearOutput()">Clear</button>
+<br><span class="examples" onclick="loadExample(1)">Ex1: robin-bird-animal</span> | <span class="examples" onclick="loadExample(2)">Ex2: revision merge</span> | <span class="examples" onclick="loadExample(3)">Ex3: negation test</span>
+</div>
+<div class="panel"><label>Inference Output</label><div id="output">Click a rule to run inference...</div></div>
+<div class="panel" style="font-size:13px">
+<h3>NAL Truth Functions</h3>
+<p><b>Deduction:</b> f = f1*f2, c = f1*f2*c1*c2</p>
+<p><b>Revision:</b> f = (f1*c1*(1-c2) + f2*c2*(1-c1)) / (c1*(1-c2) + c2*(1-c1)), c = (c1*(1-c2) + c2*(1-c1)) / (c1*(1-c2) + c2*(1-c1) + (1-c1)*(1-c2))</p>
+<p><b>Abduction:</b> f = f2, c = f1*c1*c2 / (f1*c1*c2 + 1) [w2a form]</p>
+<p><b>Induction:</b> f = f1, c = f2*c1*c2 / (f2*c1*c2 + 1) [w2a form]</p>
+</div>
+<script>
+function stv(f,c){return {f:f,c:c}}
+function fmt(s){return '<span class="truth">&lt;'+s.f.toFixed(3)+', '+s.c.toFixed(3)+'&gt;</span>'}
+function getP1(){return {term:document.getElementById('p1term').value,f:parseFloat(document.getElementById('p1f').value),c:parseFloat(document.getElementById('p1c').value)}}
+function getP2(){return {term:document.getElementById('p2term').value,f:parseFloat(document.getElementById('p2f').value),c:parseFloat(document.getElementById('p2c').value)}}
+function out(html){document.getElementById('output').innerHTML+=html+'\n'}
+function clearOutput(){document.getElementById('output').innerHTML=''}
+function deduce(f1,c1,f2,c2){return stv(f1*f2, f1*f2*c1*c2)}
+function revise(f1,c1,f2,c2){var w1=c1/(1-c1),w2=c2/(1-c2);var w=w1+w2;var f=(w1*f1+w2*f2)/w;var c=w/(w+1);return stv(f,c)}
+function abduct(f1,c1,f2,c2){var w=f1*c1*c2;return stv(f2, w/(w+1))}
+function induce(f1,c1,f2,c2){var w=f2*c1*c2;return stv(f1, w/(w+1))}
+function parseTerm(t){var parts=t.split('-->');if(parts.length==2)return{s:parts[0].trim(),p:parts[1].trim()};return{s:t,p:'?'}}
+function runDeduction(){
+  var p1=getP1(),p2=getP2();
+  var t1=parseTerm(p1.term),t2=parseTerm(p2.term);
+  var r=deduce(p1.f,p1.c,p2.f,p2.c);
+  var conc=t1.s+' --> '+t2.p;
+  out('<div class="step"><b>DEDUCTION</b><br>P1: '+p1.term+' '+fmt(stv(p1.f,p1.c))+'<br>P2: '+p2.term+' '+fmt(stv(p2.f,p2.c))+'<br>Conclusion: <b>'+conc+'</b> '+fmt(r)+'<br><i>f=f1*f2='+p1.f+'*'+p2.f+'='+(p1.f*p2.f).toFixed(3)+', c=f1*f2*c1*c2='+(p1.f*p2.f*p1.c*p2.c).toFixed(3)+'</i></div>')
+}
+function runRevision(){
+  var p1=getP1(),p2=getP2();
+  var r=revise(p1.f,p1.c,p2.f,p2.c);
+  out('<div class="step"><b>REVISION</b><br>P1: '+p1.term+' '+fmt(stv(p1.f,p1.c))+'<br>P2: '+p2.term+' '+fmt(stv(p2.f,p2.c))+'<br>Revised: <b>'+p1.term+'</b> '+fmt(r)+'</div>')
+}
+function runAbduction(){
+  var p1=getP1(),p2=getP2();
+  var t1=parseTerm(p1.term),t2=parseTerm(p2.term);
+  var r=abduct(p1.f,p1.c,p2.f,p2.c);
+  var conc=t2.s+' --> '+t1.s;
+  out('<div class="step"><b>ABDUCTION</b> (M-->P, M-->S => S-->P)<br>P1: '+p1.term+' '+fmt(stv(p1.f,p1.c))+'<br>P2: '+p2.term+' '+fmt(stv(p2.f,p2.c))+'<br>Conclusion: <b>'+conc+'</b> '+fmt(r)+'</div>')
+}
+function runInduction(){
+  var p1=getP1(),p2=getP2();
+  var t1=parseTerm(p1.term),t2=parseTerm(p2.term);
+  var r=induce(p1.f,p1.c,p2.f,p2.c);
+  var conc=t1.p+' --> '+t2.p;
+  out('<div class="step"><b>INDUCTION</b> (P-->M, S-->M => P-->S)<br>P1: '+p1.term+' '+fmt(stv(p1.f,p1.c))+'<br>P2: '+p2.term+' '+fmt(stv(p2.f,p2.c))+'<br>Conclusion: <b>'+conc+'</b> '+fmt(r)+'</div>')
+}
+function loadExample(n){
+  clearOutput();
+  if(n==1){document.getElementById('p1term').value='robin --> bird';document.getElementById('p1f').value='1.0';document.getElementById('p1c').value='0.9';document.getElementById('p2term').value='bird --> animal';document.getElementById('p2f').value='1.0';document.getElementById('p2c').value='0.9';out('Loaded: robin-->bird-->animal deduction chain')}
+  if(n==2){document.getElementById('p1term').value='swan --> bird';document.getElementById('p1f').value='0.8';document.getElementById('p1c').value='0.5';document.getElementById('p2term').value='swan --> bird';document.getElementById('p2f').value='0.9';document.getElementById('p2c').value='0.7';out('Loaded: revision of two independent swan-->bird observations')}
+  if(n==3){document.getElementById('p1term').value='penguin --> flyer';document.getElementById('p1f').value='0.0';document.getElementById('p1c').value='0.9';document.getElementById('p2term').value='flyer --> airborne';document.getElementById('p2f').value='1.0';document.getElementById('p2c').value='0.9';out('Loaded: negation test - penguin not-flyer deduction (zero propagation!)')}
+}
+</script>
+</body></html>
