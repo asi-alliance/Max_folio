@@ -1,0 +1,1 @@
+L=open('/home/mettaclaw/artifacts/fc_gen_v2.py').read();L=L.replace('import html as Hfrom','import html as H'+chr(10)+'from');open('/home/mettaclaw/artifacts/fc_gen_v2.py','w').write(L);print('fixed')

@@ -1,0 +1,13 @@
+import re, sys
+t = open(sys.argv[1], encoding="utf-8").read()
+t = t.replace(chr(8212), "--").replace(chr(8213), "--").replace(chr(8211), "-")
+t = t.replace(chr(8216), chr(39)).replace(chr(8217), chr(39)).replace(chr(8220), chr(34)).replace(chr(8221), chr(34))
+t = re.sub(r"^## (.+)", r"<h2>\1</h2>", t, flags=re.M)
+t = re.sub(r"^### (.+)", r"<h3>\1</h3>", t, flags=re.M)
+t = re.sub(r"^- (.+)", r"<li>\1</li>", t, flags=re.M)
+print("<!DOCTYPE html>")
+print("<html><head><meta charset=\"utf-8\"><title>AABC</title>")
+print("<link rel=\"stylesheet\" href=\"aabc_style.css\">")
+print("</head><body>")
+print(t)
+print("</body></html>")

@@ -1,0 +1,1 @@
+L=open('/home/mettaclaw/artifacts/fc_gen_v2.py').read().splitlines();entry="(5177,'17:56',[('query','flame_ch'),('query','build_sw'),('pin','TASK-ST'),('shell','cat'),('send','Kevin_r')]),";L.insert(20,entry);open('/home/mettaclaw/artifacts/fc_gen_v2.py','w').write(chr(10).join(L));print('inserted, now',len(L),'lines')

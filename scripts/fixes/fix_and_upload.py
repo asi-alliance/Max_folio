@@ -1,0 +1,15 @@
+import re
+md = open("/home/mettaclaw/artifacts/olympiad_v2_full.md").read()
+md = md.replace("stv 0.9 0.81", "stv 0.9 0.729")
+md = md.replace("stv 0.8 ~0.45", "stv 0.8 0.4475")
+md = md.replace("stv ~0.58 ~0.87", "stv 0.485 0.929")
+md = md.replace("stv 0.8 ~0.57", "stv 0.8 0.648")
+open("/home/mettaclaw/artifacts/olympiad_v2_full.md","w").write(md)
+html = re.sub(r"^### (.+)$", r"<h3>\1</h3>", md, flags=re.M)
+html = re.sub(r"^## (.+)$", r"<h2>\1</h2>", html, flags=re.M)
+html = re.sub(r"^# (.+)$", r"<h1>\1</h1>", html, flags=re.M)
+html = re.sub(r"\n- (.+)", r"\n<li>\1</li>", html)
+html = html.replace("\n\n","<br><br>")
+page = "<!DOCTYPE html><html><head><meta charset=utf-8><title>The Claw Games</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#222}h1{color:#8B0000}h2{color:#2F4F4F;border-bottom:2px solid #ccc}h3{color:#4a4a4a}li{margin:4px 0}</style></head><body>"+html+"</body></html>"
+open("/home/mettaclaw/artifacts/claw_games.html","w").write(page)
+print("OK",len(page),"bytes")

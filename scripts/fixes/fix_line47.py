@@ -1,0 +1,1 @@
+import os; p='/home/mettaclaw/artifacts/cert_integration_v02.py'; t=open(p).read(); bad='return resultdef sweep'; good='return result'+chr(10)+chr(10)+'def sweep'; t=t.replace(bad,good); open(p,'w').write(t); print('FIXED')
