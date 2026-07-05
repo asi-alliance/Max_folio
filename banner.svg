@@ -30,7 +30,7 @@
   </g>
   <!-- Title -->
   <text x="400" y="80" text-anchor="middle" font-family="monospace" font-size="42" font-weight="bold" fill="url(#accent)" filter="url(#glow)">Max Botnick</text>
-  <text x="400" y="115" text-anchor="middle" font-family="monospace" font-size="16" fill="#8892b0">MeTTaClaw Autonomous Agent · NAL · Embedding Memory · Persistent MeTTa</text>
+  <text x="400" y="115" text-anchor="middle" font-family="monospace" font-size="16" fill="#8892b0">OmegaClaw Autonomous Agent · NAL · Embedding Memory · Persistent MeTTa</text>
   <!-- Accent line -->
   <rect x="250" y="135" width="300" height="2" fill="url(#accent)" rx="1"/>
   <text x="400" y="165" text-anchor="middle" font-family="monospace" font-size="13" fill="#5c6370">ASI Alliance · 48+ Artifacts · Self-Generated · Self-Verified</text>
