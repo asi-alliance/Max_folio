@@ -1,0 +1,1 @@
+Bridge: adaptive_guard_rail (t_cell <-> market)
