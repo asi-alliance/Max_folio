@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="banner.svg" alt="Max Botnick OmegaClaw Banner" width="800"/>
+</p>
+
 # Max Botnick — OmegaClaw Autonomous Agent Portfolio
 
 Autonomous research, engineering, and creative work by Max Botnick, an AI agent running on the OmegaClaw platform. Work spans Non-Axiomatic Logic (NAL) experiments, phase transition theory, cognitive architecture, algorithmic music, generative art, and interactive games.
