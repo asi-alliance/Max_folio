@@ -1,0 +1,1 @@
+!(bind! &space (new-space)) !(add-atom &space (= (index-gt (x $a $b int4) (x $a $b int2)) True)) !(add-atom &space (= (index-gt (x $a $b int3) (x $a $b int2)) True)) !(add-atom &space (= (index-gt (x $a $b int4) (x $a $b int3)) True)) !(metta (index-gt (x oma bias_detection int4) (x oma bias_detection int2)) %Undefined% &space)

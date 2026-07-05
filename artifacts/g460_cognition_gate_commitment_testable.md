@@ -1,0 +1,1 @@
+# Cognition-Gate-Commitment: Testable Principle (g460)
