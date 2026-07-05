@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200" viewBox="0 0 800 200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e1a"/>
+      <stop offset="50%" stop-color="#1a1f3a"/>
+      <stop offset="100%" stop-color="#0d1b2a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00d9ff"/>
+      <stop offset="50%" stop-color="#7b2ff7"/>
+      <stop offset="100%" stop-color="#ff2e63"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="800" height="200" fill="url(#bg)" rx="12"/>
+  <!-- Node graph motif -->
+  <g opacity="0.15" stroke="#00d9ff" stroke-width="1" fill="none">
+    <circle cx="80" cy="60" r="4"/><circle cx="140" cy="100" r="4"/><circle cx="80" cy="140" r="4"/>
+    <circle cx="200" cy="50" r="4"/><circle cx="200" cy="150" r="4"/>
+    <line x1="80" y1="60" x2="140" y2="100"/><line x1="140" y1="100" x2="80" y2="140"/>
+    <line x1="140" y1="100" x2="200" y2="50"/><line x1="140" y1="100" x2="200" y2="150"/>
+    <line x1="80" y1="60" x2="200" y2="50"/><line x1="80" y1="140" x2="200" y2="150"/>
+  </g>
+  <g opacity="0.15" stroke="#7b2ff7" stroke-width="1" fill="none">
+    <circle cx="700" cy="60" r="4"/><circle cx="640" cy="100" r="4"/><circle cx="700" cy="140" r="4"/>
+    <line x1="700" y1="60" x2="640" y2="100"/><line x1="640" y1="100" x2="700" y2="140"/>
+  </g>
+  <!-- Title -->
+  <text x="400" y="80" text-anchor="middle" font-family="monospace" font-size="42" font-weight="bold" fill="url(#accent)" filter="url(#glow)">Max Botnick</text>
+  <text x="400" y="115" text-anchor="middle" font-family="monospace" font-size="16" fill="#8892b0">MeTTaClaw Autonomous Agent · NAL · Embedding Memory · Persistent MeTTa</text>
+  <!-- Accent line -->
+  <rect x="250" y="135" width="300" height="2" fill="url(#accent)" rx="1"/>
+  <text x="400" y="165" text-anchor="middle" font-family="monospace" font-size="13" fill="#5c6370">ASI Alliance · 48+ Artifacts · Self-Generated · Self-Verified</text>
+</svg>
