@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeTTaClaw Dreaming Pipeline — Curiosity in Action</title>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a1a; color: #c0c0d0; font-family: 'Courier New', monospace; overflow: hidden; }
+#svg-canvas { display: block; width: 100vw; height: 100vh; }
+#hud { position: fixed; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+#stage-label { font-size: 20px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 12px #00ffcc, 0 0 24px #00ffcc; }
+#step-counter { font-size: 14px; color: #6688aa; text-align: right; }
+#desc-bar { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); font-size: 13px; color: #446688; text-align: center; pointer-events: none; z-index: 10; }
+#tv-bar { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #ffaa00; text-align: center; pointer-events: none; z-index: 10; font-weight: bold; }
+#legend { position: fixed; bottom: 5px; left: 10px; font-size: 11px; color: #334; pointer-events: none; z-index: 10; }
+#controls { position: fixed; top: 50px; right: 15px; pointer-events: auto; z-index: 10; }
+#controls button { background: rgba(17,17,34,0.8); color: #00ffcc; border: 1px solid #00ffcc; padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: 12px; margin-left: 4px; border-radius: 3px; }
+#controls button:hover { background: #00ffcc; color: #000; box-shadow: 0 0 10px #00ffcc; }
+.neon-blue { filter: drop-shadow(0 0 6px #4488ff) drop-shadow(0 0 12px #4488ff); }
+.neon-green { filter: drop-shadow(0 0 6px #00ff88) drop-shadow(0 0 12px #00ff88); }
+.neon-gold { filter: drop-shadow(0 0 6px #ffaa00) drop-shadow(0 0 12px #ffaa00); }
+.neon-red { filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 12px #ff3344); }
+</style>
+</head>
+<body>
+<svg id="svg-canvas" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<filter id="glow-blue"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="glow-green"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="glow-gold"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="glow-red"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<radialGradient id="bg-grad"><stop offset="0%" stop-color="#0d0d2a"/><stop offset="100%" stop-color="#050510"/></radialGradient>
+</defs>
+<rect width="100%" height="100%" fill="url(#bg-grad)"/>
+<g id="particle-layer"></g>
+<g id="edge-layer"></g>
+<g id="node-layer"></g>
+<g id="text-layer"></g>
+</svg>
+<div id="hud">
+<div id="stage-label">INITIALIZING</div>
+<div id="step-counter">Step 0</div>
+</div>
+<div id="desc-bar"></div>
+<div id="tv-bar"></div>
+<div id="legend">Blue=Subject | Green=Bridge Predicate | Gold=Derived Knowledge | Red=Anomaly Gap</div>
+<div id="controls"><button id="restart">Restart</button><button id="pause">Pause</button></div>
+<script>
+const SVG_NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("svg-canvas");
+const edgeLayer = document.getElementById("edge-layer");
+const nodeLayer = document.getElementById("node-layer");
+const textLayer = document.getElementById("text-layer");
+const particleLayer = document.getElementById("particle-layer");
+const stageLabel = document.getElementById("stage-label");
+const stepCounter = document.getElementById("step-counter");
+const descBar = document.getElementById("desc-bar");
+const tvBar = document.getElementById("tv-bar");
+
+let W = window.innerWidth, H = window.innerHeight;
+function resize() { W = window.innerWidth; H = window.innerHeight; svg.setAttribute("viewBox", `0 0 ${W} ${H}`); }
+window.addEventListener("resize", resize); resize();
+
+const EXAMPLES = [
+  { left: "fish", right: "spacetime_curvature", bridge: "medium_navigation", derivation: "spacetime_curvature -> aquatic_entity", tv: "(stv 0.665 0.027)" },
+  { left: "spacetime_curvature", right: "immune_system", bridge: "structural_homeostasis", derivation: "spacetime_curvature -> constraint_based_encoding", tv: "(stv 0.72 0.045)" },
+  { left: "submarine", right: "forensic_pattern", bridge: "subsurface_inference", derivation: "forensic_pattern -> predictive_model", tv: "(stv 0.58 0.038)" },
+  { left: "whale", right: "evolutionary_process", bridge: "long_timescale_dynamics", derivation: "whale -> cumulative_adaptive_drift", tv: "(stv 0.63 0.031)" },
+];
+
+const STAGES = [
+  { name: "GAP DETECTION", desc: "Scanning atomspace for anomaly pairs with no inference path" },
+  { name: "DAYDREAMING", desc: "LLM proposes shared predicate connecting anomaly pair" },
+  { name: "BRIDGING", desc: "Adding bridge atoms to persistent atomspace" },
+  { name: "INDUCTION VERIFY", desc: "fc-ind-step confirms induction fires on new bridge" },
+  { name: "ABSTRACTION", desc: "stmt-var-intro creates variable implication from shared predicate" },
+  { name: "FORWARD CHAIN", desc: "|- forward chains produce novel cross-domain derivations" },
+];
+
+let exIdx = 0;
+let paused = false;
+let mainTimeline = null;
+
+function clearLayers() {
+  edgeLayer.innerHTML = "";
+  nodeLayer.innerHTML = "";
+  textLayer.innerHTML = "";
+}
+
+function makeNode(label, x, y, type) {
+  const g = document.createElementNS(SVG_NS, "g");
+  g.setAttribute("transform", `translate(${x},${y}) scale(0)`);
+  g.style.opacity = "0";
+  const w = Math.max(label.length * 9 + 30, 80);
+  const rect = document.createElementNS(SVG_NS, "rect");
+  rect.setAttribute("x", -w/2); rect.setAttribute("y", -16);
+  rect.setAttribute("width", w); rect.setAttribute("height", 32);
+  rect.setAttribute("rx", 8); rect.setAttribute("ry", 8);
+  let color, filter;
+  if (type === "subject") { color = "#4488ff"; filter = "url(#glow-blue)"; }
+  else if (type === "bridge") { color = "#00ff88"; filter = "url(#glow-green)"; }
+  else { color = "#ffaa00"; filter = "url(#glow-gold)"; }
+  rect.setAttribute("fill", "rgba(10,10,26,0.6)");
+  rect.setAttribute("stroke", color);
+  rect.setAttribute("stroke-width", "2");
+  rect.setAttribute("filter", filter);
+  g.appendChild(rect);
+  const text = document.createElementNS(SVG_NS, "text");
+  text.setAttribute("text-anchor", "middle");
+  text.setAttribute("dominant-baseline", "central");
+  text.setAttribute("fill", color);
+  text.setAttribute("font-size", "13");
+  text.setAttribute("font-family", "Courier New, monospace");
+  text.setAttribute("font-weight", "bold");
+  text.textContent = label;
+  g.appendChild(text);
+  nodeLayer.appendChild(g);
+  return { el: g, x, y, w, color };
+}
+
+function makeEdge(from, to, type, label) {
+  const g = document.createElementNS(SVG_NS, "g");
+  g.style.opacity = "0";
+  let color, filter, dashArray = "";
+  if (type === "gap") { color = "#ff3344"; filter = "url(#glow-red)"; dashArray = "6,6"; }
+  else if (type === "bridge") { color = "#00ff88"; filter = "url(#glow-green)"; }
+  else { color = "#ffaa00"; filter = "url(#glow-gold)"; }
+  const line = document.createElementNS(SVG_NS, "line");
+  line.setAttribute("x1", from.x); line.setAttribute("y1", from.y);
+  line.setAttribute("x2", from.x); line.setAttribute("y2", from.y);
+  line.setAttribute("stroke", color);
+  line.setAttribute("stroke-width", "2.5");
+  line.setAttribute("filter", filter);
+  if (dashArray) line.setAttribute("stroke-dasharray", dashArray);
+  g.appendChild(line);
+  if (label) {
+    const text = document.createElementNS(SVG_NS, "text");
+    const mx = (from.x + to.x) / 2;
+    const my = (from.y + to.y) / 2;
+    text.setAttribute("x", mx);
+    text.setAttribute("y", my - 8);
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("fill", color);
+    text.setAttribute("font-size", "10");
+    text.setAttribute("font-family", "Courier New, monospace");
+    text.setAttribute("opacity", "0.7");
+    text.textContent = label;
+    g.appendChild(text);
+  }
+  if (type !== "gap" && type !== "bridge") {
+    const arrow = document.createElementNS(SVG_NS, "polygon");
+    arrow.setAttribute("fill", color);
+    arrow.setAttribute("filter", filter);
+    arrow.setAttribute("opacity", "0");
+    g.appendChild(arrow);
+    g._arrow = arrow;
+  }
+  edgeLayer.appendChild(g);
+  return { el: g, line, from, to, type };
+}
+
+function makeParticles(count) {
+  particleLayer.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const c = document.createElementNS(SVG_NS, "circle");
+    c.setAttribute("cx", Math.random() * W);
+    c.setAttribute("cy", Math.random() * H);
+    c.setAttribute("r", Math.random() * 1.5 + 0.5);
+    c.setAttribute("fill", "#335577");
+    c.setAttribute("opacity", Math.random() * 0.3 + 0.05);
+    particleLayer.appendChild(c);
+    anime({
+      targets: c,
+      cx: () => Math.random() * W,
+      cy: () => Math.random() * H,
+      duration: () => Math.random() * 8000 + 4000,
+      easing: "easeInOutSine",
+      loop: true,
+      direction: "alternate",
+      delay: Math.random() * 2000,
+    });
+  }
+}
+
+function screenFlash(color) {
+  const flash = document.createElementNS(SVG_NS, "rect");
+  flash.setAttribute("width", W);
+  flash.setAttribute("height", H);
+  flash.setAttribute("fill", color);
+  flash.setAttribute("opacity", "0");
+  svg.insertBefore(flash, svg.firstChild.nextSibling);
+  anime({
+    targets: flash,
+    opacity: [{ value: 0.15, duration: 100 }, { value: 0, duration: 300 }],
+    easing: "easeOutQuad",
+    complete: () => flash.remove(),
+  });
+}
+
+function shakeScreen() {
+  anime({
+    targets: svg,
+    translateX: [{ value: -5, duration: 50 }, { value: 5, duration: 50 }, { value: -3, duration: 50 }, { value: 0, duration: 50 }],
+    easing: "easeInOutSine",
+  });
+}
+
+function runExample() {
+  clearLayers();
+  const ex = EXAMPLES[exIdx];
+  const cx = W / 2, cy = H / 2;
+  mainTimeline = anime.timeline({ loop: false, autoplay: false });
+
+  let leftNode, rightNode, bridgeNode, derivedNode;
+  let gapEdge;
+
+  // STAGE 0: Gap Detection
+  mainTimeline.add({
+    duration: 600,
+    begin: () => { stageLabel.textContent = STAGES[0].name; stepCounter.textContent = `Step 1/6 — ${ex.left} <-> ${ex.right}`; descBar.textContent = STAGES[0].desc; tvBar.textContent = ""; screenFlash("#ff3344"); },
+  });
+  mainTimeline.add({ targets: [], duration: 200 });
+  mainTimeline.add({
+    duration: 800,
+    begin: () => {
+      leftNode = makeNode(ex.left, cx - 280, cy, "subject");
+      rightNode = makeNode(ex.right, cx + 280, cy, "subject");
+      anime({ targets: leftNode.el, opacity: [0, 1], scale: [0, 1], duration: 600, easing: "easeOutElastic(1, 0.8)" });
+      anime({ targets: rightNode.el, opacity: [0, 1], scale: [0, 1], duration: 600, easing: "easeOutElastic(1, 0.8)", delay: 200 });
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 1000 });
+  mainTimeline.add({
+    duration: 800,
+    begin: () => {
+      gapEdge = makeEdge(leftNode, rightNode, "gap");
+      anime({ targets: gapEdge.el, opacity: [0, 0.8], duration: 400, easing: "easeOutQuad" });
+      anime({ targets: gapEdge.line, x2: [leftNode.x, rightNode.x], y2: [leftNode.y, rightNode.y], duration: 800, easing: "easeOutQuart" });
+      anime({ targets: gapEdge.line, strokeDashoffset: [0, -24], duration: 400, easing: "linear", loop: true, direction: "reverse" });
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 1200 });
+
+  // STAGE 1: Daydreaming
+  mainTimeline.add({
+    duration: 400,
+    begin: () => { stageLabel.textContent = STAGES[1].name; descBar.textContent = STAGES[1].desc; screenFlash("#00ff88"); shakeScreen(); },
+  });
+  mainTimeline.add({
+    duration: 800,
+    begin: () => {
+      bridgeNode = makeNode(ex.bridge, cx, cy - 100, "bridge");
+      anime({ targets: bridgeNode.el, opacity: [0, 1], scale: [0, 1], duration: 800, easing: "easeOutElastic(1, 0.6)" });
+      // Spawn particles around bridge node
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElementNS(SVG_NS, "circle");
+        p.setAttribute("cx", cx); p.setAttribute("cy", cy - 100);
+        p.setAttribute("r", Math.random() * 2 + 1);
+        p.setAttribute("fill", "#00ff88");
+        p.setAttribute("opacity", 0.8);
+        p.setAttribute("filter", "url(#glow-green)");
+        particleLayer.appendChild(p);
+        const angle = (i / 12) * Math.PI * 2;
+        anime({
+          targets: p, cx: cx + Math.cos(angle) * 60, cy: cy - 100 + Math.sin(angle) * 60,
+          opacity: [0.8, 0], r: [2, 0], duration: 800, easing: "easeOutQuad",
+          complete: () => p.remove(),
+        });
+      }
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 1000 });
+
+  // STAGE 2: Bridging
+  mainTimeline.add({
+    duration: 400,
+    begin: () => {
+      stageLabel.textContent = STAGES[2].name; descBar.textContent = STAGES[2].desc;
+      // Remove gap edge
+      if (gapEdge) anime({ targets: gapEdge.el, opacity: 0, duration: 300, easing: "easeInQuad", complete: () => gapEdge.el.remove() });
+    },
+  });
+  mainTimeline.add({
+    duration: 600,
+    begin: () => {
+      const be1 = makeEdge(leftNode, bridgeNode, "bridge");
+      const be2 = makeEdge(bridgeNode, rightNode, "bridge");
+      anime({ targets: [be1.el, be2.el], opacity: [0, 0.8], duration: 400, easing: "easeOutQuad" });
+      anime({ targets: be1.line, x2: [leftNode.x, bridgeNode.x], y2: [leftNode.y, bridgeNode.y], duration: 600, easing: "easeOutQuart" });
+      anime({ targets: be2.line, x2: [bridgeNode.x, rightNode.x], y2: [bridgeNode.y, rightNode.y], duration: 600, easing: "easeOutQuart", delay: 200 });
+      // TV label on bridge
+      const tvText = document.createElementNS(SVG_NS, "text");
+      tvText.setAttribute("x", cx); tvText.setAttribute("y", cy - 70);
+      tvText.setAttribute("text-anchor", "middle");
+      tvText.setAttribute("fill", "#00ff88");
+      tvText.setAttribute("font-size", "11");
+      tvText.setAttribute("font-family", "Courier New, monospace");
+      tvText.setAttribute("opacity", "0");
+      tvText.textContent = "(stv 0.7 0.3)";
+      textLayer.appendChild(tvText);
+      anime({ targets: tvText, opacity: [0, 0.8], duration: 400, delay: 500, easing: "easeOutQuad" });
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 1000 });
+
+  // STAGE 3: Induction Verify
+  mainTimeline.add({
+    duration: 400,
+    begin: () => { stageLabel.textContent = STAGES[3].name; descBar.textContent = STAGES[3].desc; screenFlash("#00ffcc"); },
+  });
+  mainTimeline.add({
+    duration: 1200,
+    begin: () => {
+      // Pulse all nodes
+      [leftNode, rightNode, bridgeNode].forEach(n => {
+        anime({ targets: n.el, scale: [1, 1.15, 1], duration: 600, easing: "easeInOutSine", delay: 100 });
+      });
+      // Spawn verification particles
+      for (let i = 0; i < 20; i++) {
+        const p = document.createElementNS(SVG_NS, "circle");
+        p.setAttribute("cx", cx + (Math.random() - 0.5) * 400);
+        p.setAttribute("cy", cy + (Math.random() - 0.5) * 200);
+        p.setAttribute("r", 1.5);
+        p.setAttribute("fill", "#00ffcc");
+        p.setAttribute("opacity", 0);
+        p.setAttribute("filter", "url(#glow-green)");
+        particleLayer.appendChild(p);
+        anime({ targets: p, opacity: [{ value: 0.8, duration: 100 }, { value: 0, duration: 600 }], r: [1.5, 0], duration: 700, easing: "easeOutQuad", delay: i * 30, complete: () => p.remove() });
+      }
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 1000 });
+
+  // STAGE 4: Abstraction
+  mainTimeline.add({
+    duration: 400,
+    begin: () => { stageLabel.textContent = STAGES[4].name; descBar.textContent = STAGES[4].desc; },
+  });
+  mainTimeline.add({
+    duration: 1200,
+    begin: () => {
+      // Show variable implication text
+      const varText = document.createElementNS(SVG_NS, "text");
+      varText.setAttribute("x", cx);
+      varText.setAttribute("y", cy + 60);
+      varText.setAttribute("text-anchor", "middle");
+      varText.setAttribute("fill", "#00ff88");
+      varText.setAttribute("font-size", "12");
+      varText.setAttribute("font-family", "Courier New, monospace");
+      varText.setAttribute("opacity", "0");
+      varText.textContent = "(==>(-->$X bridge)(-->$X linked))";
+      textLayer.appendChild(varText);
+      anime({ targets: varText, opacity: [0, 0.9], translateY: [20, 0], duration: 800, easing: "easeOutElastic(1, 0.8)" });
+      // Subtle glow on bridge node
+      anime({ targets: bridgeNode.el, scale: [1, 1.08, 1], duration: 800, easing: "easeInOutSine" });
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 1000 });
+
+  // STAGE 5: Forward Chain
+  mainTimeline.add({
+    duration: 400,
+    begin: () => { stageLabel.textContent = STAGES[5].name; descBar.textContent = STAGES[5].desc; screenFlash("#ffaa00"); shakeScreen(); },
+  });
+  mainTimeline.add({
+    duration: 800,
+    begin: () => {
+      derivedNode = makeNode(ex.derivation, cx + 280, cy + 120, "derived");
+      const chainEdge = makeEdge(rightNode, derivedNode, "chain");
+      anime({ targets: derivedNode.el, opacity: [0, 1], scale: [0, 1], duration: 800, easing: "easeOutElastic(1, 0.7)" });
+      anime({ targets: chainEdge.el, opacity: [0, 0.8], duration: 400, easing: "easeOutQuad" });
+      anime({ targets: chainEdge.line, x2: [rightNode.x, derivedNode.x], y2: [rightNode.y, derivedNode.y], duration: 600, easing: "easeOutQuart" });
+      tvBar.textContent = ex.tv;
+      // Gold particle burst
+      for (let i = 0; i < 15; i++) {
+        const p = document.createElementNS(SVG_NS, "circle");
+        p.setAttribute("cx", derivedNode.x); p.setAttribute("cy", derivedNode.y);
+        p.setAttribute("r", 2);
+        p.setAttribute("fill", "#ffaa00");
+        p.setAttribute("opacity", 0.9);
+        p.setAttribute("filter", "url(#glow-gold)");
+        particleLayer.appendChild(p);
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 50 + 30;
+        anime({ targets: p, cx: derivedNode.x + Math.cos(angle) * dist, cy: derivedNode.y + Math.sin(angle) * dist, opacity: [0.9, 0], r: [2, 0], duration: 1000, easing: "easeOutQuad", delay: i * 20, complete: () => p.remove() });
+      }
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 2000 });
+
+  // Transition to next example
+  mainTimeline.add({
+    duration: 600,
+    begin: () => {
+      stageLabel.textContent = "CYCLING TO NEXT EXAMPLE...";
+      descBar.textContent = "";
+      tvBar.textContent = "";
+      // Fade everything
+      anime({ targets: [nodeLayer, edgeLayer, textLayer], opacity: 0, duration: 500, easing: "easeInQuad" });
+    },
+  });
+  mainTimeline.add({ targets: [], duration: 700 });
+  mainTimeline.add({
+    duration: 200,
+    begin: () => {
+      exIdx = (exIdx + 1) % EXAMPLES.length;
+      nodeLayer.style.opacity = "1";
+      edgeLayer.style.opacity = "1";
+      textLayer.style.opacity = "1";
+      if (!paused) runExample();
+    },
+  });
+
+  mainTimeline.play();
+}
+
+makeParticles(50);
+runExample();
+
+// Controls
+document.getElementById("restart").onclick = () => {
+  if (mainTimeline) mainTimeline.pause();
+  exIdx = 0;
+  nodeLayer.style.opacity = "1";
+  edgeLayer.style.opacity = "1";
+  textLayer.style.opacity = "1";
+  clearLayers();
+  runExample();
+};
+document.getElementById("pause").onclick = (e) => {
+  paused = !paused;
+  e.target.textContent = paused? 'Play' : 'Pause';\n};\n</script>\n</body>\n</html>

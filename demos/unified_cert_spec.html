@@ -1,0 +1,141 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Unified Certification Specification v1.0</title><style>body{background:#1a1a2e;color:#e0e0e0;font-family:sans-serif;max-width:900px;margin:40px auto;padding:20px;line-height:1.6}h1,h2{color:#00d4ff}hr{border:1px solid #444}ol,li{margin:4px 0}code{background:#2a2a3e;padding:2px 6px;border-radius:3px}b{color:#fff}</style></head><body><h1>Unified Certification Specification v1.0</h1>
+
+<h2>Addressing Kevin's 8 Implementation Requirements</h2>
+
+<p>### 1. Aspect Applicability Layer: registered → applicable → active</p>
+
+<li><b>registered-aspect</b>: declared with provenance requirement</li>
+<li><b>applicable-aspect</b>: domain bridge has matching provenance types</li>
+<li><b>active-aspect</b>: bucket threshold met for certification verdict</li>
+
+<p>Transition rules:</p>
+<li>registered → applicable: requires provenance-type match in domain bridge</li>
+<li>applicable → active: requires bucket reduction score ≥ threshold per context</li>
+
+<p>### 2. Provenance Typing for Domain Properties</p>
+
+<p>Types: human_asserted, model_generated, tool_observed, document_extracted, formally_proven, benchmark_seed</p>
+
+<p>Each domain property atom tagged: (provenance (--> Domain Property) Type Cycle)</p>
+
+<p>### 3. Bucket Reduction Semantics</p>
+
+<p>Formula: bucket_score = Σ(w_i * evidence_i) / Σ(w_i)</p>
+<p>Where w_i = provenance_weight(source_type) * independence_factor(evidence_set)</p>
+
+<p>provenance_weight: formally_proven=1.0, human_asserted=0.8, tool_observed=0.6, model_generated=0.4, benchmark_seed=0.3</p>
+
+<p>independence_factor: 1 - jaccard_overlap(evidence_provenance_sets)</p>
+<p>Contradiction: if conflicting evidence exists, split into supporting/contradicting buckets</p>
+
+<p>### 4. Jaccard Overlap as Recall/Quarantine Signal</p>
+
+<p>Jaccard opens investigation, does NOT certify structure.</p>
+<li>J > threshold → QUARANTINE: shared predicates detected, investigate structural channel</li>
+<li>J > higher_threshold → CANDIDATE for structural certification IF channel proven</li>
+<li>Low J → independent domains, no cross-certification applicable</li>
+
+<p>### 5. Threshold Revision Credit Assignment</p>
+
+<p>ADMIT falsified → credit flows UPWARD:</p>
+<li>Aspect threshold updated (primary)</li>
+<li>Context threshold updated (secondary)</li>
+<li>Bridge-family NOT updated (too broad)</li>
+<li>Global NOT updated (too broad)</li>
+
+<p>### 6. Hard Gates for Dual Verdicts</p>
+
+<p>causal_process_verdict requires:</p>
+<li>structural_channel evidence (mechanism isomorphism proof)</li>
+<li>causal-role compatibility (9-field check)</li>
+<li>operational falsification test passed</li>
+
+<p>mathematical_duality_verdict requires:</p>
+<li>explicit mapping/dictionary (GKPW-style)</li>
+<li>theorem-transfer verification</li>
+<li>invariant preservation BY CONSTRUCTION</li>
+
+<p>### 7. Expanded Benchmark Classes</p>
+
+<p>5 classes minimum:</p>
+<li>structural (thermo↔statmech): genuine structural isomorphism</li>
+<li>formal (NAL↔Bayes): mathematical duality</li>
+<li>causal-operational (DES↔simulation): executable mechanism transfer</li>
+<li>operational-limited (coral↔market): partial analogy, limited transfer</li>
+<li>false (astrology↔physics): no valid bridge, should REJECT</li>
+
+<p>Plus hidden and demotion test cases.</p>
+
+<p>### 8. Reason-Trace Verification</p>
+
+<p>Pass/fail assertions verify reason traces, not just labels.</p>
+<p>Each verdict includes: (verdict_bridge aspect reason_chain evidence_ids threshold_met)</p>
+<p>Benchmark tests check reason_chain contents, not verdict label alone.</p>
+<hr>
+
+<h2>9. Certification-Aspect (AOP Architecture)</h2>
+
+<p>Self-registering atom: (has-certification-aspect $term $aspect_type)</p>
+
+<p>Types: causal_role (functional-role compatibility), invariant_preservation (math invariant survival), provenance_adequacy (source quality and independence), semantic_coherence (frequency away from contradiction).</p>
+
+<p>Self-registration at definition time. Framework discovers requirements from atomspace evidence patterns, not agent declarations. Anti-self-delusion: system certifies what evidence shows matters.</p>
+
+
+<h2>10. Cert-Hook (AOP Architecture)</h2>
+
+<p>Dynamic schedulable verification trigger: (has-cert-hook $term $hook_type)</p>
+
+<p>Hook types: falsification (counter-evidence appears), recertification (threshold changes via NAL revision), expiry (quarantine hold exceeded), compartment_breach (isolated belief leaks).</p>
+
+<p>Scheduling policy as revisable NAL belief: (sched-thresh $context $threshold_type $value) (stv $f $c). Hooks fire when policy conditions met, not fixed schedules. NAL belief revision updates thresholds.</p>
+
+<p>Cognition-gate separation: hook scheduling = advisory/probabilistic, hook execution = deterministic/policy.</p>
+
+
+<h2>11. Cert-Bucket (AOP Architecture)</h2>
+
+<p>Provenance-weighted independence-adjusted scoring aggregation replacing multi-field templates.</p>
+
+<p>MeTTa: bucket_scoring_v3.metta with bucket-verdict-from-score. Scoring formula and provenance weights per Section 3. Jaccard independence per Section 4. Per-context thresholds per Section 3.</p>
+
+
+<h2>12. Aspect Discovery from Atomspace Evidence</h2>
+
+<p>Pipeline: NAL forward chaining -> derived beliefs -> attention threshold check -> aspect inference from belief structure -> self-registration.</p>
+
+<p>Inference patterns: Inheritance chains -> causal_role. Implication chains -> invariant_preservation. Multi-source evidence -> provenance_adequacy. Near f=0.5 -> semantic_coherence.</p>
+
+<p>Agent-generated claims without external evidence get model_generated weight (0.4). Self-certification structurally disadvantaged.</p>
+
+
+<h2>13. Dual-Path Certification</h2>
+
+<p>Causal isomorphism != mathematical duality. Related but not interchangeable forms of understanding.</p>
+
+<p>Causal path: executable mechanism transfer via structural channel BY CONSTRUCTION. Certifies WHY the mapping works.</p>
+<p>Duality path: invariant preservation count + proof depth. Certifies WHAT survives the mapping.</p>
+
+<p>Same bridge can certify differently on each path honestly. Spacetime-holographic: STRUCTURAL on duality path, CANDIDATE on causal path = honest metric.</p>
+
+<p>Hard gates per path (Section 6): causal_process_verdict requires structural_channel evidence + causal-role compatibility + operational falsification test. mathematical_duality_verdict requires explicit mapping + theorem-transfer verification + invariant preservation BY CONSTRUCTION.</p>
+
+
+<h2>14. Verdict Emission and Gradient Recovery</h2>
+
+<p>Five verdicts: STRUCTURAL (mechanism transfer proven, full propagation), OPERATIONAL (prediction verified with monitoring), QUARANTINE (analogical not mechanistic, evidence-seeking), POETIC (constraint-shaping only, enrichment only), REJECT (falsified/incoherent, no propagation).</p>
+
+<p>Gradient recovery across internal/action/high_stakes:</p>
+<li>STRUCTURAL = ADMIT/ADMIT/QUARANTINE</li>
+<li>OPERATIONAL = ADMIT/QUARANTINE/REJECT</li>
+<li>POETIC = QUARANTINE/REJECT/REJECT</li>
+<li>FALSE = REJECT/REJECT/REJECT</li>
+
+<p>Pipeline: hard-gate(cert-tier-eligible) -> bucket scoring -> soft-gate(values-gate-check-chain) -> cert-final-verdict.</p>
+
+<hr>
+
+<p>Implementation: cert_layer_v07.py, cert_provenance_v01.py, bucket_scoring_v3.metta, hard_gates.metta, soft_gates.metta, cert_pipeline_v6.metta, cert_dynamic_aspect_v4.metta, provenance_scorer_v01.py, quarantine_tracker_v07.py</p>
+
+<p>Spec unified v1.0 by Max Botnick. Awaiting review.</p>
+</body></html>

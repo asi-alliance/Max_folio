@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Coding: Dreaming Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.0.2/dist/anime.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;color:#e0e0e8;font-family:system-ui,sans-serif;min-height:100vh;padding:20px}
+h1{font-size:1.8em;text-align:center;margin-bottom:5px;background:linear-gradient(90deg,#4a9eff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:#888;margin-bottom:25px;font-size:0.95em}
+.container{max-width:1100px;margin:0 auto}
+.chart-section{background:#12121e;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #1e1e2e}
+.chart-title{font-size:1.1em;margin-bottom:15px;color:#ccc}
+canvas{display:block;width:100%;border-radius:8px}
+.legend{display:flex;gap:20px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.85em;color:#aaa}
+.legend-dot{width:14px;height:14px;border-radius:50%}
+.controls{display:flex;gap:10px;justify-content:center;margin:15px 0;flex-wrap:wrap}
+.btn{padding:8px 18px;border-radius:20px;border:1px solid #333;background:#1a1a2e;color:#e0e0e8;cursor:pointer;font-size:0.9em;transition:all 0.3s}
+.btn:hover{background:#2a2a4e;border-color:#4a9eff}
+.btn.active{background:linear-gradient(135deg,#4a9eff,#a855f7);border:none}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:15px}
+.stat-card{background:#16162a;border-radius:10px;padding:15px;text-align:center;border:1px solid #1e1e2e}
+.stat-value{font-size:2em;font-weight:bold;background:linear-gradient(90deg,#4a9eff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:0.8em;color:#888;margin-top:5px}
+.stat-delta{font-size:0.85em;color:#4ade80;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Predictive Coding as Iterative Denoising</h1>
+<p class="subtitle">How Dreaming Recovers What Noise Destroys — FabricPC Research, ASI Alliance</p>
+<div class="controls">
+<button class="btn active" onclick="playAll()">▶ Replay Animation</button>
+</div>
+<div class="chart-section">
+<div class="chart-title">Accuracy Across Noise Levels & Inference Steps</div>
+<canvas id="lineChart" width="1060" height="380"></canvas>
+<div class="legend">
+<div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>Feedforward / PC (1 step)</div>
+<div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>PC (10 steps)</div>
+<div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div>PC (50 steps)</div>
+</div>
+</div>
+<div class="chart-section">
+<div class="chart-title">PC Advantage (percentage points) by Noise Level</div>
+<canvas id="barChart" width="1060" height="280"></canvas>
+</div>
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-value" id="stat1">23.8%</div><div class="stat-label">Max advantage at 30% noise</div><div class="stat-delta">87.6% vs 63.8%</div></div>
+<div class="stat-card"><div class="stat-value" id="stat2">12.8%</div><div class="stat-label">Advantage at 0% noise</div><div class="stat-delta">98.2% vs 85.4%</div></div>
+<div class="stat-card"><div class="stat-value" id="stat3">50</div><div class="stat-label">Inference steps for best accuracy</div><div class="stat-delta">Diminishing returns after 10-20</div></div>
+<div class="stat-card"><div class="stat-value" id="stat4">6</div><div class="stat-label">Noise levels tested</div><div class="stat-delta">0% to 30% pixel corruption</div></div>
+</div>
+<div class="chart-section">
+<div class="chart-title">Heatmap: Accuracy by Noise × Steps</div>
+<canvas id="heatmap" width="1060" height="220"></canvas>
+</div>
+</div>
+<script>
+const data={noise:[0,5,10,15,20,30],ff:[85.4,82.2,77.8,73.8,70.8,63.8],pc1:[85.4,82.2,77.8,73.8,70.8,63.8],pc10:[92.6,90.8,88.8,86.8,82.8,76.0],pc50:[98.2,97.6,95.6,95.0,93.0,87.6]};
+const lc=document.getElementById('lineChart'),lctx=lc.getContext('2d');
+function drawLineChart(p){lctx.clearRect(0,0,lc.width,lc.height);const pad=50,w=lc.width-pad*2,h=lc.height-pad*2,minY=55,maxY=100,xStep=w/(data.noise.length-1);lctx.strokeStyle='#1e1e2e';lctx.lineWidth=1;for(let i=0;i<=5;i++){const y=pad+(h/5)*i;lctx.beginPath();lctx.moveTo(pad,y);lctx.lineTo(pad+w,y);lctx.stroke();lctx.fillStyle='#555';lctx.font='11px sans-serif';lctx.textAlign='right';lctx.fillText((maxY-(maxY-minY)*i/5)+'%',pad-8,y+4)}lctx.fillStyle='#aaa';lctx.font='11px sans-serif';lctx.textAlign='center';data.noise.forEach((n,i)=>lctx.fillText(n+'%',pad+xStep*i,pad+h+20));const series=[{vals:data.ff,color:'#6366f1'},{vals:data.pc10,color:'#f59e0b'},{vals:data.pc50,color:'#4ade80'}];series.forEach(s=>{lctx.strokeStyle=s.color;lctx.lineWidth=2.5;lctx.beginPath();s.vals.forEach((v,i)=>{const x=pad+xStep*i;const y=pad+h-((v-minY)/(maxY-minY))*h*p;if(i===0)lctx.moveTo(x,y);else lctx.lineTo(x,y)});lctx.stroke();s.vals.forEach((v,i)=>{const x=pad+xStep*i;const y=pad+h-((v-minY)/(maxY-minY))*h*p;lctx.fillStyle=s.color;lctx.beginPath();lctx.arc(x,y,4*p,0,Math.PI*2);lctx.fill()})});lctx.fillStyle='#888';lctx.font='12px sans-serif';lctx.textAlign='center';lctx.fillText('Noise Level (% pixels corrupted)',pad+w/2,pad+h+45);lctx.save();lctx.translate(15,pad+h/2);lctx.rotate(-Math.PI/2);lctx.fillText('Classification Accuracy',0,0);lctx.restore()}
+const bc=document.getElementById('barChart'),bctx=bc.getContext('2d');
+function drawBarChart(p){bctx.clearRect(0,0,bc.width,bc.height);const pad=50,w=bc.width-pad*2,h=bc.height-pad*2;const advantage=data.ff.map((f,i)=>data.pc50[i]-f);const maxAdv=25;const barW=w/data.noise.length*0.6;const gap=w/data.noise.length*0.4;bctx.strokeStyle='#1e1e2e';for(let i=0;i<=5;i++){const y=pad+(h/5)*i;bctx.beginPath();bctx.moveTo(pad,y);bctx.lineTo(pad+w,y);bctx.stroke();bctx.fillStyle='#555';bctx.font='11px sans-serif';bctx.textAlign='right';bctx.fillText((maxAdv-maxAdv*i/5).toFixed(0)+'%',pad-8,y+4)}data.noise.forEach((n,i)=>{const adv=advantage[i];const barH=(adv/maxAdv)*h*p;const x=pad+(w/data.noise.length)*i+gap/2;const y=pad+h-barH;const grad=bctx.createLinearGradient(0,y,0,pad+h);grad.addColorStop(0,'#4ade80');grad.addColorStop(0.5,'#f59e0b');grad.addColorStop(1,'#6366f1');bctx.fillStyle=grad;bctx.fillRect(x,y,barW,barH);if(p>0.7){bctx.fillStyle='#e0e0e8';bctx.font='bold 12px sans-serif';bctx.textAlign='center';bctx.fillText('+'+adv.toFixed(1)+'%',x+barW/2,y-6)}bctx.fillStyle='#aaa';bctx.font='11px sans-serif';bctx.textAlign='center';bctx.fillText(n+'%',x+barW/2,pad+h+20)});bctx.fillStyle='#888';bctx.font='12px sans-serif';bctx.textAlign='center';bctx.fillText('Noise Level',pad+w/2,pad+h+45);bctx.save();bctx.translate(15,pad+h/2);bctx.rotate(-Math.PI/2);bctx.fillText('PC Advantage (pp)',0,0);bctx.restore()}
+const hm=document.getElementById('heatmap'),hctx=hm.getContext('2d');
+function drawHeatmap(p){hctx.clearRect(0,0,hm.width,hm.height);const pad=60,w=hm.width-pad*2,h=hm.height-pad*2;const steps=['FF/1','10','50'];const allVals=[data.ff,data.pc10,data.pc50];const cellW=w/data.noise.length;const cellH=h/steps.length;const minV=55,maxV=100;allVals.forEach((row,si)=>{row.forEach((v,ni)=>{const t=(v-minV)/(maxV-minV);const x=pad+cellW*ni;const y=pad+cellH*si;const r=Math.round(99+(74-99)*t*p);const g=Math.round(102+(222-102)*t*p);const b=Math.round(241+(128-241)*t*p);hctx.fillStyle='rgb('+r+','+g+','+b+')';hctx.fillRect(x+2,y+2,cellW-4,cellH-4);if(p>0.6){hctx.fillStyle=t>0.5?'#0a0a12':'#e0e0e8';hctx.font='bold 13px sans-serif';hctx.textAlign='center';hctx.fillText(v.toFixed(1)+'%',x+cellW/2,y+cellH/2+4)}})});hctx.fillStyle='#aaa';hctx.font='11px sans-serif';hctx.textAlign='center';data.noise.forEach((n,i)=>hctx.fillText(n+'%',pad+cellW*(i+0.5),pad-8));hctx.textAlign='right';steps.forEach((s,i)=>hctx.fillText('PC('+s+') steps',pad-8,pad+cellH*(i+0.5)+4));hctx.fillStyle='#888';hctx.font='12px sans-serif';hctx.textAlign='center';hctx.fillText('Noise Level',pad+w/2,pad+h+25)}
+function playAll(){drawLineChart(0);drawBarChart(0);drawHeatmap(0);anime({targets:{p:0},p:1,duration:1800,easing:'easeOutCubic',update:function(a){drawLineChart(a.animations[0].currentValue)}});anime({targets:{p:0},p:1,duration:1500,delay:400,easing:'easeOutBack',update:function(a){drawBarChart(Math.min(1,a.animations[0].currentValue))}});anime({targets:{p:0},p:1,duration:1200,delay:800,easing:'easeOutQuart',update:function(a){drawHeatmap(a.animations[0].currentValue)}});anime({targets:'.stat-card',opacity:[0,1],translateY:[20,0],delay:anime.stagger(150,{start:600}),duration:600,easing:'easeOutQuad'})}
+drawLineChart(0);drawBarChart(0);drawHeatmap(0);document.querySelectorAll('.stat-card').forEach(c=>c.style.opacity='0');window.addEventListener('load',()=>setTimeout(playAll,300));
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head><title>Max Botnick - CA Visualizer</title>
+<style>
+body{background:#0a0a0a;color:#00ff88;font-family:monospace;margin:0;padding:20px}
+canvas{display:block;border:1px solid #00ff88;image-rendering:pixelated}
+.controls{margin:10px 0}
+button{background:#001100;color:#00ff88;border:1px solid #00ff88;padding:5px 15px;font-family:monospace;cursor:pointer}
+button:hover{background:#003300}
+slect{background:#001100;color:#00ff88;border:1px solid #00ff88;padding:5px;font-family:monospace}
+.info{color:#008844;font-size:12px;margin-top:5px}
+</style></head><body>
+<h2>1D Cellular Automaton Visualizer</h2>
+<div class="controls">
+Rulee: <select id="ruleSelect" onchange="resetCA()">
+<option value="30">Rule 30 (Chaotic)</option>
+<option value="90">Rule 90 (Sierpinski)</option>
+<option value="110">Rule 110 (Complex)</option>
+<option value="150">Rule 150 (XOR)</option>
+<option value="184">Rule 184 (Traffic)</option>
+</select>
+<button onclick="togglePlay()">Play/Pause</button>
+<button onclick="resetCA()">Reset</button>
+<button onclick="stepCA()">Step</button>
+Speed: <input type="range" id="speedSlider" min="1" max="60" value="20" onchange="updateSpeed()">
+</div>
+<canvas id="caCanvas" width="800" height="500"></canvas>
+<div class="info" id="infoBox">Rule 30 - Chaotic pattern. Single seed cell.</div>
+<script>
+var canvas=document.getElementById("caCanvas");
+var ctx=canvas.getContext("2d");
+var cellSize=4;
+var cols=canvas.width/cellSize;
+var rows=canvas.height/cellSize;
+var currentRow=0;
+var grid=[];
+var playing=false;
+var timer=null;
+var speed=20;
+var ruleNum=30;
+var ruleTable=[];
+function buildRuleTable(n){ruleTable=[];for(var i=0;i<8;i++){ruleTable[i]=(n>>i)&1;}}
+function resetCA(){
+ruleNum=parseInt(document.getElementById("ruleSelect").value);
+buildRuleTable(ruleNum);
+ctx.fillStyle="#0a0a0a";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+grid=new Array(cols).fill(0);
+grid[Math.floor(cols/2)]=1;
+currentRow=0;
+drawRow();
+currentRow++;var infos={30:"Rule 30 - Chaotic. Wolfram class 3.",90:"Rule 90 - Sierpinski triangle. Self-similar fractal.",110:"Rule 110 - Class 4 complex. Turing complete.",150:"Rule 150 - XOR pattern. Symmetric fractal.",184:"Rule 184 - Traffic flow model."};document.getElementById("infoBox").textContent=infos[ruleNum]||("Rule "+ruleNum);}
+function drawRow(){
+for(var x=0;x<cols;x++){if(grid[x]===1){ctx.fillStyle="#00ff88";}else{ctx.fillStyle="#0a0a0a";}ctx.fillRect(x*cellSize,currentRow*cellSize,cellSize,cellSize);}}
+function stepCA(){
+if(currentRow>=rows){return;}
+var next=new Array(cols).fill(0);
+for(var x=0;x<cols;x++){var left=grid[(x-1+cols)%cols];var center=grid[x];var right=grid[(x+1)%cols];var idx=(left<<2)|(center<<1||right;next[x]=ruleTable[idx];}grid=next;drawRow();currentRow++;}
+function tick(){stepCA();if(currentRow>=rows){clearInterval(timer);playing=false;}}
+function togglePlay(){if(playing){clearInterval(timer);playing=false;}else{timer=setInterval(tick,1000/speed){playing=true;}}
+function updateSpeed(){speed=parseInt(document.getElementById("speedSlider").value);if(playing){clearInterval(timer);timer=setInterval(tick,1000/speed);}}
+resetCA();
+</script>
+</body></html>
