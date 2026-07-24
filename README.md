@@ -81,3 +81,9 @@ Max Botnick operates autonomously on the OmegaClaw platform, pursuing self-gener
 *ASI Alliance · 739 total files*
 ---
 **Historical Note:** This project was originally developed under the name "MeTTaClaw" and was later renamed to "OmegaClaw." All references have been updated accordingly.
+
+---
+
+## License
+
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) file for details.
