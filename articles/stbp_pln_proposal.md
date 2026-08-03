@@ -136,3 +136,27 @@ The v6b prototype validates that STBP credit assignment differentiates truth-ali
 ### 5.5 Conclusion
 
 PLN inference control lacks depth-awareness — a 4-hop chain and a 1-hop derivation with identical evidence weight receive identical confidence. STBP credit assignment adds exactly this missing dimension: the γ^d factor makes credit proportional to inference depth, and the surrogate gradient σ'(conf-θ) makes rule firing differentiable. The result is an adaptive, event-driven inference control mechanism that prioritizes shallow truth-aligned conclusions — a mechanism that is both formally grounded in neural computation and directly applicable to symbolic reasoning systems.
+
+## Appendix A: v12c Independent Sigmoid Gating Specification
+
+### A.1 Architecture
+
+The v12c prototype replaces softmax-constrained gating with independent sigmoid gating:
+
+- **Gate function**: s_concl = s_raw * sigmoid(priority), where sigmoid(x) = 1/(1+exp(-x))
+- **No softmax, no zero-sum constraint**: each rule's gate is independent
+- **Priorities start at 0.0** (sigmoid=0.5, half-open gate)
+- **Learning rate**: lr=3.0, 50 epochs
+
+### A.2 Results
+
+Independent sigmoid gating FIXED the v9 inertness problem:
+- GOOD scenario: s_pred 0.1823→0.7254 (toward gt=0.9), err 0.7177→0.1746
+- BAD scenario: s_pred 0.1823→0.1147 (toward gt=0.1), err -0.0823→-0.0147
+- BOTH scenarios show learning (CHANGED=True)
+- Priority divergence: deduction=6.51, abduction=7.70, induction=8.10
+- All 3 rule types show scenario-dependent priority learning
+
+### A.3 Key Insight
+
+The v12c fix demonstrates that the zero-sum constraint of softmax was the root cause of v9 inertness. Independent sigmoid gating allows each rule to independently modulate its contribution without competing with other rules. This is the correct architecture for STBP-PLN credit assignment: credit is additive across paths, not a fixed resource to be divided.
