@@ -32,7 +32,7 @@ def run(code):
     
     try:
         result = subprocess.run(
-            ["bash", RUN_SH, temp_path],
+            ["bash", RUN_SH, "-s", temp_path],
             capture_output=True,
             text=True,
             timeout=30
