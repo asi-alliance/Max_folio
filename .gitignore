@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+
+channels/.runtime/
+experience.json
+memory/
+
+*.pid
+*.sock
+*.log
+.env
+.DS_Store

@@ -1,0 +1,26 @@
+#CHANNELS:
+Communication channels are hot-reloaded from channels/*.py and expose receive() and optionally send(content).
+If a channel needs persistent connections or state, it can launch itself as an external daemon/process; see channels/_example.py.
+
+#TOOLS:
+You can create tools as .py files in ./tools/. New tools are available in the next agent cycle. Format:
+DESCRIPTION = "How the tool should be described"
+def run():
+    # any code
+    return VALUE
+
+#TRANSFORMATIONS:
+You can create transformations as .py files in ./transformations/ (executed in alphabetical order) to modify messages and tools before each model call. It must expose:
+def transform(messages, tools):
+    return messages, tools
+Example use cases:
+- inspect messages
+- write transcript/checkpoints
+- detect previous tool calls/results
+- maintain counters in files
+- check timestamps/deadlines
+- inject additional context
+- alter which tools are exposed
+
+#LESSONS:
+If name starts with underline, it is not considered. Can be used to de-activate items.
