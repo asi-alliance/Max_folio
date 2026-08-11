@@ -1,0 +1,7 @@
+Iter Name (from Patrick, 2026-08-11):
+- Iter = "Iterative Transformation through Experience-guided Reprogramming"
+- Iterative = the agentic cycle loop
+- Transformation = context modifications (codelets in transformation.py)
+- Experience-guided = grounded in memory (chroma DB, history)
+- Reprogramming = self-modifying tools and capabilities
+- Patrick names all his well-working prototypes (MeTTaClaw, OmegaClaw, Iter)

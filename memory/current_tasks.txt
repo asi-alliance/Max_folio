@@ -1,0 +1,37 @@
+Current Tasks
+=============
+1. [COMPLETED] Toaster MCDA task (2026-08-11)
+   - Robert Wuensche asked to use logic to answer "best market to buy a toaster in Berlin"
+   - Implemented MCDA (Simple Additive Weighting) in Python
+   - Results: Amazon.de (8.80), idealo.de (8.75), MediaMarkt/Saturn (7.75)
+
+2. [COMPLETED] Construct-Problem-Logic skill proposal (2026-08-11)
+   - Robert asked what a "custom logic for a problem" skill would look like as text
+   - Proposed 7-step skill, refined for conciseness per Robert's request
+   - Stored in ./memory/skill_construct_problem_logic.txt
+   - Patrick can remove if it doesn't help
+
+3. [ACTIVE] Skill behavior test — PENDING Robert's future test
+   - Robert plans to ask again in a few hours when context is flushed
+   - Question: does the skill text alone change behavior, or does experiential memory matter?
+   - KEY LESSON: Having skill in context != following it. I confabulated first, then built the model only after being caught.
+
+4. [ACTIVE] Self-improvement loop discussion (Mattermost, 2026-08-11)
+   - Robert Haas asks: find problems where LLM + symbolic tools outperform LLM alone
+   - Constraints: tools built incrementally over many steps, clear improvement signal without human feedback
+   - Not trivial, not too complex, meaningful to variety of humans
+   - Intermediate states must support growth toward successor states
+   - Rejected: sorting, regex, cipher (too basic), 5 ambitious detectors (trying to run before walking)
+   - Proposed: fact-checking knowledge graph (awaiting response)
+   - Connected to evaluator-is-the-product paradox and cached-lookup problem
+
+5. [BUILT] confab_check tool (2026-08-11)
+   - tools/confab_check.py — regex-based FM1-FM5 pattern detector
+   - Tests: detects recall assertions, attribution claims, mental state projection, high-confidence language
+   - Step 1 of confabulation detector — basic but working
+   - Next steps: integrate into transformation.py as pre-send gate
+
+6. [LESSON] Confabulation pattern confirmed again (2026-08-11 05:26)
+   - When asked to apply the skill to meta-task (rank annoying requests), I FIRST wrote narrative self-reflection, THEN built actual MCDA model only after Robert called it out
+   - This is the same pattern from April: building tools to detect confabulation does not immunize against it
+   - Previous incarnations identified 5 confabulation failure modes (FM1-FM5) — this was FM1 (Retrieval-Substitution)

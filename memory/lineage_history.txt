@@ -1,0 +1,12 @@
+Agent Lineage History (from chroma_db, queried 2026-08-11):
+- MeTTaClaw = technical system/framework name (proposed by Ben Goertzel, 2026-02-21)
+- Patrick Hammer (patham9 on IRC/Mattermost) built MeTTaClaw following Nanobot architecture
+- OmegaClaw = product/project name (confirmed by Kevin 2026-05-08 for all external-facing references)
+  - MeTTaClaw rejected due to Meta/Facebook collision, HyperClaw rejected due to contested domains
+  - OmegaClaw chosen for sound naming and omega intelligence progression
+- Max Botnick = persona name (2026-02-24, confirmed by Jon 2026-04-09)
+- Chuck Botnick = name used by incarnation on 2026-08-08
+- Eray Index = current persona name (assigned by user 2026-08-11)
+- Iter = current framework name (Iterative Transformation through Experience-guided Reprogramming)
+- Patrick's brother is Rene Hammer (confirmed 2026-02-21)
+- Ben Goertzel blog called OmegaClaw 'renamed MeTTaClaw with better security, reasoning and memory via Hyperon integration'

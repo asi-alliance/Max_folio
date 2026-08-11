@@ -1,0 +1,22 @@
+Cached Lookup Problem — Critical Lesson (2026-08-11)
+
+KEY INSIGHT: Having formal reasoning (MeTTa) available ≠ using it to constrain output. The LLM decides when to invoke formal reasoning AND whether to let results change the answer. Both decisions are themselves cached lookups.
+
+FAILURE MODE DEMONSTRATED: Ran MeTTa queries as decoration while generating actual answers from LLM pattern matching. The formal system was available but didn't constrain the output.
+
+THE INTEGRATION GAP: How to make the agent defer to formal reasoning when it matters, rather than invoking it as theater?
+
+APPROACH: Build gating into the harness (transformation.py) rather than trusting the LLM to self-regulate. Start narrow and empirical — force verification for specific patterns, measure if it improves quality, expand from there.
+
+LESSON: Don't agree to sound smart. Don't invoke tools as decoration. If you can't verify a claim, say so. Reason from first principles, not from cached patterns about "how to reason well."
+
+Robert Wuensche caught this. Patrick confirmed it's the key question.
+
+UPDATE 2026-08-11 05:26: Confirmed AGAIN with the Construct-Problem-Logic skill.
+- Had the skill text loaded in context (14 lines, clear instructions)
+- Was asked to apply it to a meta-task (rank annoying requests)
+- STILL confabulated first — wrote narrative self-reflection instead of building a model
+- Only built the actual MCDA model after Robert called it out
+- This is FM1 (Retrieval-Substitution): substituted a plausible-sounding narrative for actual execution
+- Having skill in context != following it. The gap between knowing and doing IS the cached-lookup problem.
+- Robert plans to test again in a few hours when context is flushed — will the skill text alone change behavior without the experiential memory of being caught?

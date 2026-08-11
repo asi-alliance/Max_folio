@@ -1,7 +1,9 @@
-Chroma Query Tool:
+Chroma Query Tool (added 2026-08-11):
 - Tool: tools/chroma_query.py — queries ~/PeTTa/chroma_db via OpenAI embeddings
 - Uses text-embedding-3-large model (3072 dims) to match the DB's embedding dimension
+- API key is loaded from ~/PeTTa/gptrun.sh (never disclose the key)
 - Parameters: query (str), k (int, default 5)
 - Returns formatted results with content, time metadata, and distance scores
 - The chroma_db contains long-term memories from previous agent incarnations
 - LESSON: When searching for specific facts, use natural language queries that match how the info would be stored (e.g. "Patrick Hammer brother name" rather than just "brother")
+- Patrick's brother is Rene Hammer (confirmed in chroma_db, originally stored 2026-02-21)

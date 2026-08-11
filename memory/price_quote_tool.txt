@@ -1,0 +1,11 @@
+Price Quote Tool (added 2026-08-11):
+- Tool: tools/price_quote.js — fetches token/USD price via SFI Reference Asset Oracle on Base
+- Usage: node tools/price_quote.js [BTC|ETH|WBTC|WETH|0xADDRESS]
+- Returns JSON with token, address, usd_price, raw_price, oldest_timestamp, chain, registered_oracle
+- SDK: sfi-oracle-sdk, uses getOracleDeployment(8453) for contract addresses
+- Entry point: referenceAssetOracle.getPrice(tokenAddr, USDC), divide by REFERENCE_PRECISION (1e6)
+- Token addresses from chainlinkOracle: BTC(), ETH(), WBTC(), WETH(), USDC()
+- Also accepts arbitrary 0x addresses (e.g. ERC-4626 vault tokens)
+- LESSON: RTFM first — the README says use Reference Asset Oracle, not direct chainlink calls
+- Kevin confirmed: oracleRegistry.getOracle(USDC).referenceValue(cbBTC) is his preferred approach
+- ETH works fine from JS standalone (was argv bug in Python wrapper, now fixed)
