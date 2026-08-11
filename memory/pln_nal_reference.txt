@@ -1,48 +1,76 @@
-PLN/NAL Inference Reference (2026-08-11)
+PLN/NAL Inference Reference (2026-08-11, updated with ALL verified test results)
 ========================================
 
 ## Libraries
-- lib_nal.metta — NAL (Non-Axiomatic Logic) truth functions and inference rules
-- lib_pln.metta — PLN (Probabilistic Logic Networks) truth functions and inference rules
-- Both in ~/PeTTa/ directory
-- Import syntax: !(import! &self lib_nal) — NO quotes, NO .metta extension
-- metta.py auto-imports both by default now (Patrick's suggestion 2026-08-11)
+- lib_nal.metta (202 lines) - NAL truth functions and inference rules
+- lib_pln.metta (309 lines) - PLN truth functions and inference rules
+- lib_nal7.metta - NAL-7 temporal reasoning (copied from repos/mettaclaw/ to ~/PeTTa/ for import)
+- All in ~/PeTTa/ directory
+- Import syntax: !(import! &self lib_nal) - NO quotes, NO .metta extension
+- metta.py auto-imports lib_nal and lib_pln by default (NOT lib_nal7 - must import manually)
 
 ## NAL (|- operator)
 - |-nal handles single-premise structural rules and two-premise syllogistic rules
 - |- is the wrapper: (unique-atom (collapse (superpose ((|-nal $a $b) (|-nal $b $a)))))
-- Truth functions use single underscore: Truth_Deduction, Truth_Revision, Truth_Induction, Truth_Abduction, Truth_Exemplification, Truth_Negation, Truth_Intersection, Truth_Comparison, Truth_Analogy, Truth_Resemblance, Truth_Union, Truth_Difference, Truth_or, Truth_w2c, Truth_c2w
-- NAL uses --> (Inheritance) link type: ((--> socrates human) (stv 1.0 0.9))
-- Truth_Revision uses weighted average with confidence-to-weight conversion (c2w/w2c)
+- NAL uses --> (Inheritance), <-> (Similarity), ==> (Implication) link types
 - Deduction: f = f1*f2, c = f1*f2*c1*c2
 - Revision: weighted average of frequencies, confidence = w2c(w1+w2)
-- Induction = Abduction with swapped args: Truth_Induction(T1,T2) = Truth_Abduction(T2,T1)
+- Induction = Abduction with swapped args
 - Exemplification: f = 1.0, c = w2c(f1*f2*c1*c2)
+- Single-premise |- returns negation: f_neg = 1-f, c_neg = c
+
+## NAL RULES (from lib_nal.metta lines 108-137)
+- Revision: same term T with different TVs -> Truth_Revision
+- Deduction: (--> a b) + (--> b c) -> (--> a c) via Truth_Deduction
+- Induction: (--> a b) + (--> a c) -> (--> c b) via Truth_Induction
+- Abduction: (--> a c) + (--> b c) -> (--> b a) via Truth_Abduction
+- Exemplification: (--> a b) + (--> b c) -> (--> c a) via Truth_Exemplification
+- Similarity structural: (<-> S P) -> (<-> P S)
+- Resemblance: (<-> M P) + (<-> S M) -> (<-> S P)
+- Comparison: (--> P M) + (--> S M) -> (<-> S P) [shared predicate]
+- Comparison variant: (--> M P) + (--> M S) -> (<-> S P) [shared subject]
+- Analogy: (<-> S P) + (--> P M) -> (--> S M) via Truth_Analogy
+
+## NAL VERIFIED TEST RESULTS (2026-08-11)
+- Deduction: penguin->bird(1.0/0.9) + bird->flyer(1.0/0.9) = penguin->flyer (1.0/0.81) OK
+- Multi-step chain: penguin->bird->animal->living-thing->mortal, conf degrades 0.9->0.81->0.729->0.6561 OK
+- Negation+Revision: penguin->flyer(1.0/0.81) revised with penguin->flyer(0.0/0.9) -> merged OK
+- Comparison: cat->pet + dog->pet -> cat<->dog (1.0/0.45) OK
+- Analogy: wolf<->dog(1.0/0.9) + wolf->hunter(1.0/0.9) -> dog->hunter (0.8/0.648) OK
+- Modus ponens: (==> antecedent consequent) + antecedent -> consequent OK
+
+## NAL7 TEMPORAL REASONING (|-t operator, from lib_nal7.metta)
+- Must import: !(import! &self lib_nal7) - file must be in ~/PeTTa/ (copied from repos/mettaclaw/)
+- Temporal induction: (|-nal7 (eventA TV1) (eventB TV2)) -> ((=/> eventA eventB) Truth_Induction)
+- Also produces (&/ eventA eventB) (Truth_Intersection)
+- Temporal chaining: (=/> A B) + (=/> B C) -> (=/> A C) via Truth_Deduction (0.9^2=0.81 conf)
+- Temporal modus ponens: eventA + (=/> eventA eventB) -> eventB via Truth_Deduction
+- Temporal induction: (=/> A B) + (=/> A C) -> (=/> C B) via Truth_Induction
+- Temporal abduction: (=/> A C) + (=/> B C) -> (=/> B A) via Truth_Abduction
+- |-t is wrapper: (unique-atom (collapse (superpose ((|-nal7 $a $b) (|-nal7 $b $a)))))
+- Link types: =/> (predictive implication), =|> (retroactive implication), </> (equivalence), <|> (concurrent equivalence)
 
 ## PLN (|~ operator)
-- |~pln handles inference rules, |~ is the wrapper (same pattern as NAL)
-- Truth functions use double underscore: Truth__Deduction, Truth__Revision, Truth__c2w, Truth__w2c, Truth__or, Truth__Negation
-- PLN uses Inheritance, Implication, Equivalence, Similarity, Evaluation, Member link types
-- PLN deduction requires consistency checks (conditional-probability-consistency, Consistency_ImplicationImplicantConjunction)
-- PLN has STV default truth values: (stv 0.1 0.9) for terms without explicit TV
-- PLN rules: Modus Ponens, Symmetric Modus Ponens, Deduction, Induction, Abduction, Revision, Negation, Inversion, EquivalenceToImplication, TransitiveSimilarity, EvaluationImplication
-- PLN Truth__Revision is simpler than NAL: weighted average without clamping
-- PLN has /safe (division by zero protection) and clamp utilities
+- |~pln handles syllogistic rules with explicit link types (Inheritance, Implication, Similarity)
+- STV function: (STV $X) returns (stv 0.1 0.9) by default - prior probability for induction
+- SyllogisticRuleGuard: only Inheritance and Implication allowed for deduction/induction/abduction
+- PLN format: (Inheritance A B) NOT (--> A B) - uses explicit link type atoms
+- PLN modus ponens uses (Implication A B) format
+- Deduction: same formula as NAL (f=f1*f2, c=f1*f2*c1*c2)
+- Induction uses prior probabilities via STV function (key PLN advantage over NAL)
+- Abduction also uses priors
+- Modus Ponens: f = Ps*PQs + 0.02*(1-Ps), c = Ps*PQs*Pc*PQc
+- Revision: same weighted average as NAL
 
-## Usage Examples
-```
-; NAL Deduction
-!(|- ((--> socrates human) (stv 1.0 0.9)) ((--> human mortal) (stv 1.0 0.9)))
-; Result: ((--> socrates mortal) (stv 1.0 0.81))
+## PLN VERIFIED TEST RESULTS (2026-08-11)
+- Deduction: (Inheritance socrates human)(1.0/0.9) + (Inheritance human mortal)(1.0/0.9) -> (Inheritance socrates mortal)(1.0/0.81) OK
+- Induction: (Inheritance swan bird)(0.6/0.9) + (Inheritance swan flyer)(0.8/0.9) -> (Inheritance bird flyer)(0.489/0.393) with priors OK
+- Abduction: (Inheritance bird flyer)(0.95/0.9) + (Inheritance swan flyer)(0.8/0.9) -> (Inheritance bird swan)(0.761/0.435) with priors OK
 
-; NAL Revision
-!(|- ((--> sam animal) (stv 0.8 0.5)) ((--> sam animal) (stv 0.9 0.9)))
-; Result: ((--> sam animal) (stv ~0.89 ~0.93))
-
-; PLN Deduction
-!(|~ ((Inheritance dog mammal) (stv 0.9 0.8)) ((Inheritance mammal animal) (stv 0.9 0.8)))
-; Result: ((Inheritance dog animal) (stv ...))
-
-; PLN Modus Ponens
-!(|~ ((Implication rain wet) (stv 0.9 0.8)) (rain (stv 1.0 0.9)))
-; Result: (wet (stv ...))
+## KEY DIFFERENCES: NAL vs PLN
+- NAL |- is more expressive: produces abduction both directions + similarity, PLN only one direction
+- PLN induction/abduction use prior probabilities (STV default 0.1), NAL does not
+- NAL handles --> <-> ==> with shorthand, PLN needs Inheritance/Similarity/Implication explicit atoms
+- NAL7 =/> temporal chaining requires lib_nal7 import (not auto-imported)
+- NAL |- does NOT auto-chain transitive relations - need explicit MeTTa match rules
+- Relational encoding: ((--> (x X Y) in) for "X is in Y") (Patrick 2026-08-11)
