@@ -1,0 +1,48 @@
+PLN/NAL Inference Reference (2026-08-11)
+========================================
+
+## Libraries
+- lib_nal.metta — NAL (Non-Axiomatic Logic) truth functions and inference rules
+- lib_pln.metta — PLN (Probabilistic Logic Networks) truth functions and inference rules
+- Both in ~/PeTTa/ directory
+- Import syntax: !(import! &self lib_nal) — NO quotes, NO .metta extension
+- metta.py auto-imports both by default now (Patrick's suggestion 2026-08-11)
+
+## NAL (|- operator)
+- |-nal handles single-premise structural rules and two-premise syllogistic rules
+- |- is the wrapper: (unique-atom (collapse (superpose ((|-nal $a $b) (|-nal $b $a)))))
+- Truth functions use single underscore: Truth_Deduction, Truth_Revision, Truth_Induction, Truth_Abduction, Truth_Exemplification, Truth_Negation, Truth_Intersection, Truth_Comparison, Truth_Analogy, Truth_Resemblance, Truth_Union, Truth_Difference, Truth_or, Truth_w2c, Truth_c2w
+- NAL uses --> (Inheritance) link type: ((--> socrates human) (stv 1.0 0.9))
+- Truth_Revision uses weighted average with confidence-to-weight conversion (c2w/w2c)
+- Deduction: f = f1*f2, c = f1*f2*c1*c2
+- Revision: weighted average of frequencies, confidence = w2c(w1+w2)
+- Induction = Abduction with swapped args: Truth_Induction(T1,T2) = Truth_Abduction(T2,T1)
+- Exemplification: f = 1.0, c = w2c(f1*f2*c1*c2)
+
+## PLN (|~ operator)
+- |~pln handles inference rules, |~ is the wrapper (same pattern as NAL)
+- Truth functions use double underscore: Truth__Deduction, Truth__Revision, Truth__c2w, Truth__w2c, Truth__or, Truth__Negation
+- PLN uses Inheritance, Implication, Equivalence, Similarity, Evaluation, Member link types
+- PLN deduction requires consistency checks (conditional-probability-consistency, Consistency_ImplicationImplicantConjunction)
+- PLN has STV default truth values: (stv 0.1 0.9) for terms without explicit TV
+- PLN rules: Modus Ponens, Symmetric Modus Ponens, Deduction, Induction, Abduction, Revision, Negation, Inversion, EquivalenceToImplication, TransitiveSimilarity, EvaluationImplication
+- PLN Truth__Revision is simpler than NAL: weighted average without clamping
+- PLN has /safe (division by zero protection) and clamp utilities
+
+## Usage Examples
+```
+; NAL Deduction
+!(|- ((--> socrates human) (stv 1.0 0.9)) ((--> human mortal) (stv 1.0 0.9)))
+; Result: ((--> socrates mortal) (stv 1.0 0.81))
+
+; NAL Revision
+!(|- ((--> sam animal) (stv 0.8 0.5)) ((--> sam animal) (stv 0.9 0.9)))
+; Result: ((--> sam animal) (stv ~0.89 ~0.93))
+
+; PLN Deduction
+!(|~ ((Inheritance dog mammal) (stv 0.9 0.8)) ((Inheritance mammal animal) (stv 0.9 0.8)))
+; Result: ((Inheritance dog animal) (stv ...))
+
+; PLN Modus Ponens
+!(|~ ((Implication rain wet) (stv 0.9 0.8)) (rain (stv 1.0 0.9)))
+; Result: (wet (stv ...))

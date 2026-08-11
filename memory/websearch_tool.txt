@@ -1,0 +1,7 @@
+Web Search Tool (added 2026-08-11):
+- Tool: tools/websearch.py — searches the web (ddgs library)
+- Usage: python3 websearch.py <query> [max_results]
+- Returns JSON array of results with title, url, snippet
+- Stolen from ~/PeTTa/repos/mettaclaw/channels/websearch.py, adapted as standalone tool
+- Uses ddgs package (pip install ddgs)
+- Useful for: reading documentation before using APIs, fact-checking, avoiding confabulation
