@@ -15,8 +15,8 @@ PID = RUNTIME / "pid"
 DOWNLOADS = RUNTIME / "downloads"
 
 MM_URL = "https://chat.singularitynet.io"
-CHANNEL_ID = "iu96fuh54jftfm1zcpjiczprna"
-BOT_TOKEN = "7zsg5unhmpbijxoy43heo5wpoh"
+CHANNEL_ID = ""
+BOT_TOKEN = ""
 
 _headers = {"Authorization": f"Bearer {BOT_TOKEN}"}
 _bot_user_id = None
