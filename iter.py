@@ -172,7 +172,12 @@ def apply_transformation(messages, tools):
         except Exception as error:
             errors.append(f"[RUNTIME ERROR in {path}: {type(error).__name__}: {error}. Repair {path} if needed.]")
     return messages, tools, "\n".join(errors)
- 
+
+def save_experience(experience):
+    with open("experience.tmp", "w", encoding="utf-8") as file:
+        json.dump(experience, file, ensure_ascii=False, indent=2)
+    os.replace("experience.tmp", "experience.json")
+
 # --------------------------------------------------------------------
 # 4. Main loop
 # --------------------------------------------------------------------
@@ -201,6 +206,7 @@ while True:
             autonomous_steps, new_burst, post_task_mode = 0, False, False
             print("IN FROM CHANNEL " + event_append)
             experience += [{"role": "user", "content": "Step " + get_current_time() + ": " + event_append}]
+            save_experience(experience)
             pending_event_append = ""
         elif new_burst:
             post_task_mode, new_burst = True, False
@@ -226,7 +232,7 @@ while True:
             if transformation_error:
                 request_messages += [{"role": "user", "content": transformation_error}]
             print("BEFORE LLM")
-            response = client.chat.completions.create(model=MODEL, messages=request_messages, tools=request_tools, tool_choice="required", max_tokens=MAX_TOKENS)
+            response = client.cW(model=MODEL, messages=request_messages, tools=request_tools, tool_choice="required", max_tokens=MAX_TOKENS)
             print("AFTER LLM")
             message = response.choices[0].message
             if message.tool_calls:
@@ -260,9 +266,7 @@ while True:
             experience += [{"role": "tool", "tool_call_id": tool_call.id, "content": "Step " + get_current_time() + ": " + ret}]
             tool_outputs += ["tool call: " + tool_name + " " + str(tool_arguments) + "\n" "tool return: " + ret]
         history_checkpoint = len(experience) #tool calls succeeded, even on later exception we won't unroll them
-        with open("experience.tmp", "w", encoding="utf-8") as file:
-            json.dump(experience, file, ensure_ascii=False, indent=2)
-        os.replace("experience.tmp", "experience.json")
+        save_experience(experience)
         print("Output> " + "\n".join(tool_outputs))
         autonomous_steps = 0 if event_append else autonomous_steps + 1
         if tool_name == "nop" or autonomous_steps >= MAX_FAST_STEPS:
