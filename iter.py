@@ -48,7 +48,10 @@ def dynamic_worker():
         spec.loader.exec_module(module)
         if function == "__tool_metadata__":
             parameters = inspect.signature(module.run).parameters.values()
-            result = {"description": str(module.DESCRIPTION)[:MAX_TOOL_DESCRIPTION_CHARS], "parameters": [parameter.name for parameter in parameters]}
+            description = str(module.DESCRIPTION)
+            if len(description) > MAX_TOOL_DESCRIPTION_CHARS:
+                description = description[:MAX_TOOL_DESCRIPTION_CHARS] + " [DESCRIPTION TRUNCATED]"
+            result = {"description": description, "parameters": [parameter.name for parameter in parameters]}
         else:
             result = getattr(module, function)(*payload.get("args", []), **payload.get("kwargs", {}))
             if function != "transform" and result is not None:
@@ -214,7 +217,10 @@ while True:
             if omitted_tools > 0:
                 temporary_message += [{"role": "user", "content": f"[TOOL LIMIT REACHED: {omitted_tools} tools are currently omitted. Consolidate or remove tools if they are needed.]"}]
             TOOLS = native_tools(INOPS)
-            MEMORY = "\n\n".join(path.name + ":\n" + path.read_text().strip() for path in Path("memory").iterdir() if path.is_file() and not path.name.startswith("_"))[:MAX_MEMORY_CHARS]
+            MEMORY = "\n\n".join(path.name + ":\n" + path.read_text().strip() for path in Path("memory").iterdir() if path.is_file() and not path.name.startswith("_"))
+            if len(MEMORY) > MAX_MEMORY_CHARS:
+                omitted = len(MEMORY) - MAX_MEMORY_CHARS
+                MEMORY = MEMORY[:MAX_MEMORY_CHARS] + f"\n[MEMORY TRUNCATED: {omitted} chars omitted, REDUCE MEMORY FILES!]"
             request_messages = [{"role": "system", "content": "prompt.txt:\n" + open("prompt.txt").read().strip() + "\n\n" + "reprogramming.txt:\n" + open("reprogramming.txt").read().strip() + "\n\n" + MEMORY}] + experience + temporary_message
             request_messages, request_tools, transformation_error = apply_transformation(request_messages, TOOLS)
             if transformation_error:
@@ -227,7 +233,7 @@ while True:
                 break
             temporary_message += [{"role": "user", "content": "Your previous response was invalid. Do not answer in plain text. Call at least one tool now."}]
         print(f"RESPONSE {response}\nFINISH_REASON {response.choices[0].finish_reason}\nUSAGE {response.usage}")
-        experience = [{**old_message, "content": old_message.get("content", "")[:RETURN_VALUE_PRESERVE] + " ... omitted"} if old_message.get("role") == "tool" and " ... omitted" not in old_message.get("content", "") else old_message for old_message in experience]
+        experience = [{**old_message, "content": old_message.get("content", "")[:RETURN_VALUE_PRESERVE] + " [TRUNCATED]"} if old_message.get("role") == "tool" and len(old_message.get("content", "")) > RETURN_VALUE_PRESERVE else old_message for old_message in experience]
         experience += [{**{key: value for key, value in message.model_dump(exclude_none=True).items() if key not in ("reasoning", "reasoning_details", "reasoning_content")}, "content": "Step " + get_current_time() + ": [TOOL CALL]"}]
         tool_outputs = []
         for tool_call in message.tool_calls:
@@ -248,7 +254,9 @@ while True:
                         ret = result["result"] if result["ok"] else f"Tool execution failed: {result['error']}"
                 except Exception as error:
                     ret = f"Tool execution failed: {type(error).__name__}: {error}"
-            ret = str(ret)[:MAX_TOOL_OUTPUT_CHARS]
+            ret = str(ret)
+            if len(ret) > MAX_TOOL_OUTPUT_CHARS:
+                ret = ret[:MAX_TOOL_OUTPUT_CHARS] + " [TRUNCATED]"
             experience += [{"role": "tool", "tool_call_id": tool_call.id, "content": "Step " + get_current_time() + ": " + ret}]
             tool_outputs += ["tool call: " + tool_name + " " + str(tool_arguments) + "\n" "tool return: " + ret]
         history_checkpoint = len(experience) #tool calls succeeded, even on later exception we won't unroll them
