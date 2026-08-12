@@ -232,7 +232,7 @@ while True:
             if transformation_error:
                 request_messages += [{"role": "user", "content": transformation_error}]
             print("BEFORE LLM")
-            response = client.cW(model=MODEL, messages=request_messages, tools=request_tools, tool_choice="required", max_tokens=MAX_TOKENS)
+            response = client.client.chat.completions.create(model=MODEL, messages=request_messages, tools=request_tools, tool_choice="required", max_tokens=MAX_TOKENS)
             print("AFTER LLM")
             message = response.choices[0].message
             if message.tool_calls:
