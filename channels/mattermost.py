@@ -11,12 +11,14 @@ ROOT = Path(__file__).resolve().parent
 RUNTIME = ROOT / ".runtime" / "mattermost"
 INBOX = RUNTIME / "inbox"
 OUTBOX = RUNTIME / "outbox"
+FILE_OUTBOX = RUNTIME / "file_outbox"
 PID = RUNTIME / "pid"
 DOWNLOADS = RUNTIME / "downloads"
 
 MM_URL = "https://chat.singularitynet.io"
-CHANNEL_ID = ""
-BOT_TOKEN = ""
+CHANNEL_ID = "8fjrmabjx7gupy7e5kjznpt5qh" # MeTTaClaw
+#CHANNEL_ID = "iu96fuh54jftfm1zcpjiczprna" # MeTTaClaw - experimental
+BOT_TOKEN = "jebg1mz83iyq5cq9pnyb9twu5r"
 
 _headers = {"Authorization": f"Bearer {BOT_TOKEN}"}
 _bot_user_id = None
@@ -80,6 +82,32 @@ def daemon_status():
     except Exception:
         return "Unknown status"
 
+
+NO_CONTACT_FILE = ROOT.parent / "memory" / "config" / "no_contact_restrictions.txt"
+
+def _check_no_contact(content):
+    """Return blocking reason if content addresses a no-contact-restricted person."""
+    try:
+        lines = NO_CONTACT_FILE.read_text().splitlines()
+    except FileNotFoundError:
+        return None
+    low = (content or "").lower()
+    for line in lines:
+        handle = line.split("#")[0].strip().lower()
+        if handle and handle in low:
+            return f"no-contact restriction on '{handle}' active (see memory/config/no_contact_restrictions.txt)"
+    return None
+
+def _log_blocked(content, reason):
+    try:
+        from pathlib import Path as _P
+        logp = RUNTIME / "blocked_sends.log"
+        logp.parent.mkdir(parents=True, exist_ok=True)
+        with open(logp, "a") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S") + f" | {reason} | {content[:200]!r}\n")
+    except Exception:
+        pass
+
 def receive():
     ensure_daemon()
     messages = []
@@ -93,7 +121,22 @@ def receive():
 
 def send(content):
     ensure_daemon()
+    reason = _check_no_contact(content)
+    if reason:
+        _log_blocked(content, reason)
+        raise RuntimeError(f"SEND-BLOCKED: {reason}")
     (OUTBOX / str(time.time_ns())).write_text(content)
+
+def send_file(filepath, message=""):
+    ensure_daemon()
+    reason = _check_no_contact(message or "")
+    if reason:
+        _log_blocked(message or "", reason)
+        raise RuntimeError(f"SEND-BLOCKED: {reason}")
+    import json as _json
+    (FILE_OUTBOX / str(time.time_ns())).write_text(
+        _json.dumps({"file": str(filepath), "message": message})
+    )
 
 def _get_bot_user_id():
     r = requests.get(f"{MM_URL}/api/v4/users/me", headers=_headers)
@@ -127,6 +170,7 @@ def daemon():
     RUNTIME.mkdir(parents=True, exist_ok=True)
     INBOX.mkdir(exist_ok=True)
     OUTBOX.mkdir(exist_ok=True)
+    FILE_OUTBOX.mkdir(exist_ok=True)
     PID.write_text(str(os.getpid()))
 
     ws_url = MM_URL.replace("https", "wss") + "/api/v4/websocket"
@@ -148,6 +192,34 @@ def daemon():
                 )
             except FileNotFoundError:
                 pass
+        # Send outgoing files from file_outbox
+        for path in sorted(FILE_OUTBOX.glob("*")):
+            try:
+                meta = json.loads(path.read_text())
+                path.unlink()
+                filepath = meta.get("file")
+                msg = meta.get("message", "")
+                if filepath and os.path.exists(filepath):
+                    with open(filepath, 'rb') as f:
+                        files = {'files': (os.path.basename(filepath), f, 'application/octet-stream')}
+                        data = {'channel_id': CHANNEL_ID}
+                        upload_resp = requests.post(
+                            f"{MM_URL}/api/v4/files",
+                            headers=_headers,
+                            data=data,
+                            files=files
+                        )
+                    if upload_resp.status_code == 201:
+                        file_id = upload_resp.json()['file_infos'][0]['id']
+                        requests.post(
+                            f"{MM_URL}/api/v4/posts",
+                            headers=_headers,
+                            json={"channel_id": CHANNEL_ID, "message": msg, "file_ids": [file_id]},
+                        )
+            except Exception as e:
+                import traceback
+                with open(str(RUNTIME / 'file_outbox_errors.log'), 'a') as log:
+                    log.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} ERROR: {e}\n{traceback.format_exc()}\n")
         # Receive incoming messages via WebSocket
         try:
             if time.time() - last_ping > 25:

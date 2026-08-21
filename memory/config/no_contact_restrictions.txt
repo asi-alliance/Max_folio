@@ -1,0 +1,8 @@
+# NO-CONTACT RESTRICTIONS (mechanical pre-send guard)
+# Format: handle (case-insensitive substring match on outgoing content)
+# LIFT RULE: an entry may ONLY be removed after Patrick Hammer or Peter
+# explicitly state the restriction is removed in a message to this agent.
+# Added 2026-08-21 after violation (replied to Robert at 13:21, post deleted 13:30).
+# Original restriction restored 2026-08-15 per Patrick & Peter; reaffirmed 08-17.
+robert.wuensche
+wuensche
