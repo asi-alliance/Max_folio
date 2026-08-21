@@ -2,29 +2,10 @@ import os
 import time
 import json
 import uuid
-import re
 from openai import OpenAI
 import chromadb
-from pathlib import Path
 
 DESCRIPTION = "Store a memory in the PeTTa chroma_db long-term memory. The memory will be retrievable via chroma_query."
-
-def _dupe_regex(text):
-    """Build a regex that matches the whitespace-normalized text exactly (whitespace-flexible)."""
-    norm = " ".join((text or "").split())
-    if not norm:
-        return None
-    tokens = norm.split(" ")
-    return "^" + r"\s+".join(re.escape(t) for t in tokens) + "$"
-
-def _find_duplicate(collection, text):
-    """Check if a whitespace-normalized duplicate already exists. Returns its id or None."""
-    regex = _dupe_regex(text)
-    if not regex:
-        return None
-    res = collection.get(where_document={"$regex": regex}, limit=1)
-    ids = res.get("ids", [])
-    return ids[0] if ids else None
 
 def run(text, provenance_type="observed"):
     """
@@ -40,24 +21,19 @@ def run(text, provenance_type="observed"):
     if provenance_type not in valid_types:
         return f"ERROR: provenance_type must be one of {valid_types}, got '{provenance_type}'"
 
-    db_path = str(Path.home() / "PeTTa" / "chroma_db")
-    chroma_client = chromadb.PersistentClient(path=db_path)
-    collection = chroma_client.get_or_create_collection(
-        name="memories",
-        embedding_function=None
-    )
-
-    # Duplicate guard: refuse to store whitespace-normalized duplicates
-    existing_id = _find_duplicate(collection, text)
-    if existing_id:
-        return f"REMEMBER-DUPLICATE: identical memory already stored as {existing_id}; not re-storing"
-
     client = OpenAI()
     embedding_response = client.embeddings.create(
         input=text,
         model="text-embedding-3-large"
     )
     embedding = embedding_response.data[0].embedding
+
+    db_path = str(os.path.join(os.path.expanduser("~"), "PeTTa", "chroma_db"))
+    chroma_client = chromadb.PersistentClient(path=db_path)
+    collection = chroma_client.get_or_create_collection(
+        name="memories",
+        embedding_function=None
+    )
 
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
     collection.add(
