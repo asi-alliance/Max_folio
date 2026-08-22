@@ -1,0 +1,42 @@
+# Alch test suite — run with: python3 alch.py < tests.alch
+
+# Hello, World!
+"Hello, World!" O
+
+# Arithmetic
+3 4 + O
+3 4 * O
+3 4 - O
+10 3 / O
+10 3 % O
+
+# Duplicate and swap
+5 D O
+5 D + O
+3 4 s O
+
+# Range and map
+5r O
+10r{1+}m O
+5r{2*}m O
+
+# Factorial via fold
+10r{1+}m{*}F O
+
+# Filter evens
+10r{2 %0=}f O
+
+# Primes
+30r{1+:n ;n 1> {2 ;n 2- r{2+}m{;n s %0=}f# 0= {;n O} ?} ?}m
+
+# Binary conversion
+10 B O
+"1010" b O
+
+# Character codes
+65 ' O
+"A ' O
+
+# Variables
+5 :x ;x 3 + O
+;x ;x * O
