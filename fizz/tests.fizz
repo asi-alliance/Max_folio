@@ -1,0 +1,54 @@
+# Fizz Test Suite
+# ================
+# Each test prints a result. Expected outputs are in comments.
+
+# --- Basic Arithmetic ---
+5 3 + p n        # Expected: 8
+10 4 - p n       # Expected: 6
+6 7 * p n        # Expected: 42
+20 4 / p n       # Expected: 5
+17 5 % p n       # Expected: 2
+2 10 ^ p n       # Expected: 1024
+
+# --- Comparison ---
+5 5 = p n        # Expected: 1
+3 7 < p n        # Expected: 1
+9 2 g p n        # Expected: 1
+
+# --- String Operations ---
+"Hello" ", " + "World!" + p n   # Expected: Hello, World!
+
+# --- Stack Operations ---
+1 2 : p n p n    # Expected: 2 then 2 (duplicate)
+1 2 ; p n p n    # Expected: 1 then 2 (swap)
+1 2 ~ p n        # Expected: 1 (drop)
+
+# --- Ranges ---
+5r p n           # Expected: (0 1 2 3 4)
+
+# --- Map ---
+5r{3*}m p n      # Expected: (0 3 6 9 12)
+
+# --- Filter ---
+10r{2%0=}f p n   # Expected: (0 2 4 6 8)
+
+# --- Conditional ---
+1 {42 p n} ?     # Expected: 42
+0 {99 p n} ?     # Expected: (nothing)
+
+# --- Block Execution ---
+5 {2*} ! p n     # Expected: 10
+
+# --- Rules ---
+[square => $1 $1 *]
+7 'square @ p n  # Expected: 49
+
+[double => $1 2 *]
+8 'double @ p n  # Expected: 16
+
+# --- Variables ---
+100 x= $x p n    # Expected: 100
+
+# --- Character Output ---
+72 c 105 c n   # Expected: Hi
+
