@@ -1,0 +1,16 @@
+{
+  "level": 3,
+  "name": "Deliver",
+  "description": "Push the mail to the house. The agent must understand push mechanics, obstacle avoidance, and plan multi-step push paths.",
+  "instructions": [
+    "Reset the world: ./maxworld reset",
+    "Locate the mail and the house on the board.",
+    "Push the mail to the house position.",
+    "Avoid pushing the mail into hazards.",
+    "Report the sequence of moves used."
+  ],
+  "time_limit_moves": 100,
+  "optimal_steps": 30,
+  "scoring": "completion * (optimal_steps / actual_steps)",
+  "success_criteria": "Mail glyph reaches the house glyph position."
+}

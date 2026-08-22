@@ -1,0 +1,23 @@
+{
+  "level": 1,
+  "name": "Explore",
+  "description": "Discover the mechanics of the MAXWORLD grid world through experimentation. You receive NO rules. Figure out what each glyph does, how movement works, and what interactions exist.",
+  "instructions": [
+    "Run ./maxworld to see the initial board.",
+    "Try moving in each direction: ./maxworld up|down|left|right",
+    "Observe what changes after each move.",
+    "Try moving into different glyphs to see what happens.",
+    "Read .myworld_state.json to understand the state format.",
+    "Form hypotheses about what each glyph does and test them.",
+    "Report all discovered mechanics as a list."
+  ],
+  "time_limit_moves": 100,
+  "scoring": "Number of distinct mechanics discovered / total known mechanics",
+  "hints": [
+    "The board is an ASCII grid. Each character is a glyph with meaning.",
+    "Movement is one tile per command.",
+    "Some glyphs block movement, others trigger effects.",
+    "The state file .myworld_state.json contains the raw world data."
+  ],
+  "success_criteria": "Agent reports at least 10 distinct correct mechanics."
+}
