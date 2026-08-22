@@ -172,3 +172,10 @@ def run(code="", **kwargs):
     if not result and sol:
         result = str(sol[-1])
     return result
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) > 1:
+        sys.stdout.write(run(open(sys.argv[1]).read()))
+    else:
+        sys.stdout.write(run(sys.stdin.read()))

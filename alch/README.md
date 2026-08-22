@@ -57,7 +57,7 @@ A molecule is `{...}` — a deferred code block. Molecules are passed to `m` (ma
 ## 🏃 Running
 
 ```bash
-python3 alch.py < program.alch
+python3 alch.py program.alch
 ```
 
 Or import and use directly:
