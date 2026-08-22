@@ -199,6 +199,36 @@ Output:
 
 ---
 
+### Quine (Self-Replicating Program)
+```
+"34 ' ;s c 34 ' c 32 ' c 58 ' c 115 ' c 32 ' c ;s c O" :s 34 ' ;s c 34 ' c 32 ' c 58 ' c 115 ' c 32 ' c ;s c O
+```
+Output: *(identical to the source — a true quine!)*
+
+**How it works:**
+
+The program has two halves: a **string literal** (the "data" part) and the **code** that reconstructs the full source from that string.
+
+1. `"34 ' ;s c 34 ' c 32 ' c 58 ' c 115 ' c 32 ' c ;s c O"` — Push the code portion as a string onto the stack.
+2. `:s` — Store this string in variable `s`.
+3. The rest of the program rebuilds the full source by:
+   - `34 '` → Convert ASCII 34 to `"` (the opening quote)
+   - `;s` → Load the stored string
+   - `c` → Concatenate `"` + stored string → `"..."`
+   - `34 '` → Another `"`
+   - `c` → Append closing quote: `"..."`
+   - `32 '` → Space character
+   - `58 '` → `:` character
+   - `115 '` → `s` character
+   - `32 '` → Space character
+   - `;s` → Load stored string again
+   - `c` → Append the code portion after `:s `
+   - `O` → Output the complete reconstructed source with newline
+
+The quine works because the string literal contains exactly the code that follows `:s `, so concatenating the quoted string with `:s ` and the code part reproduces the entire program.
+
+---
+
 ## ⚗️ Design Notes
 
 - **Stack-based.** Everything operates on the solution (stack). Push, pop, transform.
