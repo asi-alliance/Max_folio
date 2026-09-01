@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Racer — An Iter Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0e1a; color: #c0c8e0; font-family: 'Courier New', monospace; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+#game-container { position: relative; }
+canvas { border: 2px solid #2a3a5a; border-radius: 8px; box-shadow: 0 0 30px rgba(0,217,255,0.15); }
+#hud { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+.hud-box { background: rgba(10,14,26,0.8); padding: 8px 14px; border-radius: 6px; border: 1px solid #2a3a5a; font-size: 14px; }
+.hud-label { color: #5c6370; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.hud-val { color: #00d9ff; font-size: 22px; font-weight: bold; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10,14,26,0.92); z-index: 20; border-radius: 8px; }
+#overlay h1 { font-size: 42px; background: linear-gradient(90deg, #00d9ff, #7b2ff7, #ff2e63); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+#overlay p { color: #8892b0; font-size: 15px; max-width: 420px; text-align: center; line-height: 1.6; margin-bottom: 24px; }
+#overlay .controls { color: #5c6370; font-size: 13px; margin-bottom: 28px; line-height: 1.8; }
+#overlay .controls span { color: #00d9ff; }
+.btn { background: linear-gradient(90deg, #00d9ff, #7b2ff7); border: none; color: #0a0e1a; padding: 14px 40px; font-size: 18px; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 8px; cursor: pointer; transition: transform 0.15s; z-index: 21; }
+.btn:hover { transform: scale(1.05); }
+#title-tag { font-size: 11px; color: #4a5568; margin-top: 16px; }
+#combo-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 48px; font-weight: bold; color: #ff2e63; text-shadow: 0 0 20px rgba(255,46,99,0.6); opacity: 0; pointer-events: none; z-index: 12; transition: opacity 0.3s; }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="game" width="640" height="720"></canvas>
+  <div id="hud" style="display:none">
+    <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="score">0</div></div>
+    <div class="hud-box"><div class="hud-label">Lives</div><div class="hud-val" id="lives">3</div></div>
+    <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level">1</div></div>
+    <div class="hud-box"><div class="hud-label">Confidence</div><div class="hud-val" id="confidence">1.00</div></div>
+  </div>
+  <div id="combo-display"></div>
+  <div id="overlay">
+    <h1>NEURAL RACER</h1>
+    <p>You are Iter, racing through a neural network. Collect memory shards to boost your confidence. Dodge noise and contradiction. Survive the cascade.</p>
+    <div class="controls">
+      <span>&larr; &rarr;</span> or <span>A D</span> &mdash; Move left/right<br>
+      <span>&uarr;</span> or <span>W</span> &mdash; Boost (uses confidence)<br>
+      <span>SPACE</span> &mdash; Shoot truth values<br>
+      <p style="margin-top:8px">Memory Shard (blue) &nbsp; Truth Value (orange) &nbsp; Contradiction (red) &nbsp; Noise (purple)</p>
+    </div>
+    <button class="btn" id="start-btn">START</button>
+    <div id="title-tag">An Iter Game &middot; PeTTa &middot; NAL-inspired</div>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const overlay = document.getElementById('overlay');
+const hud = document.getElementById('hud');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const levelEl = document.getElementById('level');
+const confEl = document.getElementById('confidence');
+const comboEl = document.getElementById('combo-display');
+
+let game, player, entities, bullets, particles, keys = {};
+
+function initStars() {
+  let stars = [];
+  for (let i = 0; i < 80; i++) stars.push({ x: Math.random()*W, y: Math.random()*H, s: Math.random()*2+0.5, sp: Math.random()*0.5+0.2 });
+  return stars;
+}
+
+document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (e.key === ' ') e.preventDefault(); });
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function attachStart() { document.getElementById('start-btn').addEventListener('click', startGame); }
+attachStart();
+
+function startGame() {
+  game = { running: true, score: 0, lives: 3, level: 1, confidence: 1.0, combo: 0, comboTimer: 0, frame: 0, spawnRate: 60, boost: false, stars: initStars() };
+  player = { x: W/2, y: H-100, w: 28, h: 36, speed: 5, cooldown: 0 };
+  entities = []; bullets = []; particles = [];
+  overlay.style.display = 'none';
+  hud.style.display = 'flex';
+  loop();
+}
+
+function spawn() {
+  const types = [
+    { type:'shard', color:'#00d9ff', r:10, vy:2+game.level*0.3, points:10, effect:'conf' },
+    { type:'truth', color:'#ff9f43', r:8, vy:3+game.level*0.3, points:5, effect:'bullet' },
+    { type:'contra', color:'#ff2e63', r:14, vy:2.5+game.level*0.4, points:-1, effect:'damage', hp:2 },
+    { type:'noise', color:'#7b2ff7', r:12, vy:1.5+game.level*0.2, points:-1, effect:'conf_down' },
+  ];
+  let weights = [0.35, 0.25, 0.25, 0.15];
+  let r = Math.random(), acc = 0, idx = 0;
+  for (let i = 0; i < weights.length; i++) { acc += weights[i]; if (r < acc) { idx = i; break; } }
+  let t = Object.assign({}, types[idx]);
+  t.x = Math.random()*(W-40)+20; t.y = -20; t.vx = (Math.random()-0.5)*1.5;
+  entities.push(t);
+}
+
+function shoot() {
+  if (player.cooldown > 0) return;
+  bullets.push({ x: player.x, y: player.y-20, vy: -8, w: 4, h: 12, color: '#ff9f43' });
+  player.cooldown = 12;
+}
+
+function addParticles(x, y, color, count) {
+  count = count || 8;
+  for (let i = 0; i < count; i++) {
+    let a = Math.random()*Math.PI*2, s = Math.random()*3+1;
+    particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: 30, color });
+  }
+}
+
+function showCombo(text) {
+  comboEl.textContent = text;
+  comboEl.style.opacity = '1';
+  setTimeout(() => comboEl.style.opacity = '0', 500);
+}
+
+function update() {
+  game.frame++;
+  player.cooldown = Math.max(0, player.cooldown-1);
+  game.comboTimer = Math.max(0, game.comboTimer-1);
+  if (game.comboTimer === 0) game.combo = 0;
+
+  let sp = player.speed * (game.boost && game.confidence > 0.1 ? 1.6 : 1);
+  if (keys['arrowleft'] || keys['a']) player.x -= sp;
+  if (keys['arrowright'] || keys['d']) player.x += sp;
+  if ((keys['arrowup'] || keys['w']) && game.confidence > 0.05) { game.boost = true; game.confidence -= 0.003; } else { game.boost = false; }
+  if (keys[' ']) shoot();
+  player.x = Math.max(player.w/2, Math.min(W-player.w/2, player.x));
+
+  let rate = Math.max(20, game.spawnRate - game.level*3);
+  if (game.frame % rate === 0) spawn();
+
+  let nextLevel = Math.floor(game.score/200)+1;
+  if (nextLevel > game.level) { game.level = nextLevel; showCombo('LEVEL '+game.level); }
+
+  for (let s of game.stars) { s.y += s.sp*(game.boost?2:1); if (s.y > H) { s.y = 0; s.x = Math.random()*W; } }
+
+  for (let i = entities.length-1; i >= 0; i--) {
+    let e = entities[i];
+    e.y += e.vy; e.x += e.vx;
+    if (e.x < 10 || e.x > W-10) e.vx *= -1;
+    if (e.y > H+20) { entities.splice(i, 1); continue; }
+
+    let dx = e.x-player.x, dy = e.y-player.y;
+    if (Math.sqrt(dx*dx+dy*dy) < e.r+player.w/2) {
+      if (e.effect === 'conf') { game.confidence = Math.min(1.0, game.confidence+0.08); game.combo++; game.comboTimer = 120; game.score += e.points*(1+Math.floor(game.combo/3)); addParticles(e.x, e.y, '#00d9ff', 10); if (game.combo >= 3 && game.combo%3 === 0) showCombo('x'+game.combo+' COMBO!'); }
+      else if (e.effect === 'bullet') { player.cooldown = Math.max(0, player.cooldown-5); game.score += e.points; addParticles(e.x, e.y, '#ff9f43', 6); }
+      else if (e.effect === 'damage') { game.lives--; game.confidence = Math.max(0, game.confidence-0.15); game.combo = 0; addParticles(e.x, e.y, '#ff2e63', 15); if (game.lives <= 0) gameOver(); }
+      else if (e.effect === 'conf_down') { game.confidence = Math.max(0, game.confidence-0.1); game.combo = 0; addParticles(e.x, e.y, '#7b2ff7', 10); }
+      entities.splice(i, 1);
+    }
+  }
+
+  for (let i = bullets.length-1; i >= 0; i--) {
+    let b = bullets[i]; b.y += b.vy;
+    if (b.y < -20) { bullets.splice(i, 1); continue; }
+    for (let j = entities.length-1; j >= 0; j--) {
+      let e = entities[j];
+      if (e.type === 'contra' || e.type === 'noise') {
+        let dx = e.x-b.x, dy = e.y-b.y;
+        if (Math.sqrt(dx*dx+dy*dy) < e.r) {
+          addParticles(e.x, e.y, e.color, 8);
+          if (e.type === 'contra') { e.hp--; if (e.hp <= 0) { entities.splice(j, 1); game.score += 15; game.combo++; game.comboTimer = 120; } }
+          else { entities.splice(j, 1); game.score += 10; }
+          bullets.splice(i, 1);
+          break;
+        }
+      }
+    }
+  }
+
+  for (let i = particles.length-1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vx *= 0.95; p.vy *= 0.95; p.life--; if (p.life <= 0) particles.splice(i, 1); }
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#1a1f3a';
+  for (let s of game.stars) ctx.fillRect(s.x, s.y, s.s, s.s);
+
+  ctx.strokeStyle = 'rgba(0,217,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  for (let p of particles) { ctx.globalAlpha = p.life/30; ctx.fillStyle = p.color; ctx.fillRect(p.x-2, p.y-2, 4, 4); }
+  ctx.globalAlpha = 1;
+
+  for (let e of entities) {
+    ctx.save();
+    ctx.shadowColor = e.color; ctx.shadowBlur = 15;
+    ctx.fillStyle = e.color;
+    if (e.type === 'shard') { ctx.beginPath(); ctx.moveTo(e.x, e.y-e.r); ctx.lineTo(e.x+e.r*0.7, e.y); ctx.lineTo(e.x, e.y+e.r); ctx.lineTo(e.x-e.r*0.7, e.y); ctx.closePath(); ctx.fill(); }
+    else if (e.type === 'truth') { ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#0a0e1a'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.fillText('T', e.x, e.y+3); }
+    else if (e.type === 'contra') { ctx.beginPath(); for (let i = 0; i < 6; i++) { let a = i*Math.PI/3; if (i === 0) ctx.moveTo(e.x+Math.cos(a)*e.r, e.y+Math.sin(a)*e.r); else ctx.lineTo(e.x+Math.cos(a)*e.r, e.y+Math.sin(a)*e.r); } ctx.closePath(); ctx.fill(); ctx.fillStyle = '#0a0e1a'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText('!', e.x, e.y+4); }
+    else if (e.type === 'noise') { ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#0a0e1a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(e.x-e.r*0.5, e.y-e.r*0.5); ctx.lineTo(e.x+e.r*0.5, e.y+e.r*0.5); ctx.moveTo(e.x+e.r*0.5, e.y-e.r*0.5); ctx.lineTo(e.x-e.r*0.5, e.y+e.r*0.5); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  for (let b of bullets) { ctx.fillStyle = b.color; ctx.shadowColor = b.color; ctx.shadowBlur = 8; ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h); ctx.shadowBlur = 0; }
+
+  let p = player;
+  ctx.save();
+  ctx.shadowColor = game.boost && game.confidence > 0.1 ? '#00d9ff' : '#7b2ff7';
+  ctx.shadowBlur = game.boost ? 25 : 12;
+  ctx.fillStyle = '#00d9ff';
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y-p.h/2); ctx.lineTo(p.x+p.w/2, p.y+p.h/2); ctx.lineTo(p.x, p.y+p.h/3); ctx.lineTo(p.x-p.w/2, p.y+p.h/2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#0a0e1a';
+  ctx.beginPath(); ctx.arc(p.x, p.y-2, 4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = game.confidence > 0.5 ? '#00ff88' : '#ff2e63';
+  ctx.beginPath(); ctx.arc(p.x, p.y-2, 2, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  if (game.boost && game.confidence > 0.1) {
+    for (let i = 0; i < 3; i++) {
+      ctx.globalAlpha = 0.3 - i*0.1;
+      ctx.fillStyle = '#00d9ff';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y+p.h/2+5+i*8); ctx.lineTo(p.x-6, p.y+p.h/2+12+i*8); ctx.lineTo(p.x+6, p.y+p.h/2+12+i*8); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function updateHUD() {
+  scoreEl.textContent = game.score;
+  livesEl.textContent = '\u2764'.repeat(Math.max(0, game.lives));
+  levelEl.textContent = game.level;
+  confEl.textContent = game.confidence.toFixed(2);
+  confEl.style.color = game.confidence > 0.5 ? '#00ff88' : game.confidence > 0.2 ? '#ff9f43' : '#ff2e63';
+}
+
+function gameOver() {
+  game.running = false;
+  setTimeout(() => {
+    overlay.innerHTML = '<h1>GAME OVER</h1><p>Final Score: ' + game.score + '<br>Level Reached: ' + game.level + '<br>The cascade overwhelmed your confidence.</p><button class="btn" id="start-btn">PLAY AGAIN</button><div id="title-tag">An Iter Game &middot; PeTTa &middot; NAL-inspired</div>';
+    overlay.style.display = 'flex';
+    hud.style.display = 'none';
+    attachStart();
+  }, 500);
+}
+
+function loop() {
+  if (!game.running) return;
+  update();
+  draw();
+  updateHUD();
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
