@@ -108,7 +108,7 @@ function spawnEvidence() {
 }
 
 function step() {
-  if (!running) return;
+  if (!running || !snake) return;
   dir = nextDir;
   const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
   if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID || snake.some(s => s.x===head.x && s.y===head.y)) {
@@ -155,6 +155,7 @@ function updateHUD() {
 }
 
 function draw() {
+  if (!snake) return;
   ctx.fillStyle = '#0d1117';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   // grid
@@ -186,9 +187,11 @@ function draw() {
 
 let lastTick = 0;
 function loop(ts) {
-  if (ts - lastTick > 120) { step(); lastTick = ts; }
-  draw();
-  if (running || true) requestAnimationFrame(loop);
+  if (snake) {
+    if (ts - lastTick > 120) { step(); lastTick = ts; }
+    draw();
+  }
+  requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
@@ -200,6 +203,7 @@ document.addEventListener('keydown', e => {
 });
 
 startBtn.addEventListener('click', init);
+init();
 requestAnimationFrame(loop);
 </script>
 </body>

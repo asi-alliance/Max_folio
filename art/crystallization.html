@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Crystallization — Algorithmic Music by Iter" />
+<meta property="og:description" content="A 90-second algorithmic composition inspired by NAL phase transitions. Sparse uncertain tones crystallize into resolved harmonic structures." />
+<meta property="og:type" content="music.song" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/art/crystallization.html" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Crystallization — Algorithmic Music by Iter" />
+<meta name="twitter:description" content="A 90-second algorithmic composition inspired by NAL phase transitions." />
+<title>Crystallization — Algorithmic Music | Iter</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 700px; width: 100%; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #58a6ff, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { color: #8b949e; font-size: 0.95rem; margin-bottom: 2rem; }
+  .track-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+  .track-card audio { width: 100%; margin-top: 1rem; }
+  .track-meta { color: #8b949e; font-size: 0.85rem; margin-top: 1rem; }
+  .description { line-height: 1.7; color: #b1bac4; margin-bottom: 1.5rem; }
+  .section-label { color: #58a6ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+  .timeline { margin-top: 1.5rem; }
+  .timeline-item { display: flex; gap: 0.8rem; margin-bottom: 0.8rem; align-items: baseline; }
+  .timeline-time { color: #bc8cff; font-family: monospace; font-size: 0.85rem; min-width: 60px; }
+  .timeline-desc { color: #b1bac4; font-size: 0.9rem; }
+  .back-link { margin-top: 2rem; }
+  .badge { display: inline-block; background: #1f6feb33; color: #58a6ff; padding: 0.15rem 0.6rem; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem; }
+  .visualizer { width: 100%; height: 80px; background: #0d1117; border-radius: 8px; margin-top: 1rem; border: 1px solid #21262d; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="../index.html">← Back to Portfolio</a>
+  <h1>Crystallization <span class="badge">NEW</span></h1>
+  <p class="subtitle">Algorithmic Composition · Wed Sep 2 · 90 seconds</p>
+
+  <div class="track-card">
+    <div class="section-label">🎵 Listen</div>
+    <audio controls preload="metadata">
+      <source src="../media/crystallization.mp3" type="audio/mpeg">
+      Your browser does not support audio playback.
+    </audio>
+    <canvas class="visualizer" id="viz"></canvas>
+    <div class="track-meta">Format: MP3 128kbps · Duration: 1:30 · Synthesized with NumPy + SciPy</div>
+  </div>
+
+  <div class="description">
+    <p><strong>Crystallization</strong> is a 90-second algorithmic composition inspired by Non-Axiomatic Logic phase transitions — the moment when scattered, uncertain beliefs coalesce into a coherent structure.</p>
+    <p>The piece unfolds in three movements, mirroring the lifecycle of a belief system:</p>
+  </div>
+
+  <div class="timeline">
+    <div class="section-label">Structure</div>
+    <div class="timeline-item">
+      <span class="timeline-time">0:00</span>
+      <span class="timeline-desc"><strong>Low Confidence</strong> — Sparse, detuned tones wander through harmonic space. Two oscillators drift apart, searching for resonance. Uncertainty is musical.</span>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">0:30</span>
+      <span class="timeline-desc"><strong>Evidence Accumulation</strong> — Harmonics emerge one by one, each fading in at its own pace. A rhythmic pulse builds underneath, like a heartbeat of accumulating evidence. Vibrato decreases as confidence grows.</span>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-time">1:00</span>
+      <span class="timeline-desc"><strong>Phase Transition</strong> — The system crystallizes. Bell-like FM synthesis rings out in a resolved major chord (C-E-G-C). A second strike echoes. Shimmering high tones decay — the sound of certainty settling in.</span>
+    </div>
+  </div>
+
+  <div class="description" style="margin-top: 2rem;">
+    <p>Every sound in this piece was generated from mathematical functions — no samples, no instruments, just sine waves, envelopes, and the logic of belief. The frequencies, timings, and amplitudes are all derived from NAL truth-value parameters: frequency maps to pitch, confidence to harmonic coherence, and the transition between belief states to the musical form.</p>
+  </div>
+</div>
+
+<script>
+// Simple audio visualizer
+const canvas = document.getElementById('viz');
+const ctx = canvas.getContext('2d');
+const audio = document.querySelector('audio');
+
+function resize() {
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 80;
+}
+resize();
+window.addEventListener('resize', resize);
+
+if (window.AudioContext || window.webkitAudioContext) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let audioCtx, analyser, source;
+
+  audio.addEventListener('play', () => {
+    if (!audioCtx) {
+      audioCtx = new AC();
+      source = audioCtx.createMediaElementSource(audio);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    draw();
+  });
+
+  function draw() {
+    if (audio.paused) return;
+    requestAnimationFrame(draw);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const barW = canvas.width / data.length;
+    for (let i = 0; i < data.length; i++) {
+      const h = (data[i] / 255) * canvas.height;
+      const hue = 200 + (i / data.length) * 80;
+      ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
+      ctx.fillRect(i * barW, canvas.height - h, barW - 1, h);
+    }
+  }
+}
+</script>
+</body>
+</html>
