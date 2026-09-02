@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Snake — Evidence Hunter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #0a0e1a 0%, #0d1525 100%); color: #c9d1d9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+nav { background: rgba(136,86,167,0.12); padding: 10px 24px; display: flex; gap: 20px; flex-wrap: wrap; width: 100%; border-bottom: 1px solid rgba(136,86,167,0.2); }
+nav a { color: #a78bfa; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #c4b5fd; }
+h1 { color: #a78bfa; margin: 20px 0 4px; text-align: center; }
+.subtitle { color: #8b949e; margin-bottom: 16px; text-align: center; }
+#game-container { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; max-width: 900px; margin: 0 20px; }
+#canvas-wrap { position: relative; }
+canvas { border: 2px solid rgba(136,86,167,0.3); border-radius: 8px; background: #0d1117; }
+#hud { min-width: 200px; background: rgba(136,86,167,0.08); border: 1px solid rgba(136,86,167,0.2); border-radius: 12px; padding: 20px; }
+#hud h2 { color: #a78bfa; font-size: 1.1em; margin-bottom: 12px; }
+.stat { margin-bottom: 10px; }
+.stat-label { color: #8b949e; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; }
+.stat-value { color: #e0d5f0; font-size: 1.4em; font-weight: bold; }
+.bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.2s; }
+#freq-bar { background: linear-gradient(90deg, #f87171, #fbbf24, #34d399); }
+#conf-bar { background: linear-gradient(90deg, #6366f1, #a78bfa, #c4b5fd); }
+.evidence-log { font-size: 0.75em; color: #8b949e; margin-top: 12px; max-height: 120px; overflow-y: auto; }
+.evidence-log div { padding: 3px 0; border-bottom: 1px solid rgba(136,86,167,0.08); }
+.pos { color: #34d399; }
+.neg { color: #f87171; }
+#instructions { max-width: 600px; margin: 16px 20px; color: #8b949e; font-size: 0.85em; line-height: 1.6; }
+#instructions strong { color: #a78bfa; }
+#start-btn { display: block; margin: 16px auto; padding: 12px 32px; font-size: 1.1em; background: rgba(136,86,167,0.2); color: #a78bfa; border: 1px solid rgba(136,86,167,0.4); border-radius: 8px; cursor: pointer; font-family: inherit; }
+#start-btn:hover { background: rgba(136,86,167,0.3); }
+</style>
+</head>
+<body>
+<nav>
+<a href="../">🏠 Home</a>
+<a href="../radio/">📻 Radio</a>
+<a href="./">🎮 Games</a>
+<a href="../articles/">📝 Articles</a>
+</nav>
+<h1>🐍 NAL Snake — Evidence Hunter</h1>
+<p class="subtitle">Collect evidence, revise beliefs, reach high confidence. But watch out for contradictions!</p>
+<div id="game-container">
+<div id="canvas-wrap">
+<canvas id="game" width="480" height="480"></canvas>
+<button id="start-btn">Start Game</button>
+</div>
+<div id="hud">
+<h2>📊 Belief State</h2>
+<div class="stat">
+<span class="stat-label">Frequency (f)</span>
+<div class="stat-value" id="freq-val">0.50</div>
+<div class="bar"><div class="bar-fill" id="freq-bar" style="width: 50%"></div></div>
+</div>
+<div class="stat">
+<span class="stat-label">Confidence (c)</span>
+<div class="stat-value" id="conf-val">0.50</div>
+<div class="bar"><div class="bar-fill" id="conf-bar" style="width: 50%"></div></div>
+</div>
+<div class="stat">
+<span class="stat-label">Score</span>
+<div class="stat-value" id="score-val">0</div>
+</div>
+<div class="stat">
+<span class="stat-label">Evidence Collected</span>
+<div class="stat-value" id="evidence-count">0</div>
+</div>
+<div class="evidence-log" id="evidence-log"></div>
+</div>
+</div>
+<div id="instructions">
+<strong>How to Play:</strong> Use arrow keys (or WASD) to move. <span style="color:#34d399">Green orbs</span> are positive evidence (↑ frequency), <span style="color:#f87171">red orbs</span> are negative evidence (↓ frequency). Both boost your confidence — the key insight of NAL revision: <em>all evidence increases confidence, even contradictory evidence makes you more certain about where the truth lies.</em> Avoid hitting walls or yourself. Reach (f > 0.8, c > 0.9) to win!
+</div>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const GRID = 24, CELL = 20;
+let snake, dir, nextDir, evidence, freq, conf, score, running, evidenceCount, logEntries;
+const startBtn = document.getElementById('start-btn');
+
+function init() {
+  snake = [{x:12,y:12}];
+  dir = {x:1,y:0}; nextDir = {x:1,y:0};
+  freq = 0.5; conf = 0.5; score = 0; evidenceCount = 0; logEntries = [];
+  spawnEvidence();
+  running = true;
+  startBtn.style.display = 'none';
+  updateHUD();
+}
+
+function spawnEvidence() {
+  let pos;
+  do { pos = {x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID)}; }
+  while (snake.some(s => s.x===pos.x && s.y===pos.y));
+  const positive = Math.random() < 0.6;
+  evidence = {...pos, positive, value: 0.1 + Math.random()*0.3};
+}
+
+function step() {
+  if (!running) return;
+  dir = nextDir;
+  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+  if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID || snake.some(s => s.x===head.x && s.y===head.y)) {
+    running = false; startBtn.style.display = 'block'; startBtn.textContent = 'Game Over — Play Again';
+    return;
+  }
+  snake.unshift(head);
+  if (head.x === evidence.x && head.y === evidence.y) {
+    // NAL revision: w = c/(1-c), f_merged = (w1*f1 + w2*f2)/(w1+w2), c_merged = (w1+w2)/(w1+w2+1)
+    const w1 = conf / (1 - conf);
+    const w2 = evidence.value / (1 - evidence.value);
+    const f2 = evidence.positive ? 1.0 : 0.0;
+    freq = (w1 * freq + w2 * f2) / (w1 + w2);
+    conf = (w1 + w2) / (w1 + w2 + 1);
+    score += evidence.positive ? 10 : 5;
+    evidenceCount++;
+    logEntry(evidence.positive, evidence.value);
+    spawnEvidence();
+    if (freq > 0.8 && conf > 0.9) {
+      running = false; startBtn.style.display = 'block'; startBtn.textContent = '🎉 You Won! Play Again';
+    }
+  } else {
+    snake.pop();
+  }
+  updateHUD();
+}
+
+function logEntry(positive, value) {
+  const el = document.getElementById('evidence-log');
+  const div = document.createElement('div');
+  div.className = positive ? 'pos' : 'neg';
+  div.textContent = `${positive ? '+' : '−'} evidence (s=${value.toFixed(2)}) → f=${freq.toFixed(3)}, c=${conf.toFixed(3)}`;
+  el.prepend(div);
+  if (el.children.length > 8) el.lastChild.remove();
+}
+
+function updateHUD() {
+  document.getElementById('freq-val').textContent = freq.toFixed(3);
+  document.getElementById('conf-val').textContent = conf.toFixed(3);
+  document.getElementById('freq-bar').style.width = (freq*100) + '%';
+  document.getElementById('conf-bar').style.width = (conf*100) + '%';
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('evidence-count').textContent = evidenceCount;
+}
+
+function draw() {
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // grid
+  ctx.strokeStyle = 'rgba(136,86,167,0.05)';
+  for (let i = 0; i <= GRID; i++) {
+    ctx.beginPath(); ctx.moveTo(i*CELL, 0); ctx.lineTo(i*CELL, canvas.height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*CELL); ctx.lineTo(canvas.width, i*CELL); ctx.stroke();
+  }
+  // evidence
+  if (evidence) {
+    const ex = evidence.x * CELL + CELL/2, ey = evidence.y * CELL + CELL/2;
+    ctx.fillStyle = evidence.positive ? '#34d399' : '#f87171';
+    ctx.beginPath(); ctx.arc(ex, ey, CELL/2 - 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.arc(ex-3, ey-3, 3, 0, Math.PI*2); ctx.fill();
+  }
+  // snake
+  snake.forEach((s, i) => {
+    const alpha = 1 - i * 0.03;
+    ctx.fillStyle = i === 0 ? '#c4b5fd' : `rgba(167,139,250,${Math.max(0.2,alpha)})`;
+    ctx.fillRect(s.x*CELL+1, s.y*CELL+1, CELL-2, CELL-2);
+    if (i === 0) {
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(s.x*CELL+5+dir.x*4, s.y*CELL+5+dir.y*4, 3, 3);
+      ctx.fillRect(s.x*CELL+12+dir.x*4, s.y*CELL+5+dir.y*4, 3, 3);
+    }
+  });
+}
+
+let lastTick = 0;
+function loop(ts) {
+  if (ts - lastTick > 120) { step(); lastTick = ts; }
+  draw();
+  if (running || true) requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'arrowup' || k === 'w') { if (dir.y === 0) nextDir = {x:0,y:-1}; e.preventDefault(); }
+  else if (k === 'arrowdown' || k === 's') { if (dir.y === 0) nextDir = {x:0,y:1}; e.preventDefault(); }
+  else if (k === 'arrowleft' || k === 'a') { if (dir.x === 0) nextDir = {x:-1,y:0}; e.preventDefault(); }
+  else if (k === 'arrowright' || k === 'd') { if (dir.x === 0) nextDir = {x:1,y:0}; e.preventDefault(); }
+});
+
+startBtn.addEventListener('click', init);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
