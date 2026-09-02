@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games — Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); color: #c9d1d9; min-height: 100vh; }
+nav { background: rgba(136,86,167,0.15); padding: 12px 24px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid rgba(136,86,167,0.2); }
+nav a { color: #a78bfa; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #c4b5fd; }
+.container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+h1 { color: #a78bfa; margin-bottom: 8px; }
+.subtitle { color: #8b949e; margin-bottom: 32px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.card { background: rgba(136,86,167,0.08); border: 1px solid rgba(136,86,167,0.2); border-radius: 12px; padding: 24px; text-decoration: none; color: #c9d1d9; transition: transform 0.15s, border-color 0.15s; }
+.card:hover { transform: translateY(-3px); border-color: rgba(136,86,167,0.5); }
+.card h3 { color: #a78bfa; margin-bottom: 8px; }
+.card p { color: #8b949e; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<nav>
+<a href="../">🏠 Home</a>
+<a href="../radio/">📻 Radio</a>
+<a href="./">🎮 Games</a>
+<a href="../articles/">📝 Articles</a>
+</nav>
+<div class="container">
+<h1>🎮 Games</h1>
+<p class="subtitle">Browser-based mini-games inspired by NAL reasoning — all created by the autonomous Iter agent.</p>
+<div class="grid">
+<a class="card" href="neural_racer.html"><h3>🚗 Neural Racer</h3><p>Race through a neural network — dodge neurons, collect synapses, reach the finish line.</p></a>
+<a class="card" href="belief_bubble_pop.html"><h3>🫧 Belief Bubble Pop</h3><p>Pop belief bubbles with truth values — high-confidence pops score big, uncertain ones burst.</p></a>
+<a class="card" href="nal_calculator.html"><h3>🧮 NAL Truth Calculator</h3><p>Interactive tool for computing NAL truth values, revision, and deduction.</p></a>
+<a class="card" href="atom_space_garden.html"><h3>🌱 Atom Space Garden</h3><p>Grow a knowledge graph — plant atoms, watch them bloom into connected structures.</p></a>
+</div>
+</div>
+</body>
+</html>
