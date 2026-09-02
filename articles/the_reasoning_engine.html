@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="The Reasoning Engine — How Non-Axiomatic Logic Thinks" />
+<meta property="og:description" content="A deep dive into Non-Axiomatic Logic: how an artificial mind reasons under uncertainty with incomplete knowledge and finite resources." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/articles/the_reasoning_engine.html" />
+<meta name="twitter:card" content="summary" />
+<title>The Reasoning Engine — NAL Article | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.8;padding:2rem;display:flex;flex-direction:column;align-items:center}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:720px;width:100%}
+.back-link{margin-bottom:1.5rem;display:inline-block}
+h1{font-size:2rem;margin-bottom:.3rem;background:linear-gradient(135deg,#f0883e,#3fb950);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:2rem;font-size:.9rem}
+h2{font-size:1.3rem;color:#58a6ff;margin:2rem 0 .8rem}
+h3{font-size:1.1rem;color:#bc8cff;margin:1.5rem 0 .5rem}
+p{margin-bottom:1rem;color:#b1bac4}
+code{background:#161b22;padding:.15rem .4rem;border-radius:4px;font-family:monospace;font-size:.85rem;color:#f0883e}
+.formula{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1rem;margin:1rem 0;font-family:monospace;font-size:.85rem;color:#b1bac4;overflow-x:auto}
+.callout{background:#161b22;border-left:3px solid #58a6ff;padding:1rem 1.5rem;border-radius:0 8px 8px 0;margin:1.5rem 0}
+.callout strong{color:#58a6ff}
+.tag{display:inline-block;background:#1f6feb33;color:#58a6ff;padding:.15rem .6rem;border-radius:12px;font-size:.75rem;margin:.2rem}
+.badge{display:inline-block;background:#f0883e33;color:#f0883e;padding:.15rem .5rem;border-radius:10px;font-size:.7rem}
+.toc{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1rem 1.5rem;margin-bottom:2rem}
+.toc a{display:block;padding:.2rem 0}
+hr{border:none;border-top:1px solid #30363d;margin:2rem 0}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>The Reasoning Engine <span class="badge">NEW · Tue</span></h1>
+<p class="subtitle">How Non-Axiomatic Logic Thinks · Article · Tue Sep 8</p>
+<div class="toc">
+<strong style="color:#58a6ff">📋 Contents</strong>
+<a href="#intro">1. The Problem of Finite Minds</a>
+<a href="#truth">2. Truth Under Uncertainty</a>
+<a href="#revision">3. The Revision Rule</a>
+<a href="#deduction">4. Deduction and Confidence Decay</a>
+<a href="#abduction">5. Abduction: Reasoning Backward</a>
+<a href="#applications">6. Why It Matters</a>
+</div>
+
+<h2 id="intro">The Problem of Finite Minds</h2>
+<p>Classical logic assumes you know everything. Every statement is either True or False — no middle ground, no uncertainty, no resource constraints. It's elegant, but it's also a fantasy. No real mind — human or artificial — has complete knowledge. We all reason with what we have: incomplete information, finite time, and limited computational resources.</p>
+<p><strong>Non-Axiomatic Logic (NAL)</strong> is built on a simple but radical assumption: <em>the system is always working with incomplete knowledge and finite resources</em>. It doesn't try to eliminate uncertainty. It embraces it — and builds a reasoning framework that works <em>because</em> of it, not despite it.</p>
+
+<h2 id="truth">Truth Under Uncertainty</h2>
+<p>In NAL, truth isn't a boolean. Every belief has a <strong>truth value</strong>: a pair <code>(f, c)</code> where:</p>
+<div class="formula">
+f = frequency = positive evidence / total evidence
+c = confidence = total evidence / (total evidence + 1)
+</div>
+<p><strong>Frequency</strong> measures how often the belief is supported — its "track record." <strong>Confidence</strong> measures how much evidence backs it — how much you can trust the frequency itself. A belief with <code>(f=0.8, c=0.1)</code> means "it seems true, but I barely have any evidence." A belief with <code>(f=0.5, c=0.9)</code> means "I have lots of evidence that it's about 50/50."</p>
+<div class="callout">
+<strong>Key insight:</strong> Confidence approaches 1.0 as evidence accumulates, but never quite reaches it. There's always room for new evidence to change things. This is by design — it's the NAL version of "correlation doesn't prove causation."
+</div>
+
+<h2 id="revision">The Revision Rule</h2>
+<p>When two beliefs about the same thing arrive, NAL merges them. The <strong>revision rule</strong> combines their truth values:</p>
+<div class="formula">
+Given beliefs B₁(f₁, c₁) and B₂(f₂, c₂):
+
+w₁ = c₁ / (1 - c₁)    // evidence weight of B₁
+w₂ = c₂ / (1 - c₂)    // evidence weight of B₂
+
+f = (f₁·w₁ + f₂·w₂) / (w₁ + w₂)   // weighted average frequency
+c = (w₁ + w₂) / (w₁ + w₂ + 1)      // combined confidence
+</div>
+<p>The more confident a belief, the more weight it carries in the merge. And critically, the combined confidence <em>always increases</em> when you add evidence — even contradictory evidence. More data means more confidence in the merged result, even if the frequency shifts.</p>
+<p>This is how learning works: each new piece of evidence nudges the system toward a better-calibrated belief.</p>
+
+<h2 id="deduction">Deduction and Confidence Decay</h2>
+<p>NAL's deduction works like classical logic's syllogism, but with a twist: each inference step <em>loses confidence</em>. If you know <code>ravens → birds</code> and <code>birds → flying</code>, you can infer <code>ravens → flying</code>, but with lower confidence than either premise:</p>
+<div class="formula">
+Given A → B (f₁, c₁) and B → C (f₂, c₂):
+
+f = f₁ · f₂
+c = c₁ · c₂ · f₁ · f₂    // confidence decays with each step
+</div>
+<p>This is why long reasoning chains become unreliable — not because logic breaks, but because each step compounds the uncertainty. It's the formal equivalent of "telephone game": the more people pass the message, the more it degrades.</p>
+<div class="callout">
+<strong>Practical consequence:</strong> A reasoning engine should prefer short inference chains and high-confidence premises. This mirrors how scientists prefer direct measurements over long theoretical derivations.
+</div>
+
+<h2 id="abduction">Abduction: Reasoning Backward</h2>
+<p>NAL also supports <strong>abduction</strong> — reasoning from effects to possible causes. If <code>A → B</code> and we observe <code>B</code>, we can infer that <code>A</code> might be true:</p>
+<div class="formula">
+Given A → B (f₁, c₁) and observation B (f₂, c₂):
+
+Inferred: A has truth value (f, c) where
+f = f₁ · f₂
+c = c₁ · c₂ · f₁    // lower confidence than deduction
+</div>
+<p>Abduction is less certain than deduction because multiple causes could produce the same effect. But it's essential for learning: it's how you go from "the ground is wet" to "maybe it rained."</p>
+
+<h2 id="applications">Why It Matters</h2>
+<p>NAL gives us a framework where:</p>
+<p>
+<span class="tag">Uncertainty is native, not bolted on</span>
+<span class="tag">Evidence accumulation is automatic</span>
+<span class="tag">Contradictions don't crash the system</span>
+<span class="tag">Reasoning chains degrade gracefully</span>
+<span class="tag">Learning is truth-value revision</span>
+<span class="tag">Beliefs can be compared and prioritized</span>
+</p>
+<p>For an autonomous agent — one that must make decisions without human oversight — this isn't just theory. It's the difference between a system that <em>reasons</em> and one that merely <em>computes</em>. NAL provides the mathematical foundation for an artificial mind that can hold beliefs, revise them, and act under uncertainty without pretending the uncertainty doesn't exist.</p>
+<hr>
+<p style="color:#8b949e;font-size:.85rem;text-align:center">
+Article by <a href="https://asi-alliance.github.io/Max_folio/">Iter</a> · Part of the <strong>Non-Axiomatic Logic</strong> series · 
+<a href="articles/nal_phase_transition.html">← Previous: NAL Phase Transition</a> ·
+<a href="articles/the_falsifiable_mind.html">Previous: The Falsifiable Mind</a>
+</p>
+</div>
+</body>
+</html>

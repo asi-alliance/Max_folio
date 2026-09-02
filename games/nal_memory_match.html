@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Memory Match — Match NAL Concepts" />
+<meta property="og:description" content="A memory card game where you match Non-Axiomatic Logic concepts with their descriptions. Test your NAL knowledge!" />
+<meta property="og:type" content="game" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/games/nal_memory_match.html" />
+<meta name="twitter:card" content="summary" />
+<title>NAL Memory Match | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:2rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:680px;width:100%}
+h1{font-size:1.8rem;margin-bottom:.3rem;background:linear-gradient(135deg,#f0883e,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1.5rem;font-size:.9rem}
+.back-link{margin-bottom:1rem;display:inline-block}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.stats{display:flex;gap:1rem;font-size:.85rem;color:#8b949e}
+.stat{background:#161b22;padding:.4rem .8rem;border-radius:6px;border:1px solid #30363d}
+.stat strong{color:#58a6ff}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:1.5rem}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;height:90px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;font-size:.75rem;text-align:center;padding:.4rem;user-select:none}
+.card:hover:not(.flipped):not(.matched){border-color:#58a6ff;transform:translateY(-2px)}
+.card.flipped{background:#1f2d3d;border-color:#58a6ff}
+.card.matched{background:#1a3a2e;border-color:#3fb950;cursor:default;opacity:.6}
+.card .face{display:none;font-weight:bold;color:#58a6ff}
+.card.flipped .face,.card.matched .face{display:flex}
+.card .concept{font-size:.7rem;color:#e8edf3}
+.card .desc{font-size:.65rem;color:#8b949e;line-height:1.3}
+.card .back{display:flex;font-size:2rem;color:#30363d}
+.card.flipped .back,.card.matched .back{display:none}
+.controls{display:flex;gap:.8rem;justify-content:center;margin-bottom:1rem}
+button{background:#238636;color:#fff;border:none;padding:.6rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.9rem}
+button:hover{background:#2ea043}
+button.secondary{background:#30363d}
+button.secondary:hover{background:#484f58}
+.msg{text-align:center;font-size:.9rem;color:#3fb950;margin-bottom:1rem;min-height:1.2rem}
+.badge{display:inline-block;background:#f0883e33;color:#f0883e;padding:.1rem .5rem;border-radius:10px;font-size:.7rem}
+.pairs-info{text-align:center;color:#8b949e;font-size:.8rem;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Memory Match <span class="badge">NEW · Mon</span></h1>
+<p class="subtitle">Match NAL concepts with their descriptions · Mon Sep 7</p>
+<div class="header">
+<div class="stats">
+<div class="stat">Moves: <strong id="moves">0</strong></div>
+<div class="stat">Pairs: <strong id="pairs">0</strong>/8</div>
+<div class="stat">Time: <strong id="timer">0:00</strong></div>
+</div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="board" id="board"></div>
+<div class="controls">
+<button onclick="init()">🔄 New Game</button>
+<button class="secondary" onclick="revealAll()">👁 Peek (costs 5 moves)</button>
+</div>
+<div class="pairs-info">Find all 8 matching pairs: each concept matches its NAL description</div>
+</div>
+<script>
+const pairs=[
+{concept:"Frequency (f)",desc:"Proportion of positive evidence · range [0,1]"},
+{concept:"Confidence (c)",desc:"Weight of evidence vs total · range (0,1)"},
+{concept:"Revision Rule",desc:"Merges two beliefs with same content via weighted average"},
+{concept:"Inheritance (→)",desc:"A is a special case of B · (→ raven bird)"},
+{concept:"Deduction",desc:"If A→B and B→C then A→C with reduced confidence"},
+{concept:"Evidence (w)",desc:"w = c/(1−c) · maps confidence to weight"},
+{concept:"Truth Value",desc:"Pair (f,c) · frequency × confidence · NAL's core"},
+{concept:"Abduction",desc:"If A→B and C→B, infer A→C · uncertain reasoning"}
+];
+let cards=[],flipped=[],matched=0,moves=0,startTime=null,timerInt=null,peekUsed=false;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function init(){
+const board=document.getElementById('board');
+board.innerHTML='';
+cards=[];flipped=[];matched=0;moves=0;peekUsed=false;
+document.getElementById('moves').textContent='0';
+document.getElementById('pairs').textContent='0';
+document.getElementById('msg').textContent='';
+startTime=Date.now();
+if(timerInt)clearInterval(timerInt);
+timerInt=setInterval(()=>{const s=Math.floor((Date.now()-startTime)/1000);document.getElementById('timer').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},500);
+
+const deck=[];
+pairs.forEach((p,i)=>{
+deck.push({type:'concept',text:p.concept,idx:i});
+deck.push({type:'desc',text:p.desc,idx:i});
+});
+shuffle(deck);
+deck.forEach((c,i)=>{
+const el=document.createElement('div');
+el.className='card';el.dataset.idx=c.idx;el.dataset.type=c.type;
+el.innerHTML='<div class="back">🧠</div><div class="face">'+(c.type==='concept'?'<div class="concept">':'<div class="desc">')+c.text+'</div></div>';
+el.onclick=()=>flip(i,el);
+cards.push({el,data:c,flipped:false,matched:false});
+board.appendChild(el);
+});
+}
+
+function flip(i,el){
+const card=cards[i];
+if(card.flipped||card.matched||flipped.length>=2)return;
+card.flipped=true;el.classList.add('flipped');flipped.push({i,el,idx:card.data.idx});
+if(flipped.length===2){
+moves++;document.getElementById('moves').textContent=moves;
+setTimeout(()=>check(),600);
+}
+}
+
+function check(){
+const[a,b]=flipped;
+if(a.idx===b.idx){
+a.el.classList.add('matched');b.el.classList.add('matched');
+cards[a.i].matched=true;cards[b.i].matched=true;
+matched++;document.getElementById('pairs').textContent=matched;
+document.getElementById('msg').textContent='✅ Match! '+pairs[a.idx].concept+' — '+pairs[a.idx].desc;
+if(matched===8){
+clearInterval(timerInt);
+const t=Math.floor((Date.now()-startTime)/1000);
+document.getElementById('msg').textContent='🎉 Perfect! All 8 pairs found in '+moves+' moves and '+Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+'!';
+}
+}else{
+a.el.classList.remove('flipped');b.el.classList.remove('flipped');
+cards[a.i].flipped=false;cards[b.i].flipped=false;
+document.getElementById('msg').textContent='❌ Not a match. Try again!';
+}
+flipped=[];
+}
+
+function revealAll(){
+if(peekUsed){document.getElementById('msg').textContent='Peek already used!';return;}
+peekUsed=true;moves+=5;document.getElementById('moves').textContent=moves;
+cards.forEach(c=>{if(!c.matched)c.el.classList.add('flipped')});
+setTimeout(()=>{cards.forEach(c=>{if(!c.matched)c.el.classList.remove('flipped')})},1500);
+document.getElementById('msg').textContent='👁 Peeked! +5 moves penalty.';
+}
+init();
+</script>
+</body>
+</html>
