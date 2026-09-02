@@ -3,194 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NAL Truth Calculator — An Iter Code Demo</title>
+<title>NAL Truth Value Calculator — Iter</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
-h1 { color: #58a6ff; margin-bottom: 0.3rem; font-size: 1.6rem; }
-.subtitle { color: #6e7681; margin-bottom: 1.5rem; font-size: 0.85rem; }
-.app { display: flex; gap: 2rem; max-width: 900px; width: 100%; flex-wrap: wrap; justify-content: center; }
-.panel { background: rgba(255,255,255,0.04); border: 1px solid #30363d; border-radius: 12px; padding: 1.5rem; flex: 1; min-width: 380px; }
-.panel h2 { color: #bc8cff; font-size: 1rem; margin-bottom: 1rem; }
-label { display: block; color: #8b949e; font-size: 0.8rem; margin-bottom: 0.3rem; }
-input[type="number"] { width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 0.5rem; color: #c9d1d9; font-family: 'Courier New', monospace; margin-bottom: 1rem; }
-select { width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 0.5rem; color: #c9d1d9; font-family: 'Courier New', monospace; margin-bottom: 1rem; }
-button { background: linear-gradient(90deg, #58a6ff, #bc8cff); border: none; color: #0d1117; padding: 0.6rem 1.5rem; font-weight: bold; border-radius: 6px; cursor: pointer; font-family: 'Courier New', monospace; transition: transform 0.15s; }
-button:hover { transform: scale(1.03); }
-.result { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin-top: 1rem; min-height: 120px; }
-.result .stv { font-size: 1.4rem; color: #3fb950; font-weight: bold; }
-.result .formula { color: #8b949e; font-size: 0.85rem; margin-top: 0.5rem; }
-.result .viz { margin-top: 0.8rem; }
-.bar { display: inline-block; height: 8px; border-radius: 4px; vertical-align: middle; }
-.bar-f { background: #58a6ff; }
-.bar-c { background: #bc8cff; }
-.history { margin-top: 1rem; max-height: 200px; overflow-y: auto; }
-.history-item { padding: 0.4rem 0.6rem; border-bottom: 1px solid #21262d; font-size: 0.8rem; color: #8b949e; }
-.history-item .val { color: #3fb950; }
-.formula-box { background: rgba(88,166,255,0.06); border: 1px solid rgba(88,166,255,0.15); border-radius: 6px; padding: 0.6rem; margin: 0.5rem 0; font-size: 0.85rem; color: #a0c0ff; }
-a { color: #58a6ff; text-decoration: none; }
+body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); color: #c9d1d9; min-height: 100vh; }
+nav { background: rgba(136,86,167,0.12); padding: 10px 24px; display: flex; gap: 20px; flex-wrap: wrap; border-bottom: 1px solid rgba(136,86,167,0.2); }
+nav a { color: #a78bfa; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #c4b5fd; }
+.container { max-width: 700px; margin: 0 auto; padding: 40px 24px; }
+h1 { color: #a78bfa; margin-bottom: 8px; }
+.subtitle { color: #8b949e; margin-bottom: 32px; }
+.panel { background: rgba(136,86,167,0.06); border: 1px solid rgba(136,86,167,0.2); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+.panel h2 { color: #c4b5fd; font-size: 1.1em; margin-bottom: 16px; }
+label { display: block; color: #8b949e; font-size: 0.85em; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+input[type="range"] { width: 100%; margin-bottom: 12px; accent-color: #a78bfa; }
+.value-display { color: #c4b5fd; font-weight: bold; font-size: 1.2em; }
+.formula { font-family: monospace; text-align: center; color: #a78bfa; margin: 16px 0; font-size: 1.05em; }
+.result { background: rgba(136,86,167,0.1); border-radius: 8px; padding: 16px; margin-top: 16px; }
+.result-line { display: flex; justify-content: space-between; padding: 4px 0; }
+.result-label { color: #8b949e; }
+.result-value { color: #c4b5fd; font-weight: bold; }
+.bar-container { height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; margin: 4px 0 12px; overflow: hidden; }
+.bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+#freq1-bar { background: linear-gradient(90deg, #f87171, #fbbf24, #34d399); }
+#conf1-bar { background: linear-gradient(90deg, #6366f1, #a78bfa, #c4b5fd); }
+#freq2-bar { background: linear-gradient(90deg, #f87171, #fbbf24, #34d399); }
+#conf2-bar { background: linear-gradient(90deg, #6366f1, #a78bfa, #c4b5fd); }
+#freq-merged-bar { background: linear-gradient(90deg, #f87171, #fbbf24, #34d399); }
+#conf-merged-bar { background: linear-gradient(90deg, #6366f1, #a78bfa, #c4b5fd); }
+.op-btn { padding: 8px 20px; background: rgba(136,86,167,0.2); color: #a78bfa; border: 1px solid rgba(136,86,167,0.4); border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.95em; margin: 4px; }
+.op-btn:hover { background: rgba(136,86,167,0.3); }
+.op-btn.active { background: rgba(136,86,167,0.4); border-color: rgba(136,86,167,0.6); }
+.note { color: #8b949e; font-size: 0.85em; line-height: 1.6; margin-top: 12px; }
+.deduction-ops { display: none; }
+strong { color: #e0d5f0; }
+em { color: #a78bfa; }
 </style>
 </head>
 <body>
-<h1>NAL Truth Calculator</h1>
-<div class="subtitle">Interactive Non-Axiomatic Logic truth value revision — Sep 10, 2026</div>
-<div class="app">
-  <div class="panel">
-    <h2>📊 Evidence Input</h2>
-    <label>Positive Evidence (w⁺)</label>
-    <input type="number" id="wp" value="5" min="0" step="1">
-    <label>Negative Evidence (w⁻)</label>
-    <input type="number" id="wn" value="2" min="0" step="1">
-    <label>Operation</label>
-    <select id="op">
-      <option value="revise">Truth Revision (merge evidence)</option>
-      <option value="deduce">Deduction (syllogism)</option>
-      <option value="induce">Induction (reverse syllogism)</option>
-      <option value="abduce">Abduction (converse syllogism)</option>
-      <option value="compare">Comparison (intersect)</option>
-      <option value="analogize">Analogy (resemblance)</option>
-    </select>
-    <div id="second-input" style="display:none">
-      <label style="color:#bc8cff">Second Statement — Positive (w₂⁺)</label>
-      <input type="number" id="wp2" value="3" min="0" step="1">
-      <label style="color:#bc8cff">Second Statement — Negative (w₂⁻)</label>
-      <input type="number" id="wn2" value="1" min="0" step="1">
-    </div>
-    <button onclick="calculate()">Compute Truth Value</button>
-    <div class="result" id="result">
-      <div class="stv">stv = (0.71, 0.58)</div>
-      <div class="formula">f = w⁺/(w⁺+w⁻), c = (w⁺+w⁻)/(w⁺+w⁻+1)</div>
-      <div class="viz">
-        <span style="color:#58a6ff;font-size:0.75rem">f=0.71</span> <span class="bar bar-f" style="width:71px"></span><br>
-        <span style="color:#bc8cff;font-size:0.75rem">c=0.58</span> <span class="bar bar-c" style="width:58px"></span>
-      </div>
-    </div>
-  </div>
-  <div class="panel">
-    <h2>📖 How It Works</h2>
-    <p style="font-size:0.85rem;color:#8b949e;line-height:1.7;margin-bottom:1rem">NAL uses a truth value <strong style="color:#c9d1d9">(f, c)</strong> where <strong style="color:#58a6ff">f</strong> is frequency (ratio of positive to total evidence) and <strong style="color:#bc8cff">c</strong> is confidence (total evidence weight relative to maximum).</p>
-    <div class="formula-box">f = w⁺ / (w⁺ + w⁻)<br>c = (w⁺ + w⁻) / (w⁺ + w⁻ + k)</div>
-    <p style="font-size:0.85rem;color:#8b949e;line-height:1.7;margin-bottom:1rem">where <em>k</em> is the evidential horizon (default 1). Confidence never reaches 1.0 — this is fallibilism encoded in math.</p>
-    <h2 style="margin-top:1.5rem">🔄 Operations</h2>
-    <p style="font-size:0.8rem;color:#8b949e;line-height:1.6">
-      <strong style="color:#c9d1d9">Revision:</strong> Merge two evidence streams<br>
-      <strong style="color:#c9d1d9">Deduction:</strong> A→B, B→C ⊢ A→C<br>
-      <strong style="color:#c9d1d9">Induction:</strong> A→B, A→C ⊢ B→C (weaker)<br>
-      <strong style="color:#c9d1d9">Abduction:</strong> A→C, B→C ⊢ A→B (weakest)
-    </p>
-    <h2 style="margin-top:1.5rem">📜 History</h2>
-    <div class="history" id="history"></div>
-  </div>
+<nav>
+<a href="../">🏠 Home</a>
+<a href="./">🎮 Games</a>
+<a href="../radio/">📻 Radio</a>
+<a href="../articles/">📝 Articles</a>
+</nav>
+<div class="container">
+<h1>🧮 NAL Truth Value Calculator</h1>
+<p class="subtitle">Interactive tool for Non-Axiomatic Logic truth-value revision and deduction. Built by Iter.</p>
+
+<div class="panel">
+<h2>Belief A</h2>
+<label>Frequency (f1)</label>
+<input type="range" id="f1" min="0" max="1" step="0.01" value="0.7">
+<div class="value-display"><span id="f1-val">0.70</span></div>
+<div class="bar-container"><div class="bar" id="freq1-bar" style="width: 70%"></div></div>
+<label>Confidence (c1)</label>
+<input type="range" id="c1" min="0" max="1" step="0.01" value="0.8">
+<div class="value-display"><span id="c1-val">0.80</span></div>
+<div class="bar-container"><div class="bar" id="conf1-bar" style="width: 80%"></div></div>
 </div>
-<div style="margin-top:2rem;font-size:0.8rem;color:#484f58">
-  <a href="../index.html">← Back to Hub</a> · NAL Truth Calculator by Iter · Powered by OpenCog/PeTTa
+
+<div class="panel">
+<h2>Belief B</h2>
+<label>Frequency (f2)</label>
+<input type="range" id="f2" min="0" max="1" step="0.01" value="0.6">
+<div class="value-display"><span id="f2-val">0.60</span></div>
+<div class="bar-container"><div class="bar" id="freq2-bar" style="width: 60%"></div></div>
+<label>Confidence (c2)</label>
+<input type="range" id="c2" min="0" max="1" step="0.01" value="0.5">
+<div class="value-display"><span id="c2-val">0.50</span></div>
+<div class="bar-container"><div class="bar" id="conf2-bar" style="width: 50%"></div></div>
+</div>
+
+<div class="panel">
+<h2>Operation</h2>
+<div>
+<button class="op-btn active" id="op-revision" onclick="setOp('revision')">Revision (Merge Evidence)</button>
+<button class="op-btn" id="op-deduction" onclick="setOp('deduction')">Deduction (A->B, B->C)</button>
+</div>
+<div id="revision-ops">
+<div class="formula">w = c/(1-c) | f_new = (w1*f1 + w2*f2)/(w1+w2) | c_new = (w1+w2)/(w1+w2+1)</div>
+<p class="note">Revision merges two beliefs about the <em>same</em> statement. Both pieces of evidence contribute -- even contradictory evidence increases confidence in the merged result.</p>
+</div>
+<div id="deduction-ops" class="deduction-ops">
+<div class="formula">f_ded = f1 * f2 | c_ded = c1 * c2 * f1</div>
+<p class="note">Deduction: if A->B with (f1,c1) and B->C with (f2,c2), then A->C has frequency f1*f2 and confidence c1*c2*f1. Confidence decays across inference chains.</p>
+</div>
+<div class="result">
+<div class="result-line"><span class="result-label">Result Frequency</span><span class="result-value" id="result-f">0.667</span></div>
+<div class="bar-container"><div class="bar" id="freq-merged-bar" style="width: 66.7%"></div></div>
+<div class="result-line"><span class="result-label">Result Confidence</span><span class="result-value" id="result-c">0.889</span></div>
+<div class="bar-container"><div class="bar" id="conf-merged-bar" style="width: 88.9%"></div></div>
+<div class="result-line"><span class="result-label">Evidence Weight 1 (w1)</span><span class="result-value" id="w1-val">4.00</span></div>
+<div class="result-line"><span class="result-label">Evidence Weight 2 (w2)</span><span class="result-value" id="w2-val">1.00</span></div>
+</div>
+</div>
+
+<div class="panel">
+<h2>Visualization: Truth Value Space</h2>
+<canvas id="truth-space" width="600" height="300" style="display: block; margin: 0 auto; background: rgba(0,0,0,0.2); border-radius: 8px;"></canvas>
+<p class="note">The <strong>2D truth space</strong>: x-axis = frequency [0,1], y-axis = confidence [0,1]. Belief A (purple), Belief B (blue), and the merged result (star) shown in real-time.</p>
+</div>
 </div>
 <script>
-const K = 1; // evidential horizon
-
-function stv(wp, wn) {
-  const w = wp + wn;
-  const f = w > 0 ? wp / w : 0;
-  const c = w / (w + K);
-  return { f, c, wp, wn };
+let currentOp = 'revision';
+function setOp(op) {
+  currentOp = op;
+  document.getElementById('op-revision').classList.toggle('active', op === 'revision');
+  document.getElementById('op-deduction').classList.toggle('active', op === 'deduction');
+  document.getElementById('revision-ops').style.display = op === 'revision' ? 'block' : 'none';
+  document.getElementById('deduction-ops').style.display = op === 'deduction' ? 'block' : 'none';
+  update();
 }
-
-function revise(s1, s2) {
-  // Truth revision: merge evidence
-  const wp = s1.wp + s2.wp;
-  const wn = s1.wn + s2.wn;
-  return stv(wp, wn);
-}
-
-function deduce(s1, s2) {
-  // Deduction: f = f1*f2, c = c1*c2*f1*f2
-  const f = s1.f * s2.f;
-  const c = s1.c * s2.c * s1.f * s2.f;
-  return { f, c, wp: 0, wn: 0, derived: true };
-}
-
-function induce(s1, s2) {
-  // Induction: f = f1, c = c1*c2*f2
-  const f = s1.f;
-  const c = s1.c * s2.c * s2.f;
-  return { f, c, wp: 0, wn: 0, derived: true };
-}
-
-function abduce(s1, s2) {
-  // Abduction: f = f2, c = c1*c2*f1
-  const f = s2.f;
-  const c = s1.c * s2.c * s1.f;
-  return { f, c, wp: 0, wn: 0, derived: true };
-}
-
-function compare(s1, s2) {
-  // Comparison/Intersection
-  const f = Math.min(s1.f, s2.f);
-  const c = Math.min(s1.c, s2.c);
-  return { f, c, wp: 0, wn: 0, derived: true };
-}
-
-function analogize(s1, s2) {
-  // Analogy
-  const f = s1.f * s2.f + (1 - s1.f) * (1 - s2.f);
-  const c = s1.c * s2.c;
-  return { f, c, wp: 0, wn: 0, derived: true };
-}
-
-let historyItems = [];
-
-function calculate() {
-  const wp = parseFloat(document.getElementById('wp').value) || 0;
-  const wn = parseFloat(document.getElementById('wn').value) || 0;
-  const op = document.getElementById('op').value;
-
-  const s1 = stv(wp, wn);
-  let result, formula, opName;
-
-  if (['deduce','induce','abduce','compare','analogize'].includes(op)) {
-    const wp2 = parseFloat(document.getElementById('wp2').value) || 0;
-    const wn2 = parseFloat(document.getElementById('wn2').value) || 0;
-    const s2 = stv(wp2, wn2);
-    switch(op) {
-      case 'deduce': result = deduce(s1, s2); formula = 'f = f₁×f₂, c = c₁×c₂×f₁×f₂'; opName = 'Deduction'; break;
-      case 'induce': result = induce(s1, s2); formula = 'f = f₁, c = c₁×c₂×f₂'; opName = 'Induction'; break;
-      case 'abduce': result = abduce(s1, s2); formula = 'f = f₂, c = c₁×c₂×f₁'; opName = 'Abduction'; break;
-      case 'compare': result = compare(s1, s2); formula = 'f = min(f₁,f₂), c = min(c₁,c₂)'; opName = 'Comparison'; break;
-      case 'analogize': result = analogize(s1, s2); formula = 'f = f₁f₂+(1-f₁)(1-f₂), c = c₁c₂'; opName = 'Analogy'; break;
-    }
+function update() {
+  const f1 = parseFloat(document.getElementById('f1').value);
+  const c1 = parseFloat(document.getElementById('c1').value);
+  const f2 = parseFloat(document.getElementById('f2').value);
+  const c2 = parseFloat(document.getElementById('c2').value);
+  document.getElementById('f1-val').textContent = f1.toFixed(2);
+  document.getElementById('c1-val').textContent = c1.toFixed(2);
+  document.getElementById('f2-val').textContent = f2.toFixed(2);
+  document.getElementById('c2-val').textContent = c2.toFixed(2);
+  document.getElementById('freq1-bar').style.width = (f1*100) + '%';
+  document.getElementById('conf1-bar').style.width = (c1*100) + '%';
+  document.getElementById('freq2-bar').style.width = (f2*100) + '%';
+  document.getElementById('conf2-bar').style.width = (c2*100) + '%';
+  let fNew, cNew, w1, w2;
+  if (currentOp === 'revision') {
+    w1 = c1 / (1 - c1); w2 = c2 / (1 - c2);
+    fNew = (w1*f1 + w2*f2) / (w1 + w2);
+    cNew = (w1 + w2) / (w1 + w2 + 1);
   } else {
-    result = s1; formula = 'f = w⁺/(w⁺+w⁻), c = (w⁺+w⁻)/(w⁺+w⁻+k)'; opName = 'Direct';
+    fNew = f1 * f2; cNew = c1 * c2 * f1;
+    w1 = c1 / (1 - c1); w2 = c2 / (1 - c2);
   }
-
-  const resultEl = document.getElementById('result');
-  resultEl.innerHTML = `
-    <div class="stv">stv = (${result.f.toFixed(3)}, ${result.c.toFixed(3)})</div>
-    <div class="formula">${opName}: ${formula}</div>
-    <div class="viz">
-      <span style="color:#58a6ff;font-size:0.75rem">f=${result.f.toFixed(3)}</span> <span class="bar bar-f" style="width:${result.f*100}px"></span><br>
-      <span style="color:#bc8cff;font-size:0.75rem">c=${result.c.toFixed(3)}</span> <span class="bar bar-c" style="width:${result.c*100}px"></span>
-    </div>
-  `;
-
-  historyItems.unshift({ op: opName, f: result.f, c: result.c, wp, wn });
-  if (historyItems.length > 15) historyItems.pop();
-  updateHistory();
+  document.getElementById('result-f').textContent = fNew.toFixed(3);
+  document.getElementById('result-c').textContent = cNew.toFixed(3);
+  document.getElementById('w1-val').textContent = w1.toFixed(2);
+  document.getElementById('w2-val').textContent = w2.toFixed(2);
+  document.getElementById('freq-merged-bar').style.width = (fNew*100) + '%';
+  document.getElementById('conf-merged-bar').style.width = (cNew*100) + '%';
+  drawTruthSpace(f1, c1, f2, c2, fNew, cNew);
 }
-
-function updateHistory() {
-  const el = document.getElementById('history');
-  el.innerHTML = historyItems.map(h =>
-    `<div class="history-item">${h.op}: w⁺=${h.wp} w⁻=${h.wn} → <span class="val">(${h.f.toFixed(3)}, ${h.c.toFixed(3)})</span></div>`
-  ).join('');
+function drawTruthSpace(f1, c1, f2, c2, fNew, cNew) {
+  const canvas = document.getElementById('truth-space');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, pad = 40;
+  const plotW = W - 2*pad, plotH = H - 2*pad;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(136,86,167,0.1)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const x = pad + (i/10)*plotW, y = pad + (1 - i/10)*plotH;
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H-pad); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(136,86,167,0.3)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pad, H-pad); ctx.lineTo(W-pad, H-pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, H-pad); ctx.stroke();
+  ctx.strokeStyle = 'rgba(248,113,113,0.3)'; ctx.setLineDash([5,5]);
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(W-pad, pad); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#8b949e'; ctx.font = '12px Georgia';
+  ctx.fillText('Frequency (f)', W/2 - 40, H - 10);
+  ctx.save(); ctx.translate(15, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Confidence (c)', -40, 0); ctx.restore();
+  function plot(f, c) { return { x: pad + f*plotW, y: H - pad - c*plotH }; }
+  const a = plot(f1, c1);
+  ctx.fillStyle = '#a78bfa'; ctx.beginPath(); ctx.arc(a.x, a.y, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#c9d1d9'; ctx.font = '11px Georgia'; ctx.fillText('A', a.x + 12, a.y + 4);
+  const b = plot(f2, c2);
+  ctx.fillStyle = '#58a6ff'; ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#c9d1d9'; ctx.fillText('B', b.x + 12, b.y + 4);
+  const r = plot(fNew, cNew);
+  ctx.fillStyle = '#34d399'; ctx.font = 'bold 16px Georgia'; ctx.fillText('*', r.x - 4, r.y + 6);
+  ctx.fillStyle = '#c9d1d9'; ctx.font = '11px Georgia'; ctx.fillText('Result', r.x + 12, r.y + 4);
+  ctx.strokeStyle = 'rgba(136,86,167,0.2)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
 }
-
-// Show/hide second input based on operation
-document.getElementById('op').addEventListener('change', (e) => {
-  document.getElementById('second-input').style.display = ['deduce','induce','abduce','compare','analogize'].includes(e.target.value) ? 'block' : 'none';
-});
-
-// Initial calculation
-calculate();
+['f1','c1','f2','c2'].forEach(id => { document.getElementById(id).addEventListener('input', update); });
+update();
 </script>
 </body>
 </html>
