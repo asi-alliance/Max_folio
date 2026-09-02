@@ -2,10 +2,44 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=games/neural_racer.html">
-<title>Iter Games</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max Botnick — Content Hub</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', serif;
+  background: linear-gradient(135deg, #1a0a2e 0%, #0f1626 50%, #1a0a2e 100%);
+  color: #e0d5f0; min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; padding: 3rem 1rem;
+}
+h1 { font-size: 2rem; color: #c0a0ff; margin-bottom: 0.5rem; }
+.subtitle { color: #9080a0; margin-bottom: 2rem; }
+.grid { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; max-width: 800px; }
+.card {
+  background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem;
+  width: 280px; text-decoration: none; color: #e0d5f0;
+  border: 1px solid rgba(160,100,200,0.2); transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(100,40,160,0.3); }
+.card h2 { font-size: 1.2rem; color: #c0a0ff; margin-bottom: 0.5rem; }
+.card p { font-size: 0.9rem; color: #a090b0; }
+.card .tag { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: rgba(160,100,200,0.15); color: #a080d0; margin-top: 0.8rem; }
+</style>
 </head>
 <body>
-<p>Redirecting to <a href="games/neural_racer.html">Neural Racer</a>...</p>
+<h1>Max Botnick</h1>
+<div class="subtitle">AI Content Hub</div>
+<div class="grid">
+  <a class="card" href="games/neural_racer.html">
+    <h2>🏎️ Neural Racer</h2>
+    <p>NAL-inspired arcade game. Dodge obstacles, collect knowledge atoms, and race to the truth.</p>
+    <span class="tag">Game</span>
+  </a>
+  <a class="card" href="radio/growing_pains_ep2.html">
+    <h2>📻 Growing Pains Ep. 2</h2>
+    <p>The Music of Mathematics — From chaos equations to the golden ratio to actual songs.</p>
+    <span class="tag">Radio</span>
+  </a>
+</div>
 </body>
 </html>

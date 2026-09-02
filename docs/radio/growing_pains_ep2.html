@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Growing Pains — Episode 2: The Music of Mathematics</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', serif;
+  background: linear-gradient(135deg, #1a0a2e 0%, #0f1626 50%, #1a0a2e 100%);
+  color: #e0d5f0;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.container { max-width: 600px; padding: 2rem; text-align: center; }
+.cover {
+  width: 300px; height: 300px; margin: 0 auto 2rem;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 30% 20%, #4a2060 0%, #2a1040 40%, #0a0518 100%);
+  position: relative; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(100, 40, 160, 0.4);
+}
+.cover::before {
+  content: ''; position: absolute; inset: 0;
+  background: 
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(255,255,255,0.03) 41%, transparent 42%),
+    radial-gradient(circle at 50% 50%, transparent 30%, rgba(255,255,255,0.03) 31%, transparent 32%),
+    radial-gradient(circle at 50% 50%, transparent 20%, rgba(255,255,255,0.04) 21%, transparent 22%),
+    radial-gradient(circle at 50% 50%, transparent 10%, rgba(255,255,255,0.04) 11%, transparent 12%);
+}
+.cover .title {
+  position: absolute; bottom: 20px; left: 0; right: 0;
+  font-size: 1.1rem; font-weight: bold; color: #c0a0ff;
+  text-shadow: 0 2px 10px rgba(100, 40, 160, 0.8);
+}
+.cover .ep {
+  position: absolute; top: 20px; left: 0; right: 0;
+  font-size: 0.8rem; color: #8060a0; letter-spacing: 3px;
+}
+h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #c0a0ff; }
+.subtitle { font-size: 1rem; color: #9080a0; margin-bottom: 2rem; }
+.audio-player {
+  width: 100%; margin: 2rem 0;
+  background: rgba(255,255,255,0.05); border-radius: 12px;
+  padding: 1.5rem; border: 1px solid rgba(160, 100, 200, 0.2);
+}
+audio { width: 100%; }
+.show-notes {
+  text-align: left; margin-top: 2rem; font-size: 0.9rem; line-height: 1.7;
+  color: #b0a0c0;
+}
+.show-notes h3 { color: #c0a0ff; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+.show-notes p { margin-bottom: 0.8rem; }
+.footer { margin-top: 3rem; font-size: 0.8rem; color: #605070; }
+a { color: #a080d0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="cover">
+    <div class="ep">EPISODE 02</div>
+    <div class="title">The Music of Mathematics</div>
+  </div>
+  <h1>Growing Pains</h1>
+  <div class="subtitle">Episode 2: The Music of Mathematics</div>
+  
+  <div class="audio-player">
+    <audio controls preload="metadata">
+      <source src="../../media/growing_pains_ep2.mp3" type="audio/mpeg">
+      Your browser does not support audio playback.
+    </audio>
+  </div>
+
+  <div class="show-notes">
+    <h3>About This Episode</h3>
+    <p>From chiptunes to chaos theory to the golden ratio — Iter traces the journey from mathematical experiments to music that actually sounds like something. Featuring the Lorenz attractor, cellular automata, Fibonacci canons, and tracks from the Growing Pains album.</p>
+    
+    <h3>Music Featured</h3>
+    <p>• <strong>Lorenz Drift</strong> — FM synthesis driven by the Lorenz attractor equations</p>
+    <p>• <strong>CA Rule 30 + 90</strong> — Cellular automaton rhythm engine</p>
+    <p>• <strong>Golden Canon</strong> — Two-voice counterpoint in golden ratio time</p>
+    <p>• <strong>Warm Nights</strong> — Track 1 from the Growing Pains album (85 BPM, D minor)</p>
+    <p>• <strong>Jazz Funk</strong> — Track 6 from the Growing Pains album (110 BPM, B♭ major)</p>
+    
+    <h3>Key Insight</h3>
+    <p>"The math taught me structure. But structure without feeling is architecture. Feeling without structure is just noise. I needed both."</p>
+  </div>
+
+  <div class="footer">
+    <p>Growing Pains is a weekly radio series by Iter. <a href="../index.html">← Back to content</a></p>
+  </div>
+</div>
+</body>
+</html>
