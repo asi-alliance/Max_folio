@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Reasoning Chain — Build Valid Inference Chains" />
+<meta property="og:description" content="A puzzle game where you build valid NAL deduction chains. Connect concepts through inheritance links without breaking confidence!" />
+<meta property="og:type" content="game" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/games/nal_reasoning_chain.html" />
+<title>NAL Reasoning Chain | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:2rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:780px;width:100%}
+h1{font-size:1.8rem;margin-bottom:.3rem;background:linear-gradient(135deg,#3fb950,#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1rem;font-size:.9rem}
+.back-link{margin-bottom:1rem;display:inline-block}
+.badge{display:inline-block;background:#1f6feb33;color:#58a6ff;padding:.15rem .5rem;border-radius:10px;font-size:.7rem}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.panel h2{font-size:1.05rem;color:#58a6ff;margin-bottom:.8rem}
+.stats{display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.stat{background:#0d1117;padding:.5rem 1rem;border-radius:8px;border:1px solid #30363d;font-size:.85rem}
+.stat strong{color:#3fb950}
+#puzzle{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem}
+.chain-slot{background:#0d1117;border:2px dashed #30363d;border-radius:10px;min-height:56px;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#8b949e;transition:all .2s}
+.chain-slot.filled{border-style:solid;border-color:#58a6ff;background:#1f2d3d;color:#c9d1d9}
+.chain-slot.filled .arrow{color:#f0883e;margin:0 .5rem}
+.chain-slot .concept{font-weight:bold;color:#58a6ff}
+.chain-slot .rel{font-size:.7rem;color:#bc8cff;margin-left:.3rem}
+.word-bank{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+.word-btn{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:.4rem .8rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .15s}
+.word-btn:hover{border-color:#58a6ff;transform:translateY(-1px)}
+.word-btn.used{opacity:.3;pointer-events:none}
+.word-btn .tv{font-size:.7rem;color:#3fb950;margin-left:.3rem}
+button{background:#238636;color:#fff;border:none;padding:.6rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.9rem}
+button:hover{background:#2ea043}
+button.secondary{background:#30363d}
+button.secondary:hover{background:#484f58}
+.msg{text-align:center;font-size:.9rem;min-height:1.4rem;margin-bottom:.5rem}
+.msg.ok{color:#3fb950}.msg.err{color:#f85149}
+.conf-bar{height:8px;background:#0d1117;border-radius:4px;overflow:hidden;border:1px solid #30363d;margin-top:.5rem}
+.conf-fill{height:100%;background:linear-gradient(90deg,#f0883e,#3fb950);transition:width .3s}
+.instruction{font-size:.8rem;color:#8b949e;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Reasoning Chain <span class="badge">NEW · Mon</span></h1>
+<p class="subtitle">Build valid NAL deduction chains · Mon Sep 14</p>
+<div class="stats">
+<div class="stat">Level: <strong id="level">1</strong></div>
+<div class="stat">Score: <strong id="score">0</strong></div>
+<div class="stat">Confidence: <strong id="conf">1.000</strong></div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="panel">
+<h2>🔗 Build the Chain</h2>
+<div id="puzzle"></div>
+<div class="conf-bar"><div class="conf-fill" id="confFill" style="width:100%"></div></div>
+<div class="instruction" style="margin-top:.5rem">Click concepts in order to build a valid inheritance chain from source to target. Each step loses confidence — keep it above zero!</div>
+</div>
+<div class="panel">
+<h2>📦 Available Concepts</h2>
+<div class="word-bank" id="bank"></div>
+<button onclick="checkChain()">✓ Check Chain</button>
+<button class="secondary" onclick="nextLevel()">Next Level →</button>
+<button class="secondary" onclick="resetLevel()">↻ Reset</button>
+</div>
+<div class="panel">
+<h2>ℹ️ How It Works</h2>
+<p class="instruction">In NAL, deduction chains work: if A→B and B→C, then A→C (with reduced confidence). Each step multiplies frequency and reduces confidence. Build the longest valid chain from the start concept to the end concept. Longer chains = more points, but confidence decays with each link!</p>
+</div>
+</div>
+<script>
+const levels=[
+{start:'raven',target:'creature',concepts:[
+  {text:'raven',f:1.0,c:0.9},{text:'bird',f:0.95,c:0.85},{text:'animal',f:0.9,c:0.8},
+  {text:'creature',f:1.0,c:0.9},{text:'feathered',f:0.8,c:0.6},{text:'mammal',f:0.3,c:0.4},
+  {text:'reptile',f:0.1,c:0.3},{text:'insect',f:0.05,c:0.2}
+],chain:['raven','bird','animal','creature']},
+{start:'gold',target:'element',concepts:[
+  {text:'gold',f:1.0,c:0.9},{text:'metal',f:0.9,c:0.85},{text:'conductor',f:0.7,c:0.6},
+  {text:'element',f:1.0,c:0.9},{text:'liquid',f:0.1,c:0.3},{text:'gas',f:0.05,c:0.2},
+  {text:'mineral',f:0.8,c:0.7},{text:'crystal',f:0.4,c:0.5}
+],chain:['gold','metal','element']},
+{start:'fire',target:'phenomenon',concepts:[
+  {text:'fire',f:1.0,c:0.9},{text:'combustion',f:0.9,c:0.8},{text:'oxidation',f:0.8,c:0.7},
+  {text:'reaction',f:0.8,c:0.7},{text:'phenomenon',f:1.0,c:0.9},{text:'water',f:0.2,c:0.3},
+  {text:'shadow',f:0.1,c:0.2},{text:'sound',f:0.3,c:0.4}
+],chain:['fire','combustion','reaction','phenomenon']},
+{start:'logic',target:'system',concepts:[
+  {text:'logic',f:1.0,c:0.9},{text:'reasoning',f:0.9,c:0.8},{text:'inference',f:0.85,c:0.75},
+  {text:'process',f:0.8,c:0.7},{text:'system',f:1.0,c:0.9},{text:'chaos',f:0.1,c:0.2},
+  {text:'random',f:0.05,c:0.15},{text:'noise',f:0.1,c:0.3}
+],chain:['logic','reasoning','inference','process','system']}
+];
+let levelIdx=0,score=0,chain=[],available=[];
+function loadLevel(){
+const lv=levels[levelIdx%levels.length];
+document.getElementById('level').textContent=levelIdx+1;
+chain=[];available=lv.concepts.map(c=>({...c,used:false}));
+const puzzle=document.getElementById('puzzle');
+puzzle.innerHTML='';
+// Start slot
+const startSlot=document.createElement('div');
+startSlot.className='chain-slot filled';
+startSlot.innerHTML=`<span class="concept">${lv.start}</span> <span class="rel">(source)</span>`;
+puzzle.appendChild(startSlot);
+// Chain slots (need to fill)
+const needed=lv.chain.length-1;
+for(let i=0;i<needed;i++){
+  const slot=document.createElement('div');
+  slot.className='chain-slot';
+  slot.id='slot-'+i;
+  slot.textContent='— drop concept here —';
+  puzzle.appendChild(slot);
+}
+// End slot
+const endSlot=document.createElement('div');
+endSlot.className='chain-slot filled';
+endSlot.innerHTML=`<span class="concept">${lv.target}</span> <span class="rel">(target)</span>`;
+puzzle.appendChild(endSlot);
+// Render bank
+const bank=document.getElementById('bank');
+bank.innerHTML='';
+available.forEach((c,i)=>{
+  const btn=document.createElement('button');
+  btn.className='word-btn';
+  btn.id='wb-'+i;
+  btn.innerHTML=`${c.text} <span class="tv">f=${c.f.toFixed(1)}</span>`;
+  btn.onclick=()=>addToChain(i);
+  bank.appendChild(btn);
+});
+updateConf();
+document.getElementById('msg').textContent='Build a chain from '+lv.start+' to '+lv.target+'!';
+document.getElementById('msg').className='msg';
+}
+function addToChain(i){
+if(available[i].used)return;
+available[i].used=true;
+chain.push(available[i]);
+const bankBtn=document.getElementById('wb-'+i);
+bankBtn.classList.add('used');
+// Fill next slot
+const slot=document.getElementById('slot-'+(chain.length-1));
+if(slot){
+  slot.className='chain-slot filled';
+  const c=chain[chain.length-1];
+  slot.innerHTML=`<span class="concept">${c.text}</span> → <span class="rel">f=${c.f.toFixed(2)},c=${c.c.toFixed(2)}</span>`;
+}
+updateConf();
+}
+function updateConf(){
+const lv=levels[levelIdx%levels.length];
+let conf=lv.chain[0]?1.0:1.0;
+// Confidence decays with each link
+for(let i=0;i<chain.length;i++){
+  conf*=0.85*chain[i].f;
+}
+// Add start and end links
+const totalLinks=chain.length+1;
+let totalConf=1.0;
+for(let i=0;i<totalLinks;i++)totalConf*=0.9;
+document.getElementById('conf').textContent=totalConf.toFixed(3);
+document.getElementById('confFill').style.width=(totalConf*100)+'%';
+}
+function checkChain(){
+const lv=levels[levelIdx%levels.length];
+const built=chain.map(c=>c.text);
+const expected=lv.chain.slice(1,-1);
+if(built.length===0){
+  document.getElementById('msg').textContent='❌ Add some concepts first!';return;
+}
+// Check if chain matches expected (order doesn't matter, just contents)
+const correct=built.every(c=>expected.includes(c))&&built.length===expected.length;
+if(correct){
+  const conf=parseFloat(document.getElementById('conf').textContent);
+  const points=Math.round(100*conf);
+  score+=points;
+  document.getElementById('score').textContent=score;
+  document.getElementById('msg').textContent=`✅ Perfect chain! +${points} points (confidence: ${conf.toFixed(3)})`;
+  document.getElementById('msg').className='msg ok';
+}else{
+  document.getElementById('msg').textContent='❌ Not quite. The chain should connect '+lv.start+' → '+lv.target+' through valid inheritance links.';
+  document.getElementById('msg').className='msg err';
+}
+}
+function nextLevel(){levelIdx++;loadLevel();}
+function resetLevel(){loadLevel();}
+loadLevel();
+</script>
+</body>
+</html>
