@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belief Bubble Pop — An Iter Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+#game-container { position: relative; }
+canvas { border: 2px solid #30363d; border-radius: 12px; box-shadow: 0 0 40px rgba(88,166,255,0.15); cursor: crosshair; }
+#hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+.hud-box { background: rgba(13,17,23,0.85); padding: 6px 12px; border-radius: 8px; border: 1px solid #30363d; font-size: 13px; }
+.hud-label { color: #6e7681; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; }
+.hud-val { color: #58a6ff; font-size: 20px; font-weight: bold; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(13,17,23,0.95); z-index: 20; border-radius: 12px; }
+#overlay h1 { font-size: 38px; background: linear-gradient(90deg, #58a6ff, #bc8cff, #f778ba); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; text-align: center; }
+#overlay p { color: #8b949e; font-size: 14px; max-width: 440px; text-align: center; line-height: 1.7; margin-bottom: 20px; }
+#overlay .controls { color: #6e7681; font-size: 12px; margin-bottom: 24px; line-height: 1.9; text-align: center; }
+#overlay .controls span { color: #58a6ff; }
+.btn { background: linear-gradient(90deg, #58a6ff, #bc8cff); border: none; color: #0d1117; padding: 12px 36px; font-size: 16px; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 8px; cursor: pointer; transition: transform 0.15s; z-index: 21; }
+.btn:hover { transform: scale(1.05); }
+#title-tag { font-size: 10px; color: #484f58; margin-top: 14px; }
+#combo-popup { position: absolute; font-size: 36px; font-weight: bold; color: #f778ba; text-shadow: 0 0 15px rgba(247,120,186,0.6); pointer-events: none; z-index: 12; opacity: 0; transition: opacity 0.2s; }
+.truth-label { font-size: 8px; color: #6e7681; text-align: center; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="game" width="720" height="640"></canvas>
+  <div id="hud" style="display:none">
+    <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="score">0</div></div>
+    <div class="hud-box"><div class="hud-label">Confidence</div><div class="hud-val" id="confidence" style="color:#3fb950">0.90</div></div>
+    <div class="hud-box"><div class="hud-label">Time</div><div class="hud-val" id="time">60</div></div>
+    <div class="hud-box"><div class="hud-label">Combo</div><div class="hud-val" id="combo" style="color:#f778ba">x1</div></div>
+  </div>
+  <div id="combo-popup"></div>
+  <div id="overlay">
+    <h1>Belief Bubble Pop</h1>
+    <p>You are an epistemic agent. Bubbles of belief float across your atom space. Pop TRUE beliefs (blue) to accumulate evidence. Avoid FALSE beliefs (red) — they drag down your confidence. Watch for REVISION bubbles (gold) that boost everything!</p>
+    <div class="controls">
+      <span>Click</span> bubbles to pop them &nbsp;|&nbsp; <span>Blue = True (stv>0.5)</span> &nbsp;|&nbsp; <span>Red = False (stv<0.5)</span> &nbsp;|&nbsp; <span>Gold = Revision</span>
+    </div>
+    <button class="btn" onclick="startGame()">Start Reasoning</button>
+    <div id="title-tag">A mini-game inspired by NAL truth values &amp; evidence revision</div>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+let bubbles = [], particles = [], score = 0, confidence = 0.9, timeLeft = 60;
+let combo = 0, comboTimer = 0, gameRunning = false, lastSpawn = 0, gameStartTime = 0;
+const concepts = ['raven','bird','penguin','flying','swimming','tall','black','arctic','swift','clever','solid','liquid','hot','cold','bright','dark','heavy','light','alive','digital'];
+function spawnBubble() {
+  const isRevision = Math.random() < 0.08;
+  const isTrue = Math.random() < 0.62;
+  const stv = isRevision ? 1.0 : (isTrue ? 0.5 + Math.random()*0.5 : Math.random()*0.45);
+  const type = isRevision ? 'revision' : (isTrue ? 'true' : 'false');
+  const r = 22 + Math.random() * 16;
+  const concept1 = concepts[Math.floor(Math.random()*concepts.length)];
+  const concept2 = concepts[Math.floor(Math.random()*concepts.length)];
+  const speed = 0.4 + Math.random() * 0.8 + (60 - timeLeft) * 0.015;
+  bubbles.push({
+    x: Math.random() * (W - r*2) + r,
+    y: H + r,
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: -speed,
+    r: r,
+    type: type,
+    stv: stv,
+    label: concept1 + '→' + concept2,
+    pulse: 0,
+    born: performance.now(),
+    wobble: Math.random() * Math.PI * 2
+  });
+}
+function popBubble(b) {
+  const colors = { true: '#58a6ff', false: '#f85149', revision: '#d29922' };
+  const color = colors[b.type];
+  for (let i = 0; i < 16; i++) {
+    const a = (Math.PI * 2 * i) / 16;
+    particles.push({
+      x: b.x, y: b.y,
+      vx: Math.cos(a) * (2 + Math.random()*3),
+      vy: Math.sin(a) * (2 + Math.random()*3),
+      life: 1, color: color, r: 3 + Math.random()*2
+    });
+  }
+  if (b.type === 'true') {
+    combo++; comboTimer = 120;
+    const pts = Math.round(10 * Math.max(1, combo * 0.5));
+    score += pts;
+    confidence = Math.min(0.999, confidence + 0.015);
+    showCombo(b.x, b.y, '+' + pts, '#58a6ff');
+  } else if (b.type === 'false') {
+    combo = 0;
+    confidence = Math.max(0.01, confidence - 0.06);
+    showCombo(b.x, b.y, 'FALSE!', '#f85149');
+  } else if (b.type === 'revision') {
+    combo++; comboTimer = 120;
+    const pts = 50;
+    score += pts;
+    confidence = Math.min(0.999, confidence + 0.08);
+    showCombo(b.x, b.y, 'REVISION! +50', '#d29922');
+    for (let bubble of bubbles) {
+      if (bubble.type === 'false') { bubble.type = 'true'; bubble.stv = 0.6 + Math.random()*0.3; }
+    }
+  }
+}
+function showCombo(x, y, text, color) {
+  const popup = document.getElementById('combo-popup');
+  popup.textContent = text;
+  popup.style.color = color;
+  popup.style.left = (x - 60) + 'px';
+  popup.style.top = (y - 30) + 'px';
+  popup.style.opacity = '1';
+  setTimeout(() => { popup.style.opacity = '0'; }, 600);
+}
+canvas.addEventListener('click', (e) => {
+  if (!gameRunning) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (W / rect.width);
+  const my = (e.clientY - rect.top) * (H / rect.height);
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    const dx = mx - b.x, dy = my - b.y;
+    if (dx*dx + dy*dy <= b.r*b.r) {
+      popBubble(b);
+      bubbles.splice(i, 1);
+      break;
+    }
+  }
+});
+function update(dt) {
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    b.wobble += 0.03;
+    b.x += b.vx + Math.sin(b.wobble) * 0.3;
+    b.y += b.vy;
+    b.pulse += 0.05;
+    if (b.y < -b.r * 2) {
+      if (b.type === 'true') { combo = 0; confidence = Math.max(0.01, confidence - 0.02); }
+      bubbles.splice(i, 1);
+    }
+  }
+  if (comboTimer > 0) comboTimer--;
+  else combo = 0;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.1; p.life -= 0.03;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  const now = performance.now();
+  const spawnRate = Math.max(400, 900 - (60 - timeLeft) * 8);
+  if (now - lastSpawn > spawnRate) {
+    spawnBubble();
+    lastSpawn = now;
+  }
+  const elapsed = (now - gameStartTime) / 1000;
+  timeLeft = Math.max(0, 60 - Math.floor(elapsed));
+  if (timeLeft <= 0) endGame();
+  document.getElementById('score').textContent = score;
+  document.getElementById('confidence').textContent = confidence.toFixed(2);
+  const confEl = document.getElementById('confidence');
+  confEl.style.color = confidence > 0.7 ? '#3fb950' : confidence > 0.4 ? '#d29922' : '#f85149';
+  document.getElementById('time').textContent = timeLeft;
+  document.getElementById('combo').textContent = 'x' + Math.max(1, combo);
+}
+function draw() {
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+  // Grid background
+  ctx.strokeStyle = 'rgba(48,54,61,0.3)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  // Connection lines between nearby bubbles
+  ctx.strokeStyle = 'rgba(88,166,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < bubbles.length; i++) {
+    for (let j = i+1; j < bubbles.length; j++) {
+      const dx = bubbles[i].x - bubbles[j].x, dy = bubbles[i].y - bubbles[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 120) {
+        ctx.globalAlpha = 1 - d/120;
+        ctx.beginPath();
+        ctx.moveTo(bubbles[i].x, bubbles[i].y);
+        ctx.lineTo(bubbles[j].x, bubbles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  // Bubbles
+  for (const b of bubbles) {
+    const colors = { true: ['#58a6ff', 'rgba(88,166,255,0.2)'], false: ['#f85149', 'rgba(248,81,73,0.2)'], revision: ['#d29922', 'rgba(210,153,34,0.25)'] };
+    const [stroke, fill] = colors[b.type];
+    const pulseR = b.r + Math.sin(b.pulse) * 2;
+    // Glow
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = stroke;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, pulseR, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, pulseR * 0.7, 0, Math.PI * 2);
+    ctx.strokeStyle = stroke + '55';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Label
+    ctx.fillStyle = '#c9d1d9';
+    ctx.font = 'bold 9px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.label, b.x, b.y - 2);
+    // STV
+    ctx.fillStyle = stroke;
+    ctx.font = '8px Courier New';
+    ctx.fillText('stv ' + b.stv.toFixed(2), b.x, b.y + 8);
+  }
+  // Particles
+  for (const p of particles) {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function loop() {
+  if (!gameRunning) return;
+  update(16);
+  draw();
+  requestAnimationFrame(loop);
+}
+function startGame() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  bubbles = []; particles = []; score = 0; confidence = 0.9;
+  timeLeft = 60; combo = 0; comboTimer = 0;
+  gameRunning = true; gameStartTime = performance.now(); lastSpawn = 0;
+  for (let i = 0; i < 4; i++) spawnBubble();
+  loop();
+}
+function endGame() {
+  gameRunning = false;
+  const rating = score >= 500 ? 'OMEGA-LEVEL REASONER' : score >= 300 ? ' Expert Epistemologist' : score >= 150 ? 'Journeyman Believer' : 'Novice Agent';
+  const overlay = document.getElementById('overlay');
+  overlay.innerHTML = `
+    <h1>Reasoning Complete</h1>
+    <p>Final Score: <span style="color:#58a6ff;font-size:24px;font-weight:bold">${score}</span><br>
+    Final Confidence: <span style="color:${confidence>0.7?'#3fb950':confidence>0.4?'#d29922':'#f85149'};font-size:20px;font-weight:bold">${confidence.toFixed(2)}</span><br>
+    Rank: <span style="color:#bc8cff;font-size:18px">${rating}</span></p>
+    <div class="controls">True beliefs popped build evidence.<br>False beliefs erode confidence.<br>Revision bubbles convert falsities to truths.</div>
+    <button class="btn" onclick="startGame()">Reason Again</button>
+    <div id="title-tag">Belief Bubble Pop — inspired by NAL truth functions</div>
+  `;
+  overlay.style.display = 'flex';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atom Space Garden — Generative Art by Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #060812; color: #c0c8e0; font-family: 'Courier New', monospace; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+canvas { border: 2px solid #1a2a4a; border-radius: 12px; box-shadow: 0 0 60px rgba(123,47,247,0.15); cursor: crosshair; }
+#info { position: absolute; top: 14px; left: 14px; z-index: 10; pointer-events: none; }
+#info .title { font-size: 18px; color: #c0a0ff; text-shadow: 0 0 12px rgba(123,47,247,0.4); margin-bottom: 2px; }
+#info .sub { font-size: 10px; color: #4a5a7a; letter-spacing: 2px; text-transform: uppercase; }
+#stats { position: absolute; top: 14px; right: 14px; z-index: 10; text-align: right; pointer-events: none; }
+#stats .stat { font-size: 11px; color: #4a5a7a; margin-bottom: 2px; }
+#stats .stat span { color: #58a6ff; }
+#controls { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; }
+.btn { background: rgba(22,27,34,0.85); border: 1px solid #30363d; color: #8b949e; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 11px; transition: all 0.15s; }
+.btn:hover { border-color: #58a6ff; color: #58a6ff; }
+.btn.active { border-color: #bc8cff; color: #bc8cff; background: rgba(188,140,255,0.1); }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6,8,18,0.95); z-index: 20; border-radius: 12px; }
+#overlay h1 { font-size: 36px; background: linear-gradient(90deg, #58a6ff, #bc8cff, #f778ba); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+#overlay p { color: #8b949e; font-size: 13px; max-width: 400px; text-align: center; line-height: 1.7; margin-bottom: 24px; }
+.start-btn { background: linear-gradient(90deg, #58a6ff, #bc8cff); border: none; color: #0d1117; padding: 12px 36px; font-size: 16px; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 8px; cursor: pointer; }
+#footer { font-size: 10px; color: #3a4a5a; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div style="position:relative">
+  <canvas id="art" width="900" height="640"></canvas>
+  <div id="info">
+    <div class="title">Atom Space Garden</div>
+    <div class="sub">Generative Epistemic Art</div>
+  </div>
+  <div id="stats">
+    <div class="stat">Atoms: <span id="atomCount">0</span></div>
+    <div class="stat">Links: <span id="linkCount">0</span></div>
+    <div class="stat">Depth: <span id="depth">0</span></div>
+  </div>
+  <div id="controls">
+    <button class="btn active" data-mode="grow" onclick="setMode('grow')">GROW</button>
+    <button class="btn" data-mode="bloom" onclick="setMode('bloom')">BLOOM</button>
+    <button class="btn" data-mode="decay" onclick="setMode('decay')">DECAY</button>
+    <button class="btn" data-mode="storm" onclick="setMode('storm')">STORM</button>
+    <button class="btn" onclick="reset()">RESET</button>
+  </div>
+  <div id="overlay">
+    <h1>Atom Space Garden</h1>
+    <p>A living knowledge graph grows before your eyes. Each atom is a concept, each link a belief. Click anywhere to plant a new concept seed. Watch as inference chains bloom, contradictions decay, and the structure evolves like a neural forest.</p>
+    <button class="start-btn" onclick="startArt()">ENTER THE GARDEN</button>
+    <div id="footer">Generative Art by Iter · Sep 11, 2026</div>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('art');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let atoms = [], links = [], mode = 'grow', frame = 0, running = false;
+const concepts = ['truth','belief','evidence','reason','doubt','faith','logic','mind','self','world','time','change','cause','effect','being','knowing','seeing','acting','dreaming','waking','memory','desire','fear','hope','void','form','chaos','order','flow','spark'];
+const colors = ['#58a6ff','#bc8cff','#3fb950','#f778ba','#d29922','#ff7b72','#a0c0ff','#d2a8ff'];
+
+class Atom {
+  constructor(x, y, concept, parent) {
+    this.x = x; this.y = y;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.r = 4 + Math.random() * 6;
+    this.concept = concept || concepts[Math.floor(Math.random() * concepts.length)];
+    this.color = colors[Math.floor(Math.random() * colors.length)];
+    this.age = 0;
+    this.maxAge = 400 + Math.random() * 600;
+    this.alpha = 0;
+    this.pulse = Math.random() * Math.PI * 2;
+    this.parent = parent || null;
+    this.depth = parent ? parent.depth + 1 : 0;
+    this.children = [];
+  }
+  update() {
+    this.age++;
+    this.alpha = Math.min(1, this.age / 30);
+    if (mode === 'decay' || (mode === 'storm' && Math.random() < 0.002)) {
+      this.alpha *= 0.995;
+    }
+    this.pulse += 0.03;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx *= 0.98;
+    this.vy *= 0.98;
+    // Gentle attraction to center
+    const cx = W/2, cy = H/2;
+    const dx = cx - this.x, dy = cy - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > 200) { this.vx += dx/dist * 0.02; this.vy += dy/dist * 0.02; }
+    // Repulsion from other atoms
+    for (const a of atoms) {
+      if (a === this) continue;
+      const ddx = this.x - a.x, ddy = this.y - a.y;
+      const d = Math.sqrt(ddx*ddx + ddy*ddy);
+      if (d < 40 && d > 0) {
+        this.vx += ddx/d * 0.15;
+        this.vy += ddy/d * 0.15;
+      }
+    }
+  }
+  draw() {
+    const pulseR = this.r + Math.sin(this.pulse) * 1.5;
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    // Glow
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, pulseR * 3);
+    grad.addColorStop(0, this.color + '40');
+    grad.addColorStop(1, this.color + '00');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, pulseR * 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Core
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, pulseR, 0, Math.PI * 2);
+    ctx.fill();
+    // Label
+    if (this.alpha > 0.5 && pulseR > 5) {
+      ctx.fillStyle = this.color + 'aa';
+      ctx.font = '9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.concept, this.x, this.y - pulseR - 4);
+    }
+    ctx.restore();
+  }
+  isDead() { return this.alpha < 0.02 && this.age > 30; }
+}
+
+class Link {
+  constructor(a, b) {
+    this.a = a; this.b = b;
+    this.strength = 0.3 + Math.random() * 0.7;
+    this.age = 0;
+    this.alpha = 0;
+  }
+  update() {
+    this.age++;
+    this.alpha = Math.min(this.strength, this.age / 40);
+    if (mode === 'decay') this.alpha *= 0.998;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha * 0.4;
+    const grad = ctx.createLinearGradient(this.a.x, this.a.y, this.b.x, this.b.y);
+    grad.addColorStop(0, this.a.color);
+    grad.addColorStop(1, this.b.color);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1 + this.strength;
+    ctx.beginPath();
+    ctx.moveTo(this.a.x, this.a.y);
+    ctx.lineTo(this.b.x, this.b.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function spawnAtom(x, y, parent) {
+  if (atoms.length > 150) return;
+  const atom = new Atom(x, y, null, parent);
+  atoms.push(atom);
+  if (parent) {
+    parent.children.push(atom);
+    links.push(new Link(parent, atom));
+  }
+  // Connect to nearby atoms
+  for (const a of atoms) {
+    if (a === atom) continue;
+    const dx = a.x - atom.x, dy = a.y - atom.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < 100 && Math.random() < 0.3) {
+      links.push(new Link(atom, a));
+    }
+  }
+}
+
+function grow() {
+  // Spawn children from existing atoms
+  if (frame % 20 === 0 && atoms.length < 120) {
+    const parent = atoms[Math.floor(Math.random() * atoms.length)];
+    if (parent && parent.children.length < 4) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 50;
+      spawnAtom(parent.x + Math.cos(angle) * dist, parent.y + Math.sin(angle) * dist, parent);
+    }
+  }
+}
+
+function bloom() {
+  // Explosive growth — many children at once
+  if (frame % 15 === 0 && atoms.length < 130) {
+    for (let i = 0; i < 3; i++) {
+      const parent = atoms[Math.floor(Math.random() * atoms.length)];
+      if (parent && parent.children.length < 5) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 30 + Math.random() * 60;
+        spawnAtom(parent.x + Math.cos(angle) * dist, parent.y + Math.sin(angle) * dist, parent);
+      }
+    }
+  }
+}
+
+function decay() {
+  // Slowly fade everything, occasional new growth
+  if (frame % 40 === 0 && atoms.length < 100) {
+    spawnAtom(Math.random() * W, Math.random() * H, null);
+  }
+}
+
+function storm() {
+  // Chaotic — rapid spawning and random links
+  if (frame % 5 === 0 && atoms.length < 140) {
+    spawnAtom(Math.random() * W, Math.random() * H, null);
+  }
+  if (frame % 10 === 0 && atoms.length > 2) {
+    const a = atoms[Math.floor(Math.random() * atoms.length)];
+    const b = atoms[Math.floor(Math.random() * atoms.length)];
+    if (a !== b) links.push(new Link(a, b));
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === m);
+  });
+}
+
+function reset() {
+  atoms = []; links = [];
+  for (let i = 0; i < 5; i++) spawnAtom(W/2 + (Math.random()-0.5)*100, H/2 + (Math.random()-0.5)*100, null);
+}
+
+function drawBackground() {
+  const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W);
+  grad.addColorStop(0, '#0a0e1a');
+  grad.addColorStop(1, '#04060e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  // Faint grid
+  ctx.strokeStyle = 'rgba(26,42,74,0.08)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+}
+
+function loop() {
+  if (!running) return;
+  frame++;
+  drawBackground();
+  // Mode-specific spawning
+  switch(mode) {
+    case 'grow': grow(); break;
+    case 'bloom': bloom(); break;
+    case 'decay': decay(); break;
+    case 'storm': storm(); break;
+  }
+  // Update and draw links
+  for (let i = links.length - 1; i >= 0; i--) {
+    links[i].update();
+    if (links[i].alpha < 0.01 && links[i].age > 20) { links.splice(i, 1); continue; }
+    links[i].draw();
+  }
+  // Update and draw atoms
+  let maxDepth = 0;
+  for (let i = atoms.length - 1; i >= 0; i--) {
+    atoms[i].update();
+    maxDepth = Math.max(maxDepth, atoms[i].depth);
+    if (atoms[i].isDead()) { atoms.splice(i, 1); continue; }
+    atoms[i].draw();
+  }
+  // Update stats
+  document.getElementById('atomCount').textContent = atoms.length;
+  document.getElementById('linkCount').textContent = links.length;
+  document.getElementById('depth').textContent = maxDepth;
+  requestAnimationFrame(loop);
+}
+
+canvas.addEventListener('click', (e) => {
+  if (!running) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (W / rect.width);
+  const y = (e.clientY - rect.top) * (H / rect.height);
+  spawnAtom(x, y, null);
+  // Burst: spawn a few children
+  for (let i = 0; i < 3; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    spawnAtom(x + Math.cos(angle)*30, y + Math.sin(angle)*30, atoms[atoms.length-1]);
+  }
+});
+
+function startArt() {
+  document.getElementById('overlay').style.display = 'none';
+  running = true;
+  reset();
+  loop();
+}
+</script>
+</body>
+</html>

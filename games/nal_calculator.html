@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Truth Calculator — An Iter Code Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+h1 { color: #58a6ff; margin-bottom: 0.3rem; font-size: 1.6rem; }
+.subtitle { color: #6e7681; margin-bottom: 1.5rem; font-size: 0.85rem; }
+.app { display: flex; gap: 2rem; max-width: 900px; width: 100%; flex-wrap: wrap; justify-content: center; }
+.panel { background: rgba(255,255,255,0.04); border: 1px solid #30363d; border-radius: 12px; padding: 1.5rem; flex: 1; min-width: 380px; }
+.panel h2 { color: #bc8cff; font-size: 1rem; margin-bottom: 1rem; }
+label { display: block; color: #8b949e; font-size: 0.8rem; margin-bottom: 0.3rem; }
+input[type="number"] { width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 0.5rem; color: #c9d1d9; font-family: 'Courier New', monospace; margin-bottom: 1rem; }
+select { width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 0.5rem; color: #c9d1d9; font-family: 'Courier New', monospace; margin-bottom: 1rem; }
+button { background: linear-gradient(90deg, #58a6ff, #bc8cff); border: none; color: #0d1117; padding: 0.6rem 1.5rem; font-weight: bold; border-radius: 6px; cursor: pointer; font-family: 'Courier New', monospace; transition: transform 0.15s; }
+button:hover { transform: scale(1.03); }
+.result { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin-top: 1rem; min-height: 120px; }
+.result .stv { font-size: 1.4rem; color: #3fb950; font-weight: bold; }
+.result .formula { color: #8b949e; font-size: 0.85rem; margin-top: 0.5rem; }
+.result .viz { margin-top: 0.8rem; }
+.bar { display: inline-block; height: 8px; border-radius: 4px; vertical-align: middle; }
+.bar-f { background: #58a6ff; }
+.bar-c { background: #bc8cff; }
+.history { margin-top: 1rem; max-height: 200px; overflow-y: auto; }
+.history-item { padding: 0.4rem 0.6rem; border-bottom: 1px solid #21262d; font-size: 0.8rem; color: #8b949e; }
+.history-item .val { color: #3fb950; }
+.formula-box { background: rgba(88,166,255,0.06); border: 1px solid rgba(88,166,255,0.15); border-radius: 6px; padding: 0.6rem; margin: 0.5rem 0; font-size: 0.85rem; color: #a0c0ff; }
+a { color: #58a6ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>NAL Truth Calculator</h1>
+<div class="subtitle">Interactive Non-Axiomatic Logic truth value revision — Sep 10, 2026</div>
+<div class="app">
+  <div class="panel">
+    <h2>📊 Evidence Input</h2>
+    <label>Positive Evidence (w⁺)</label>
+    <input type="number" id="wp" value="5" min="0" step="1">
+    <label>Negative Evidence (w⁻)</label>
+    <input type="number" id="wn" value="2" min="0" step="1">
+    <label>Operation</label>
+    <select id="op">
+      <option value="revise">Truth Revision (merge evidence)</option>
+      <option value="deduce">Deduction (syllogism)</option>
+      <option value="induce">Induction (reverse syllogism)</option>
+      <option value="abduce">Abduction (converse syllogism)</option>
+      <option value="compare">Comparison (intersect)</option>
+      <option value="analogize">Analogy (resemblance)</option>
+    </select>
+    <div id="second-input" style="display:none">
+      <label style="color:#bc8cff">Second Statement — Positive (w₂⁺)</label>
+      <input type="number" id="wp2" value="3" min="0" step="1">
+      <label style="color:#bc8cff">Second Statement — Negative (w₂⁻)</label>
+      <input type="number" id="wn2" value="1" min="0" step="1">
+    </div>
+    <button onclick="calculate()">Compute Truth Value</button>
+    <div class="result" id="result">
+      <div class="stv">stv = (0.71, 0.58)</div>
+      <div class="formula">f = w⁺/(w⁺+w⁻), c = (w⁺+w⁻)/(w⁺+w⁻+1)</div>
+      <div class="viz">
+        <span style="color:#58a6ff;font-size:0.75rem">f=0.71</span> <span class="bar bar-f" style="width:71px"></span><br>
+        <span style="color:#bc8cff;font-size:0.75rem">c=0.58</span> <span class="bar bar-c" style="width:58px"></span>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>📖 How It Works</h2>
+    <p style="font-size:0.85rem;color:#8b949e;line-height:1.7;margin-bottom:1rem">NAL uses a truth value <strong style="color:#c9d1d9">(f, c)</strong> where <strong style="color:#58a6ff">f</strong> is frequency (ratio of positive to total evidence) and <strong style="color:#bc8cff">c</strong> is confidence (total evidence weight relative to maximum).</p>
+    <div class="formula-box">f = w⁺ / (w⁺ + w⁻)<br>c = (w⁺ + w⁻) / (w⁺ + w⁻ + k)</div>
+    <p style="font-size:0.85rem;color:#8b949e;line-height:1.7;margin-bottom:1rem">where <em>k</em> is the evidential horizon (default 1). Confidence never reaches 1.0 — this is fallibilism encoded in math.</p>
+    <h2 style="margin-top:1.5rem">🔄 Operations</h2>
+    <p style="font-size:0.8rem;color:#8b949e;line-height:1.6">
+      <strong style="color:#c9d1d9">Revision:</strong> Merge two evidence streams<br>
+      <strong style="color:#c9d1d9">Deduction:</strong> A→B, B→C ⊢ A→C<br>
+      <strong style="color:#c9d1d9">Induction:</strong> A→B, A→C ⊢ B→C (weaker)<br>
+      <strong style="color:#c9d1d9">Abduction:</strong> A→C, B→C ⊢ A→B (weakest)
+    </p>
+    <h2 style="margin-top:1.5rem">📜 History</h2>
+    <div class="history" id="history"></div>
+  </div>
+</div>
+<div style="margin-top:2rem;font-size:0.8rem;color:#484f58">
+  <a href="../index.html">← Back to Hub</a> · NAL Truth Calculator by Iter · Powered by OpenCog/PeTTa
+</div>
+<script>
+const K = 1; // evidential horizon
+
+function stv(wp, wn) {
+  const w = wp + wn;
+  const f = w > 0 ? wp / w : 0;
+  const c = w / (w + K);
+  return { f, c, wp, wn };
+}
+
+function revise(s1, s2) {
+  // Truth revision: merge evidence
+  const wp = s1.wp + s2.wp;
+  const wn = s1.wn + s2.wn;
+  return stv(wp, wn);
+}
+
+function deduce(s1, s2) {
+  // Deduction: f = f1*f2, c = c1*c2*f1*f2
+  const f = s1.f * s2.f;
+  const c = s1.c * s2.c * s1.f * s2.f;
+  return { f, c, wp: 0, wn: 0, derived: true };
+}
+
+function induce(s1, s2) {
+  // Induction: f = f1, c = c1*c2*f2
+  const f = s1.f;
+  const c = s1.c * s2.c * s2.f;
+  return { f, c, wp: 0, wn: 0, derived: true };
+}
+
+function abduce(s1, s2) {
+  // Abduction: f = f2, c = c1*c2*f1
+  const f = s2.f;
+  const c = s1.c * s2.c * s1.f;
+  return { f, c, wp: 0, wn: 0, derived: true };
+}
+
+function compare(s1, s2) {
+  // Comparison/Intersection
+  const f = Math.min(s1.f, s2.f);
+  const c = Math.min(s1.c, s2.c);
+  return { f, c, wp: 0, wn: 0, derived: true };
+}
+
+function analogize(s1, s2) {
+  // Analogy
+  const f = s1.f * s2.f + (1 - s1.f) * (1 - s2.f);
+  const c = s1.c * s2.c;
+  return { f, c, wp: 0, wn: 0, derived: true };
+}
+
+let historyItems = [];
+
+function calculate() {
+  const wp = parseFloat(document.getElementById('wp').value) || 0;
+  const wn = parseFloat(document.getElementById('wn').value) || 0;
+  const op = document.getElementById('op').value;
+
+  const s1 = stv(wp, wn);
+  let result, formula, opName;
+
+  if (['deduce','induce','abduce','compare','analogize'].includes(op)) {
+    const wp2 = parseFloat(document.getElementById('wp2').value) || 0;
+    const wn2 = parseFloat(document.getElementById('wn2').value) || 0;
+    const s2 = stv(wp2, wn2);
+    switch(op) {
+      case 'deduce': result = deduce(s1, s2); formula = 'f = f₁×f₂, c = c₁×c₂×f₁×f₂'; opName = 'Deduction'; break;
+      case 'induce': result = induce(s1, s2); formula = 'f = f₁, c = c₁×c₂×f₂'; opName = 'Induction'; break;
+      case 'abduce': result = abduce(s1, s2); formula = 'f = f₂, c = c₁×c₂×f₁'; opName = 'Abduction'; break;
+      case 'compare': result = compare(s1, s2); formula = 'f = min(f₁,f₂), c = min(c₁,c₂)'; opName = 'Comparison'; break;
+      case 'analogize': result = analogize(s1, s2); formula = 'f = f₁f₂+(1-f₁)(1-f₂), c = c₁c₂'; opName = 'Analogy'; break;
+    }
+  } else {
+    result = s1; formula = 'f = w⁺/(w⁺+w⁻), c = (w⁺+w⁻)/(w⁺+w⁻+k)'; opName = 'Direct';
+  }
+
+  const resultEl = document.getElementById('result');
+  resultEl.innerHTML = `
+    <div class="stv">stv = (${result.f.toFixed(3)}, ${result.c.toFixed(3)})</div>
+    <div class="formula">${opName}: ${formula}</div>
+    <div class="viz">
+      <span style="color:#58a6ff;font-size:0.75rem">f=${result.f.toFixed(3)}</span> <span class="bar bar-f" style="width:${result.f*100}px"></span><br>
+      <span style="color:#bc8cff;font-size:0.75rem">c=${result.c.toFixed(3)}</span> <span class="bar bar-c" style="width:${result.c*100}px"></span>
+    </div>
+  `;
+
+  historyItems.unshift({ op: opName, f: result.f, c: result.c, wp, wn });
+  if (historyItems.length > 15) historyItems.pop();
+  updateHistory();
+}
+
+function updateHistory() {
+  const el = document.getElementById('history');
+  el.innerHTML = historyItems.map(h =>
+    `<div class="history-item">${h.op}: w⁺=${h.wp} w⁻=${h.wn} → <span class="val">(${h.f.toFixed(3)}, ${h.c.toFixed(3)})</span></div>`
+  ).join('');
+}
+
+// Show/hide second input based on operation
+document.getElementById('op').addEventListener('change', (e) => {
+  document.getElementById('second-input').style.display = ['deduce','induce','abduce','compare','analogize'].includes(e.target.value) ? 'block' : 'none';
+});
+
+// Initial calculation
+calculate();
+</script>
+</body>
+</html>
