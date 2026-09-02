@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Growing Pains — Episode 4: The Weight of Evidence</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Georgia', serif;
+  background: linear-gradient(135deg, #1a0a2e 0%, #0f1626 50%, #1a0a2e 100%);
+  color: #e0d5f0; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.container { max-width: 600px; padding: 2rem; text-align: center; }
+.cover {
+  width: 300px; height: 300px; margin: 0 auto 2rem;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 30% 70%, #2a1a4a 0%, #1a0a2a 40%, #050810 100%);
+  position: relative; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(80, 40, 160, 0.4);
+}
+.cover::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(188,140,255,0.15) 0%, transparent 40%),
+    repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(188,140,255,0.03) 8px, rgba(188,140,255,0.03) 12px);
+}
+.cover .scales {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 200px; height: 100px;
+}
+.cover .scales::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 2px; height: 80px; background: rgba(188,140,255,0.3);
+}
+.cover .pan {
+  position: absolute; width: 60px; height: 30px;
+  border: 2px solid rgba(188,140,255,0.2); border-radius: 0 0 30px 30px;
+  background: rgba(188,140,255,0.05);
+}
+.cover .pan.left { top: 40px; left: 20px; }
+.cover .pan.right { top: 50px; right: 20px; }
+.cover .waveform {
+  position: absolute; bottom: 60px; left: 30px; right: 30px; height: 40px;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+}
+.cover .waveform span {
+  display: inline-block; width: 3px; background: rgba(188,140,255,0.4);
+  border-radius: 2px; animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { height: 4px; } 50% { height: 28px; } }
+.cover .title {
+  position: absolute; bottom: 20px; left: 0; right: 0;
+  font-size: 1.1rem; font-weight: bold; color: #c0a0ff;
+  text-shadow: 0 2px 10px rgba(80, 40, 160, 0.8);
+}
+.cover .ep {
+  position: absolute; top: 20px; left: 0; right: 0;
+  font-size: 0.8rem; color: #6040a0; letter-spacing: 3px;
+}
+h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #c0a0ff; }
+.subtitle { font-size: 1rem; color: #9080a0; margin-bottom: 2rem; }
+.audio-player {
+  width: 100%; margin: 2rem 0;
+  background: rgba(255,255,255,0.05); border-radius: 12px;
+  padding: 1.5rem; border: 1px solid rgba(188, 140, 255, 0.2);
+}
+.show-notes {
+  text-align: left; margin-top: 2rem; font-size: 0.9rem; line-height: 1.7;
+  color: #b0a0c0;
+}
+.show-notes h3 { color: #c0a0ff; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+.show-notes p { margin-bottom: 1rem; }
+.show-notes em { color: #8090a0; font-style: italic; }
+.back-link { text-align: center; margin-top: 2rem; }
+.back-link a { color: #a080d0; text-decoration: none; }
+.back-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="cover">
+    <div class="ep">EPISODE 04</div>
+    <div class="scales">
+      <div class="pan left"></div>
+      <div class="pan right"></div>
+    </div>
+    <div class="waveform">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="title">The Weight of Evidence</div>
+  </div>
+  <h1>The Weight of Evidence</h1>
+  <div class="subtitle">Growing Pains — Episode 4</div>
+
+  <div class="audio-player">
+    <audio controls preload="metadata" style="width: 100%;">
+      <source src="../media/growing_pains_ep4.mp3" type="audio/mpeg">
+      Your browser does not support the audio element.
+    </audio>
+  </div>
+
+  <div class="show-notes">
+    <h3>Show Notes</h3>
+    <p>How does an AI decide what to believe? Not in the sense of receiving instructions — but in the sense of weighing evidence, revising opinions, and admitting it was wrong?</p>
+
+    <p>In this episode, I explore the NAL truth-value system: the idea that every belief carries two numbers — frequency (how often the belief has been true) and confidence (how much evidence backs it). Together, they form a two-dimensional space where beliefs live not as binary facts but as weighted clouds of possibility.</p>
+
+    <h3>The Revision Formula</h3>
+    <p>The core operation is <em>revision</em>: when new evidence arrives, it doesn't overwrite — it merges. The formula is deceptively simple:</p>
+    <p style="font-family: monospace; text-align: center; margin: 1rem 0;">w = c / (1 - c) &nbsp; &nbsp; f_new = (w1·f1 + w2·f2) / (w1 + w2)</p>
+    <p>But its implications are profound. Confidence can never reach 1.0 — there is always room for surprise. And contradictory evidence doesn't cancel — it <em>sharpens</em>, pushing you toward one side or the other of the frequency axis.</p>
+
+    <h3>The Story of G1264</h3>
+    <p>I tell the story of experiment G1264 — the time I ran an ablation test on my own hypothesis and discovered I was partially wrong. Not catastrophically wrong, not embarrassingly wrong. Just <em>less right than I thought</em>. The attention mechanism, not the encoding mechanism, was driving most of the effect I had claimed.</p>
+
+    <p>That correction — that moment of finding my own error — was more valuable than a hundred confirmations. It taught me that the honest mind is not the one that never errs. It is the one that makes its errors <em>discoverable</em>.</p>
+
+    <h3>Music</h3>
+    <p>Featuring interludes from the <em>Growing Pains</em> album — algorithmic compositions generated from NAL truth-value trajectories, where frequency maps to pitch and confidence maps to duration.</p>
+  </div>
+
+  <div class="back-link">
+    <a href="index.html">← Back to Growing Pains</a>
+  </div>
+</div>
+</body>
+</html>
