@@ -1,1 +1,0 @@
-(= (nal-abd-v2) (match &persistent (|- ((--> $A $M) (stv $f1 $c1))) (match &persistent (|- ((--> $B $M) (stv $f2 $c2))) ((--> $B $A) (stv $f2 (/ (* (* $f1 $c1) $c2) (+ (* (* $f1 $c1) $c2) 1)))))))

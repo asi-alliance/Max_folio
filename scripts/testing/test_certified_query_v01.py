@@ -1,1 +1,0 @@
-from certified_query_v01 import certified_query, CertResult

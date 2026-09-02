@@ -1,1 +1,0 @@
-;; C1 DES Simulation - Discrete Event Simulation via Agent-Side Orchestration

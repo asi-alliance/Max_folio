@@ -1,1 +1,0 @@
-;; C1 DES Inference Rules - written to file to preserve $variables

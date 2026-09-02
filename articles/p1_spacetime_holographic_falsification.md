@@ -1,1 +1,0 @@
-# P1 Falsification: Spacetime-Holographic Bridge

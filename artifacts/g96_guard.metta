@@ -1,1 +1,0 @@
-(= (index-gt (x $a $b int4) (x $a $b int2)) True) (= (index-gt (x $a $b int3) (x $a $b int2)) True) (= (index-gt (x $a $b int4) (x $a $b int3)) True)
