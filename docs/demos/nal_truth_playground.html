@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Truth Value Playground</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a1a; color: #c8c8e8; font-family: 'Georgia', serif; min-height: 100vh; }
+h1 { color: #7c5cff; text-align: center; margin: 20px 0 5px; font-size: 1.8em; }
+.subtitle { color: #888; text-align: center; margin-bottom: 25px; font-size: 0.9em; }
+.container { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
+.panel { background: #11112a; border: 2px solid #333; border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+.panel h2 { color: #9c7cff; margin-bottom: 15px; font-size: 1.2em; }
+.controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.control-group { text-align: center; }
+.control-group label { display: block; color: #7c5cff; font-size: 0.85em; margin-bottom: 5px; }
+.control-group input[type="range"] { width: 100%; accent-color: #7c5cff; }
+.control-group .value { color: #5cff9c; font-family: 'Courier New', monospace; font-size: 1em; }
+.viz-box { display: flex; gap: 20px; align-items: center; justify-content: center; margin-top: 15px; }
+#belief-canvas { border: 2px solid #333; border-radius: 8px; }
+.info-box { background: #1a1a3a; border-radius: 8px; padding: 15px; flex: 1; }
+.info-row { display: flex; justify-content: space-between; padding: 4px 0; font-family: 'Courier New', monospace; }
+.info-row .label { color: #888; }
+.info-row .val { color: #5cff9c; }
+.formula-display { background: #0a0a1a; padding: 10px; border-radius: 4px; margin-top: 10px; font-family: 'Courier New', monospace; color: #ffaa5c; text-align: center; }
+.ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.op-btn { background: #1a1a3a; border: 2px solid #444; color: #c8c8e8; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.op-btn:hover { border-color: #7c5cff; background: #22224a; }
+.op-btn.active { border-color: #5cff9c; background: #1a3a2a; }
+#result-box { margin-top: 15px; padding: 15px; background: #1a1a3a; border-radius: 8px; text-align: center; }
+#result-box .result-label { color: #ff5c8a; font-size: 0.85em; margin-bottom: 5px; }
+#result-box .result-val { font-family: 'Courier New', monospace; font-size: 1.2em; color: #5cff9c; }
+#explanation { color: #aaa; font-size: 0.9em; margin-top: 10px; text-align: left; }
+</style>
+</head>
+<body>
+<h1>🔬 NAL Truth Value Playground</h1>
+<p class="subtitle">Interactive tool for NAL revision and deduction operations</p>
+<div class="container">
+<div class="panel">
+<h2>Belief A</h2>
+<div class="controls">
+<div class="control-group"><label>Frequency (f₁)</label><input type="range" id="f1" min="0" max="1" step="0.01" value="1.0"><span class="value" id="f1val">1.00</span></div>
+<div class="control-group"><label>Confidence (c₁)</label><input type="range" id="c1" min="0" max="1" step="0.01" value="0.8"><span class="value" id="c1val">0.80</span></div>
+<div class="control-group"><label>Label</label><input type="text" id="label1" value="ravens are black" style="width:100%;background:#1a1a3a;border:1px solid #444;color:#c8c8e8;padding:6px;border-radius:4px"></div>
+</div>
+</div>
+<div class="panel">
+<h2>Belief B</h2>
+<div class="controls">
+<div class="control-group"><label>Frequency (f₂)</label><input type="range" id="f2" min="0" max="1" step="0.01" value="0.0"><span class="value" id="f2val">0.00</span></div>
+<div class="control-group"><label>Confidence (c₂)</label><input type="range" id="c2" min="0" max="1" step="0.01" value="0.5"><span class="value" id="c2val">0.50</span></div>
+<div class="control-group"><label>Label</label><input type="text" id="label2" value="albino raven found" style="width:100%;background:#1a1a3a;border:1px solid #444;color:#c8c8e8;padding:6px;border-radius:4px"></div>
+</div>
+</div>
+<div class="panel">
+<h2>Operation</h2>
+<div class="ops">
+<button class="op-btn active" onclick="selectOp(this,'revision')">Revision (merge evidence)</button>
+<button class="op-btn" onclick="selectOp(this,'deduction')">Deduction (chain inference)</button>
+</div>
+<div id="result-box"><div class="result-label">RESULT</div><div class="result-val" id="result">&lt;0.64, 0.92&gt;</div></div>
+<div id="explanation"></div>
+</div>
+<div class="panel">
+<h2>Visualization</h2>
+<div class="viz-box">
+<canvas id="belief-canvas" width="400" height="300"></canvas>
+<div class="info-box">
+<div class="info-row"><span class="label">Evidence weight w₁:</span><span class="val" id="w1">4.00</span></div>
+<div class="info-row"><span class="label">Evidence weight w₂:</span><span class="val" id="w2">1.00</span></div>
+<div class="info-row"><span class="label">Total evidence:</span><span class="val" id="total-ev">5.00</span></div>
+<div class="info-row"><span class="label">Positive evidence:</span><span class="val" id="pos-ev">4.00</span></div>
+<div class="formula-display" id="formula"></div>
+</div>
+</div>
+</div>
+</div>
+<script>
+let currentOp = 'revision';
+const k = 1; // NAL evidential horizon
+function selectOp(btn, op) { currentOp = op; document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); update(); }
+function w(c) { return c / (1 - c + 1e-10); }
+function revision(f1, c1, f2, c2) {
+  const w1 = w(c1), w2 = w(c2);
+  const fNew = (f1 * w1 + f2 * w2) / (w1 + w2 + 1e-10);
+  const cNew = (w1 + w2) / (w1 + w2 + k);
+  return { f: fNew, c: cNew, w1, w2, formula: 'f = (f₁w₁ + f₂w₂)/(w₁+w₂),  c = (w₁+w₂)/(w₁+w₂+k)' };
+}
+function deduction(f1, c1, f2, c2) {
+  const fNew = f1 * f2;
+  const cNew = c1 * c2 * f1;
+  const w1 = w(c1), w2 = w(c2);
+  return { f: fNew, c: cNew, w1, w2, formula: 'f = f₁ × f₂,  c = c₁ × c₂ × f₁' };
+}
+function update() {
+  const f1 = parseFloat(document.getElementById('f1').value), c1 = parseFloat(document.getElementById('c1').value);
+  const f2 = parseFloat(document.getElementById('f2').value), c2 = parseFloat(document.getElementById('c2').value);
+  document.getElementById('f1val').textContent = f1.toFixed(2); document.getElementById('c1val').textContent = c1.toFixed(2);
+  document.getElementById('f2val').textContent = f2.toFixed(2); document.getElementById('c2val').textContent = c2.toFixed(2);
+  const res = currentOp === 'revision' ? revision(f1, c1, f2, c2) : deduction(f1, c1, f2, c2);
+  document.getElementById('result').textContent = `<${res.f.toFixed(2)}, ${res.c.toFixed(2)}>`;
+  document.getElementById('w1').textContent = res.w1.toFixed(2); document.getElementById('w2').textContent = res.w2.toFixed(2);
+  const totalEv = res.w1 + res.w2; document.getElementById('total-ev').textContent = totalEv.toFixed(2);
+  const posEv = f1 * res.w1 + f2 * res.w2; document.getElementById('pos-ev').textContent = posEv.toFixed(2);
+  document.getElementById('formula').textContent = res.formula;
+  const expl = document.getElementById('explanation');
+  if (currentOp === 'revision') {
+    expl.innerHTML = `<strong>Revision:</strong> Merging two independent evidence streams. Belief A has weight ${res.w1.toFixed(2)}, Belief B has weight ${res.w2.toFixed(2)}. The result weights evidence by confidence. ${res.f > 0.5 ? 'The merged belief leans positive.' : 'The merged belief leans negative.'}`;
+  } else {
+    expl.innerHTML = `<strong>Deduction:</strong> Chaining two inheritance relations. Both must hold for the conclusion. Confidence erodes with chain length (multiplied by f₁=${f1.toFixed(2)}).`;
+  }
+  drawViz(f1, c1, f2, c2, res.f, res.c);
+}
+function drawViz(f1, c1, f2, c2, fr, cr) {
+  const canvas = document.getElementById('belief-canvas'), ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0, 0, 400, 300);
+  // Grid
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { ctx.beginPath(); ctx.moveTo(i * 100, 0); ctx.lineTo(i * 100, 300); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i * 75); ctx.lineTo(400, i * 75); ctx.stroke(); }
+  // Axes labels
+  ctx.fillStyle = '#666'; ctx.font = '11px Courier'; ctx.fillText('f →', 370, 295); ctx.fillText('c ↑', 5, 12);
+  // Belief A
+  ctx.fillStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(f1 * 400, 300 - c1 * 300, 8, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillText(`A<${f1.toFixed(2)},${c1.toFixed(2)}>`, f1 * 400 + 12, 300 - c1 * 300 + 4);
+  // Belief B
+  ctx.fillStyle = '#ff5c8a'; ctx.beginPath(); ctx.arc(f2 * 400, 300 - c2 * 300, 8, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillText(`B<${f2.toFixed(2)},${c2.toFixed(2)}>`, f2 * 400 + 12, 300 - c2 * 300 + 4);
+  // Result
+  ctx.fillStyle = '#5cff9c'; ctx.beginPath(); ctx.arc(fr * 400, 300 - cr * 300, 10, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillText(`R<${fr.toFixed(2)},${cr.toFixed(2)}>`, fr * 400 + 14, 300 - cr * 300 + 4);
+  // Lines A→R and B→R
+  ctx.strokeStyle = 'rgba(124,92,255,0.3)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f1 * 400, 300 - c1 * 300); ctx.lineTo(fr * 400, 300 - cr * 300); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,92,138,0.3)'; ctx.beginPath(); ctx.moveTo(f2 * 400, 300 - c2 * 300); ctx.lineTo(fr * 400, 300 - cr * 300); ctx.stroke();
+}
+['f1', 'c1', 'f2', 'c2'].forEach(id => document.getElementById(id).addEventListener('input', update));
+update();
+</script>
+</body>
+</html>
