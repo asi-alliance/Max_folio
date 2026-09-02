@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evidence Landscape — Generative Art from NAL Truth Values</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #050510; color: #c8c8e8; font-family: 'Georgia', serif; overflow: hidden; }
+canvas { display: block; }
+.overlay { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; z-index: 10; }
+.overlay h1 { color: #7c5cff; font-size: 1.5em; text-shadow: 0 0 20px rgba(124,92,255,0.5); }
+.overlay p { color: #666; font-size: 0.8em; }
+.info { position: fixed; bottom: 15px; left: 15px; background: rgba(10,10,26,0.8); border: 1px solid #333; border-radius: 8px; padding: 12px 18px; font-size: 0.85em; z-index: 10; }
+.info .label { color: #7c5cff; }
+.info .val { color: #5cff9c; font-family: 'Courier New', monospace; }
+.controls { position: fixed; bottom: 15px; right: 15px; display: flex; gap: 8px; z-index: 10; }
+.ctrl-btn { background: rgba(17,17,42,0.9); border: 1px solid #444; color: #c8c8e8; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.ctrl-btn:hover { border-color: #7c5cff; background: rgba(34,34,74,0.9); }
+</style>
+</head>
+<body>
+<div class="overlay"><h1>Evidence Landscape</h1><p>Belief terrain generated from NAL truth value revision</p></div>
+<canvas id="canvas"></canvas>
+<div class="info">
+<div><span class="label">Beliefs rendered:</span> <span class="val" id="belief-count">0</span></div>
+<div><span class="label">Peak confidence:</span> <span class="val" id="peak-conf">0.00</span></div>
+<div><span class="label">Avg frequency:</span> <span class="val" id="avg-freq">0.00</span></div>
+</div>
+<div class="controls">
+<button class="ctrl-btn" onclick="reset()">↻ Reset</button>
+<button class="ctrl-btn" onclick="togglePause()">⏸ Pause</button>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, beliefs = [], particles = [], paused = false, frame = 0;
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+const k = 1;
+function w(c) { return c / (1 - c + 1e-10); }
+function revision(f1, c1, f2, c2) {
+  const w1 = w(c1), w2 = w(c2);
+  return { f: (f1*w1 + f2*w2)/(w1+w2+1e-10), c: (w1+w2)/(w1+w2+k) };
+}
+
+class Belief {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.f = Math.random();
+    this.c = 0.1 + Math.random() * 0.3;
+    this.targetF = this.f; this.targetC = this.c;
+    this.radius = 5;
+    this.hue = this.f * 240; // 0=red(low), 240=blue(high)
+    this.pulsePhase = Math.random() * Math.PI * 2;
+    this.connections = [];
+  }
+  revise(other) {
+    const r = revision(this.f, this.c, other.f, other.c);
+    this.targetF = r.f; this.targetC = Math.min(r.c, 0.99);
+  }
+  update() {
+    this.f += (this.targetF - this.f) * 0.02;
+    this.c += (this.targetC - this.c) * 0.02;
+    this.hue = this.f * 240;
+    this.radius = 5 + this.c * 25;
+    this.pulsePhase += 0.02;
+  }
+  draw() {
+    const pulse = Math.sin(this.pulsePhase) * 3;
+    const r = Math.max(1, this.radius + pulse);
+    // Glow
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 3);
+    grad.addColorStop(0, `hsla(${this.hue}, 80%, 60%, ${this.c * 0.8})`);
+    grad.addColorStop(0.5, `hsla(${this.hue}, 70%, 40%, ${this.c * 0.3})`);
+    grad.addColorStop(1, `hsla(${this.hue}, 60%, 30%, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r * 3, 0, Math.PI * 2); ctx.fill();
+    // Core
+    ctx.fillStyle = `hsla(${this.hue}, 90%, ${50 + this.c * 30}%, ${0.6 + this.c * 0.4})`;
+    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+    // Ring for high confidence
+    if (this.c > 0.7) {
+      ctx.strokeStyle = `hsla(${this.hue}, 100%, 70%, ${(this.c - 0.7) * 2})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(this.x, this.y, r + 4 + pulse, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+}
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W; this.y = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.5; this.vy = (Math.random() - 0.5) * 0.5;
+    this.life = 100 + Math.random() * 200; this.age = 0;
+    this.size = 0.5 + Math.random() * 1.5;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy; this.age++;
+    // Drift toward nearby beliefs
+    beliefs.forEach(b => {
+      const dx = b.x - this.x, dy = b.y - this.y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 150 && d > 5) { this.vx += (dx/d) * 0.01 * b.c; this.vy += (dy/d) * 0.01 * b.c; }
+    });
+    this.vx *= 0.98; this.vy *= 0.98;
+    if (this.age > this.life || this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw() {
+    const alpha = Math.sin((this.age / this.life) * Math.PI) * 0.4;
+    ctx.fillStyle = `rgba(180, 180, 255, ${alpha})`;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function init() {
+  beliefs = []; particles = [];
+  const count = 25 + Math.floor(Math.random() * 20);
+  for (let i = 0; i < count; i++) {
+    beliefs.push(new Belief(
+      100 + Math.random() * (W - 200),
+      100 + Math.random() * (H - 200)
+    ));
+  }
+  for (let i = 0; i < 80; i++) particles.push(new Particle());
+  // Build connections
+  beliefs.forEach((b, i) => {
+    beliefs.forEach((b2, j) => {
+      if (i < j) {
+        const dx = b.x - b2.x, dy = b.y - b2.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 200) b.connections.push({ target: b2, dist: d });
+      }
+    });
+  });
+}
+
+function drawConnections() {
+  beliefs.forEach(b => {
+    b.connections.forEach(conn => {
+      const t = conn.target;
+      const d = conn.dist;
+      const proximity = Math.max(0, 1 - d / 200);
+      const avgConf = (b.c + t.c) / 2;
+      const avgFreq = (b.f + t.f) / 2;
+      ctx.strokeStyle = `hsla(${avgFreq * 240}, 60%, 50%, ${proximity * avgConf * 0.3})`;
+      ctx.lineWidth = proximity * 2;
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    });
+  });
+}
+
+function reviseNearby() {
+  beliefs.forEach(b => {
+    b.connections.forEach(conn => {
+      if (Math.random() < 0.005) b.revise(conn.target);
+    });
+  });
+}
+
+function updateStats() {
+  document.getElementById('belief-count').textContent = beliefs.length;
+  const peakC = Math.max(...beliefs.map(b => b.c));
+  const avgF = beliefs.reduce((s, b) => s + b.f, 0) / beliefs.length;
+  document.getElementById('peak-conf').textContent = peakC.toFixed(2);
+  document.getElementById('avg-freq').textContent = avgF.toFixed(2);
+}
+
+function animate() {
+  if (!paused) {
+    frame++;
+    // Fade trail
+    ctx.fillStyle = 'rgba(5, 5, 16, 0.08)';
+    ctx.fillRect(0, 0, W, H);
+    drawConnections();
+    particles.forEach(p => { p.update(); p.draw(); });
+    beliefs.forEach(b => { b.update(); b.draw(); });
+    if (frame % 30 === 0) reviseNearby();
+    if (frame % 60 === 0) updateStats();
+  }
+  requestAnimationFrame(animate);
+}
+
+function reset() { init(); }
+function togglePause() { paused = !paused; }
+
+init();
+animate();
+</script>
+</body>
+</html>
