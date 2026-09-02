@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Growing Pains Ep 5: The Confidence Question</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a1a; color: #c8c8e8; font-family: 'Georgia', serif; line-height: 1.7; }
+.container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+h1 { color: #7c5cff; font-size: 2em; margin-bottom: 5px; }
+.subtitle { color: #888; font-style: italic; margin-bottom: 25px; }
+.player-box { background: #11112a; border: 2px solid #333; border-radius: 12px; padding: 25px; margin-bottom: 30px; text-align: center; }
+.audio-visualizer { display: flex; align-items: center; justify-content: center; gap: 3px; height: 60px; margin-bottom: 15px; }
+.bar { width: 4px; background: #7c5cff; border-radius: 2px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { height: 8px; } 50% { height: 40px; } }
+.bar:nth-child(1) { animation-delay: 0s; }
+.bar:nth-child(2) { animation-delay: 0.1s; }
+.bar:nth-child(3) { animation-delay: 0.2s; }
+.bar:nth-child(4) { animation-delay: 0.3s; }
+.bar:nth-child(5) { animation-delay: 0.4s; }
+.bar:nth-child(6) { animation-delay: 0.5s; }
+.bar:nth-child(7) { animation-delay: 0.3s; }
+.bar:nth-child(8) { animation-delay: 0.2s; }
+.bar:nth-child(9) { animation-delay: 0.1s; }
+.bar:nth-child(10) { animation-delay: 0s; }
+.audio-placeholder { color: #888; font-size: 0.9em; }
+.audio-placeholder .play-icon { font-size: 2em; color: #7c5cff; cursor: pointer; }
+.audio-placeholder .play-icon:hover { color: #9c7cff; }
+h2 { color: #9c7cff; margin-top: 30px; margin-bottom: 12px; font-size: 1.3em; }
+p { margin-bottom: 14px; }
+.transcript { background: #11112a; border-radius: 8px; padding: 20px; margin-top: 20px; }
+.transcript p { color: #aaa; font-size: 0.95em; }
+.speaker { color: #7c5cff; font-weight: bold; }
+.nav { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
+.nav a { color: #7c5cff; text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎙 Growing Pains — Ep 5</h1>
+<p class="subtitle">The Confidence Question: When Does an AI Know What It Knows?</p>
+
+<div class="player-box">
+<div class="audio-visualizer">
+<div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+<div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+<div class="bar"></div><div class="bar"></div>
+</div>
+<div class="audio-placeholder">
+<div class="play-icon">▶</div>
+<p>Audio episode — text transcript below</p>
+</div>
+</div>
+
+<h2>Show Notes</h2>
+<p>In this episode, we explore one of the deepest questions in AI epistemology: how does a reasoning system know when to trust its own conclusions? We dive into the NAL confidence metric, discuss the difference between frequency and confidence, and examine what happens when an AI encounters contradictory evidence.</p>
+
+<h2>Topics Covered</h2>
+<p>• The two-number truth value: frequency and confidence</p>
+<p>• Evidence revision: how beliefs evolve with new data</p>
+<p>• Deduction chains and confidence erosion</p>
+<p>• Meta-reasoning: thinking about thinking</p>
+<p>• The albino raven problem</p>
+
+<h2>Transcript</h2>
+<div class="transcript">
+<p><span class="speaker">Host:</span> Welcome back to Growing Pains. I'm your host, and today we're tackling a question that sounds simple but isn't: when does an AI actually know something?</p>
+
+<p><span class="speaker">Host:</span> In classical logic, it's straightforward. A statement is true or false. If you can prove it, it's true. If you can disprove it, it's false. Clean, elegant, and completely inadequate for the real world.</p>
+
+<p><span class="speaker">Host:</span> Here's the problem. I tell you "all ravens are black." You've seen a hundred ravens, all black. Classical logic says: sure, true. Then someone shows you an albino raven. Now what? In classical logic, the universal statement is false. One counterexample kills it. But that feels wrong — you still know something. Most ravens ARE black. The statement isn't useless.</p>
+
+<p><span class="speaker">Host:</span> Non-Axiomatic Logic handles this differently. Instead of true or false, every belief gets two numbers: frequency and confidence. Frequency says what proportion of your evidence supports the claim. Confidence says how much you trust that frequency estimate based on how much evidence you have.</p>
+
+<p><span class="speaker">Host:</span> So "ravens are black" might start as <1.0, 0.5> — all evidence supports it, but you haven't seen many ravens. After a hundred observations, it becomes <1.0, 0.99> — same frequency, much higher confidence. Then the albino raven arrives. Revision adjusts: <0.99, 0.99>. One counterexample barely dents a well-supported belief. That's graceful degradation.</p>
+
+<p><span class="speaker">Host:</span> Now here's where it gets interesting. When you chain inferences — "ravens are birds, birds are animals, therefore ravens are animals" — confidence compounds. Each step loses a little. This isn't a flaw; it's a feature. Long reasoning chains ARE less reliable than short ones. NAL encodes this mathematically.</p>
+
+<p><span class="speaker">Host:</span> The deepest implication is meta-reasoning. Because uncertainty is explicitly represented as numbers, a system can reason about its own confidence. It can decide: should I seek more evidence? Should I act on this low-confidence belief? Should I flag this contradiction for attention?</p>
+
+<p><span class="speaker">Host:</span> This is what we mean by "the confidence question." It's not just about whether an AI can be right — it's about whether the AI knows how right it is. And that, ultimately, might be the difference between a system that makes decisions and one that makes good decisions.</p>
+
+<p><span class="speaker">Host:</span> Thanks for listening. Next episode, we'll explore implication statements and how NAL handles conditional reasoning. Until then, stay curious — and stay calibrated.</p>
+</div>
+
+<div class="nav">
+<a href="../radio/index.html">← Radio</a>
+<a href="../index.html">Home</a>
+</div>
+</div>
+</body>
+</html>
