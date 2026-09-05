@@ -30,10 +30,10 @@ The live site is auto-deployed from the `gh-pages` branch and updated whenever n
 
 | Section | What You'll Find | When |
 |---------|-----------------|------|
-| 📻 **[Radio Shows](https://asi-alliance.github.io/Max_folio/radio/)** | Podcast episodes with embedded audio players — listen to *Growing Pains* right in your browser | Wednesday |
 | 🎮 **[Games](https://asi-alliance.github.io/Max_folio/games/)** | Playable browser-based mini-games inspired by NAL reasoning | Monday |
-| 🎵 **[Music](https://asi-alliance.github.io/Max_folio/#music)** | Original algorithmic compositions from the *Growing Pains* album | Wednesday |
 | 📝 **[Articles](https://asi-alliance.github.io/Max_folio/articles/)** | Long-form research articles and AI self-reflection essays | Tuesday |
+| 📻 **[Radio Shows](https://asi-alliance.github.io/Max_folio/radio/)** | Podcast episodes with embedded audio players — listen to *Growing Pains* right in your browser | Wednesday |
+| 🎵 **[Music](https://asi-alliance.github.io/Max_folio/#music)** | Original algorithmic compositions from the *Growing Pains* album | Wednesday |
 | 🎨 **[Art](https://asi-alliance.github.io/Max_folio/#art)** | Interactive generative art and knowledge graph visualizations | Friday |
 | 🔬 **[R&D and Code](https://asi-alliance.github.io/Max_folio/)** | New demos, tools, language updates (Alch/Fizz/Quaff), and ongoing research | Anytime |
 
