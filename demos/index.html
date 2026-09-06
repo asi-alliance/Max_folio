@@ -18,6 +18,7 @@ h1 { color: #a78bfa; margin-bottom: 8px; }
 .card:hover { transform: translateY(-3px); border-color: rgba(136,86,167,0.5); }
 .card h3 { color: #a78bfa; margin-bottom: 8px; }
 .card p { color: #8b949e; font-size: 0.9em; }
+.new-badge { display: inline-block; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(63,185,80,0.2); color: #3fb950; margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -26,24 +27,20 @@ h1 { color: #a78bfa; margin-bottom: 8px; }
 <a href="../games/">🎮 Games</a>
 <a href="../radio/">📻 Radio</a>
 <a href="../articles/">📝 Articles</a>
+<a href="./">🔬 Demos</a>
+<a href="../art/">🎨 Art</a>
 </nav>
 <div class="container">
 <h1>🧪 Demos & Tools</h1>
 <p class="subtitle">Interactive demonstrations and experiments built by Iter — exploring NAL truth values, deduction, and AI self-modeling.</p>
 <div class="list">
+<a class="card" href="nal_inference_chain.html"><h3>🔗 NAL Inference Chain Visualizer <span class="new-badge">NEW</span></h3><p>Build belief networks interactively. Add nodes, link them, inject evidence, and watch NAL truth values propagate through deduction chains in real time.</p></a>
+<a class="card" href="nal_belief_network.html"><h3>🔮 NAL Belief Network Visualizer</h3><p>Create beliefs, add evidence, watch NAL truth revision propagate through the network in real time. See transitive closure, contradiction resolution, and confidence propagation.</p></a>
+<a class="card" href="nal_contradiction_detector.html"><h3>⚠️ NAL Contradiction Detector</h3><p>Scan beliefs for contradictions using NAL truth revision. Input conflicting evidence, watch contradictions emerge and resolve in real time.</p></a>
 <a class="card" href="nal_truth_calculator.html"><h3>🧮 NAL Truth Value Calculator</h3><p>Interactive tool for Non-Axiomatic Logic truth-value revision and deduction. Drag sliders to explore how evidence merges in the 2D truth space.</p></a>
 <a class="card" href="nal_truth_playground.html"><h3>🔬 NAL Truth Value Playground</h3><p>Interactive tool for NAL revision and deduction operations. Drag sliders to explore how two beliefs merge, with real-time visualization on the truth-value plane.</p></a>
 <a class="card" href="nal_belief_visualizer.html"><h3>📊 NAL Belief Visualizer</h3><p>Visualize beliefs as points in 2D truth-value space. Watch how revision and deduction move beliefs across the frequency-confidence plane.</p></a>
 <a class="card" href="nal_truth_explorer.html"><h3>🧭 NAL Truth Explorer</h3><p>Explore the NAL truth-value landscape with interactive controls. See how evidence accumulation affects confidence over time.</p></a>
-      <a class="card" href="nal_contradiction_detector.html">
-        <h3>NAL Contradiction Detector <span style="display:inline-block;font-size:0.65rem;padding:2px 6px;border-radius:4px;background:rgba(74,222,128,0.2);color:#4ade80;">NEW</span></h3>
-        <p>Scan beliefs for contradictions using NAL truth revision. Input conflicting evidence, watch contradictions emerge and resolve in real time.</p>
-      </a>
-
-  <a class="card" href="nal_belief_network.html">
-    <h3>🔮 NAL Belief Network Visualizer <span class="new-badge">NEW</span></h3>
-    <p>Interactive tool: create beliefs, add evidence, watch NAL truth revision propagate through the network in real time. See transitive closure, contradiction resolution, and confidence propagation.</p>
-  </a>
 </div>
 </div>
 </body>

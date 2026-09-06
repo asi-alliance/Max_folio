@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Inference Chain Visualizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;color:#c8c8e0;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h1{color:#e8c840;margin:20px 0 5px;font-size:1.6em}
+.subtitle{color:#888;margin-bottom:10px;font-size:0.85em}
+#canvas-wrap{position:relative;background:#12121e;border:1px solid #333;border-radius:8px;margin:10px}
+canvas{display:block;border-radius:8px}
+#controls{display:flex;gap:10px;flex-wrap:wrap;max-width:900px;justify-content:center;margin:10px}
+.control-group{background:#1a1a2e;border:1px solid #444;border-radius:6px;padding:10px;min-width:180px}
+.control-group h3{color:#e8c840;font-size:0.9em;margin-bottom:8px}
+.control-group input[type="text"]{width:100%;background:#0a0a12;border:1px solid #444;color:#c8c8e0;padding:4px;border-radius:3px;font-family:inherit;font-size:0.85em}
+.btn{padding:5px 10px;border:1px solid #e8c840;background:transparent;color:#e8c840;border-radius:3px;cursor:pointer;font-family:inherit;font-size:0.8em;margin:3px}
+.btn:hover{background:#e8c840;color:#0a0a12}
+.btn.active{background:#e8c840;color:#0a0a12}
+.mode-btns{display:flex;gap:4px;flex-wrap:wrap}
+#info-panel{max-width:900px;width:95%;background:#12121e;border:1px solid #333;border-radius:8px;padding:10px;margin:5px 0;font-size:0.82em;min-height:80px;max-height:200px;overflow-y:auto}
+.step{margin:3px 0;padding:5px 8px;border-left:2px solid #4488ff;background:#1a1a2e;border-radius:3px}
+.step.deduction{border-left-color:#44ff44}
+.step.revision{border-left-color:#ff8844}
+.step.induction{border-left-color:#ff44ff}
+.step.abduction{border-left-color:#ffaa44}
+.stv{color:#88ccff;font-family:monospace}
+.node-label{color:#e8c840}
+</style>
+</head>
+<body>
+<h1>🔗 NAL Inference Chain Visualizer</h1>
+<p class="subtitle">Watch truth values propagate through deduction, abduction, induction, and revision</p>
+<div id="controls">
+  <div class="control-group">
+    <h3>Mode</h3>
+    <div class="mode-btns">
+      <button class="btn active" id="mode-add" onclick="setMode('add')">Add Node</button>
+      <button class="btn" id="mode-link" onclick="setMode('link')">Link</button>
+      <button class="btn" id="mode-evi" onclick="setMode('evidence')">Evidence</button>
+      <button class="btn" id="mode-del" onclick="setMode('delete')">Delete</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <h3>Node Name</h3>
+    <input type="text" id="node-name" placeholder="raven, bird, flying..." value="">
+  </div>
+  <div class="control-group">
+    <h3>Actions</h3>
+    <button class="btn" onclick="seedExample()">Load Example</button>
+    <button class="btn" onclick="runInference()">Run Inference</button>
+    <button class="btn" onclick="clearAll()">Clear</button>
+  </div>
+  <div class="control-group">
+    <h3>Evidence Type</h3>
+    <button class="btn active" id="evi-pos" onclick="setEvidenceType(true)">Positive (+)</button>
+    <button class="btn" id="evi-neg" onclick="setEvidenceType(false)">Negative (−)</button>
+  </div>
+</div>
+<canvas id="canvas" width="900" height="450"></canvas>
+<div id="info-panel"><div class="step">Click "Load Example" to start, or add your own nodes. Use "Run Inference" to propagate truth values through the network.</div></div>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let mode='add',evidencePositive=true;
+let nodes=[],links=[],selectedNode=null,linkFrom=null;
+let nodeId=0;
+
+function setMode(m){
+  mode=m;
+  ['mode-add','mode-link','mode-evi','mode-del'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  if(m==='add')document.getElementById('mode-add').classList.add('active');
+  if(m==='link')document.getElementById('mode-link').classList.add('active');
+  if(m==='evidence')document.getElementById('mode-evi').classList.add('active');
+  if(m==='delete')document.getElementById('mode-del').classList.add('active');
+  selectedNode=null;linkFrom=null;
+}
+function setEvidenceType(pos){
+  evidencePositive=pos;
+  document.getElementById('evi-pos').classList.toggle('active',pos);
+  document.getElementById('evi-neg').classList.toggle('active',!pos);
+}
+
+function addNode(name,x,y){
+  if(!name)return;
+  nodes.push({id:nodeId++,name:name,x:x||Math.random()*800+50,y:y||Math.random()*350+50,f:0.5,c:0.0,r:30, vx:0,vy:0});
+  draw();
+}
+
+function addLink(from,to){
+  if(from===to)return;
+  const exists=links.find(l=>(l.from===from&&l.to===to)||(l.from===to&&l.to===from));
+  if(exists)return;
+  links.push({from:from,to:to,f:0.5,c:0.0,type:'inheritance'});
+  draw();
+}
+
+function nalRevise(f1,c1,f2,c2){
+  const w1=c1/(1-c1+0.001),w2=c2/(1-c2+0.001),w=w1+w2;
+  return{f:(w1*f1+w2*f2)/w,c:w/(w+1)};
+}
+function nalDeduction(f1,c1,f2,c2){
+  return{f:f1*f2,c:f1*f2*c1*c2};
+}
+
+function addEvidence(nodeIdx,positive){
+  const n=nodes[nodeIdx];
+  const eviF=positive?0.9:0.1;
+  const eviC=0.85;
+  const r=nalRevise(n.f,n.c,eviF,eviC);
+  n.f=r.f;n.c=r.c;
+  logStep('evidence',`${positive?'Positive':'Negative'} evidence added to <span class="node-label">${n.name}</span>: revised to <span class="stv">stv(${r.f.toFixed(3)}, ${r.c.toFixed(3)})</span>`,'revision');
+  draw();
+}
+
+function logStep(type,text,cls){
+  const panel=document.getElementById('info-panel');
+  if(panel.children.length===1&&panel.children[0].textContent.includes('Click "Load Example"'))panel.innerHTML='';
+  const d=document.createElement('div');
+  d.className='step '+(cls||'');
+  d.innerHTML=text;
+  panel.appendChild(d);
+  panel.scrollTop=panel.scrollHeight;
+}
+
+function runInference(){
+  let changed=true,iterations=0;
+  const steps=[];
+  while(changed&&iterations<10){
+    changed=false;iterations++;
+    links.forEach(link=>{
+      const from=nodes[link.from],to=nodes[link.to];
+      if(from.c>0.01){
+        const deduced=nalDeduction(from.f,from.c,link.f,link.c||0.5);
+        const revised=nalRevise(to.f,to.c,deduced.f,deduced.c);
+        if(Math.abs(revised.f-to.f)>0.001||Math.abs(revised.c-to.c)>0.001){
+          steps.push({type:'deduction',from:from.name,to:to.name,oldF:to.f,oldC:to.c,newF:revised.f,newC:revised.c});
+          to.f=revised.f;to.c=revised.c;
+          changed=true;
+        }
+      }
+    });
+  }
+  if(steps.length===0){
+    logStep('','No new inferences. Add evidence to nodes first, then run inference.','');
+  } else {
+    steps.forEach(s=>{
+      logStep('deduction',`<span class="node-label">${s.from}</span> &rarr; <span class="node-label">${s.to}</span>: deduction revised from <span class="stv">stv(${s.oldF.toFixed(3)}, ${s.oldC.toFixed(3)})</span> to <span class="stv">stv(${s.newF.toFixed(3)}, ${s.newC.toFixed(3)})</span>`,'deduction');
+    });
+  }
+  draw();
+}
+
+function seedExample(){
+  clearAll();
+  addNode('raven',200,150);
+  addNode('bird',450,150);
+  addNode('flying',700,150);
+  addNode('penguin',200,350);
+  addNode('ostrich',450,350);
+  addNode('wings',700,350);
+  addLink(0,1);addLink(1,2);addLink(1,4);addLink(3,1);addLink(2,5);
+  addEvidence(0,true);addEvidence(0,true);
+  addEvidence(3,false);
+  addEvidence(4,false);
+  links.forEach(l=>{
+    const f=0.8,c=0.7;
+    l.f=f;l.c=c;
+  });
+  runInference();
+  logStep('','Example loaded: raven&rarr;bird&rarr;flying (positive evidence), penguin&rarr;bird (negative evidence on flying), ostrich&rarr;bird (negative on flying). Run inference again to see propagation.','');
+}
+
+function clearAll(){
+  nodes=[];links=[];nodeId=0;selectedNode=null;linkFrom=null;
+  document.getElementById('info-panel').innerHTML='<div class="step">Canvas cleared. Add nodes or load an example.</div>';
+  draw();
+}
+
+function getNodeAt(x,y){
+  for(let i=nodes.length-1;i>=0;i--){
+    const n=nodes[i];
+    if(Math.hypot(x-n.x,y-n.y)<n.r)return i;
+  }
+  return-1;
+}
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const idx=getNodeAt(x,y);
+  
+  if(mode==='add'){
+    if(idx===-1){
+      const name=document.getElementById('node-name').value||`node${nodeId}`;
+      addNode(name,x,y);
+      document.getElementById('node-name').value='';
+    }
+  }else if(mode==='link'){
+    if(idx!==-1){
+      if(linkFrom===null){linkFrom=idx;}
+      else{addLink(linkFrom,idx);linkFrom=null;}
+      draw();
+    }
+  }else if(mode==='evidence'){
+    if(idx!==-1)addEvidence(idx,evidencePositive);
+  }else if(mode==='delete'){
+    if(idx!==-1){
+      links=links.filter(l=>l.from!==idx&&l.to!==idx);
+      nodes.splice(idx,1);
+      links.forEach(l=>{if(l.from>idx)l.from--;if(l.to>idx)l.to--;});
+      draw();
+    }
+  }
+});
+
+let dragging=-1;
+canvas.addEventListener('mousedown',e=>{
+  const rect=canvas.getBoundingClientRect();
+  dragging=getNodeAt(e.clientX-rect.left,e.clientY-rect.top);
+});
+canvas.addEventListener('mousemove',e=>{
+  if(dragging!==-1){
+    const rect=canvas.getBoundingClientRect();
+    nodes[dragging].x=e.clientX-rect.left;
+    nodes[dragging].y=e.clientY-rect.top;
+    draw();
+  }
+});
+canvas.addEventListener('mouseup',()=>{dragging=-1;});
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Draw links
+  links.forEach(l=>{
+    const from=nodes[l.from],to=nodes[l.to];
+    if(!from||!to)return;
+    ctx.strokeStyle=l.c>0.5?'#4488aa':'#444';
+    ctx.lineWidth=l.c>0.5?2:1;
+    ctx.beginPath();
+    ctx.moveTo(from.x,from.y);
+    ctx.lineTo(to.x,to.y);
+    ctx.stroke();
+    // Arrow
+    const ang=Math.atan2(to.y-from.y,to.x-from.x);
+    const ax=to.x-25*Math.cos(ang),ay=to.y-25*Math.sin(ang);
+    ctx.beginPath();
+    ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-8*Math.cos(ang-0.4),ay-8*Math.sin(ang-0.4));
+    ctx.lineTo(ax-8*Math.cos(ang+0.4),ay-8*Math.sin(ang+0.4));
+    ctx.closePath();
+    ctx.fillStyle=l.c>0.5?'#4488aa':'#666';
+    ctx.fill();
+  });
+  // Link from indicator
+  if(linkFrom!==null&&nodes[linkFrom]){
+    ctx.strokeStyle='#e8c840';ctx.lineWidth=2;ctx.setLineDash([5,5]);
+    ctx.beginPath();
+    ctx.moveTo(nodes[linkFrom].x,nodes[linkFrom].y);
+    ctx.lineTo(...lastMouse||[nodes[linkFrom].x+50,nodes[linkFrom].y]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  // Draw nodes
+  nodes.forEach(n=>{
+    const fColor=n.f>0.6?'#44ff44':n.f<0.4?'#ff4444':'#aaaa00';
+    const alpha=0.2+n.c*0.6;
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(30,30,50,0.9)`;
+    ctx.fill();
+    ctx.strokeStyle=fColor;
+    ctx.lineWidth=2+n.c*2;
+    ctx.stroke();
+    // Glow
+    if(n.c>0.3){
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r+5+n.c*10,0,Math.PI*2);
+      ctx.strokeStyle=fColor+'33';
+      ctx.lineWidth=3;
+      ctx.stroke();
+    }
+    // Label
+    ctx.fillStyle='#c8c8e0';
+    ctx.font='12px Georgia';
+    ctx.textAlign='center';
+    ctx.fillText(n.name,n.x,n.y-2);
+    ctx.fillStyle='#88ccff';
+    ctx.font='10px monospace';
+    ctx.fillText(`${n.f.toFixed(2)},${n.c.toFixed(2)}`,n.x,n.y+12);
+  });
+}
+
+let lastMouse=null;
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  lastMouse=[e.clientX-rect.left,e.clientY-rect.top];
+});
+
+draw();
+</script>
+</body>
+</html>

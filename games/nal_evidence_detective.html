@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Evidence Detective</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;color:#c8c8e0;font-family:Georgia,serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+h1{color:#e8c840;margin:20px 0 5px;font-size:1.8em}
+.subtitle{color:#888;margin-bottom:15px;font-size:0.9em}
+#game-container{display:flex;gap:20px;max-width:900px;width:95%;flex-wrap:wrap}
+#case-panel{flex:1;min-width:300px;background:#12121e;border:1px solid #333;border-radius:8px;padding:15px}
+#evidence-panel{flex:1;min-width:300px;background:#12121e;border:1px solid #333;border-radius:8px;padding:15px}
+.panel-title{color:#e8c840;font-size:1.1em;margin-bottom:10px;border-bottom:1px solid #333;padding-bottom:5px}
+.clue{background:#1a1a2e;border:1px solid #444;border-radius:6px;padding:10px;margin:8px 0;cursor:pointer;transition:all 0.2s}
+.clue:hover{border-color:#e8c840;transform:translateX(3px)}
+.clue .clue-text{font-size:0.9em;margin-bottom:5px}
+.clue .clue-stv{font-size:0.8em;color:#888}
+.clue.collected{opacity:0.35;cursor:default}
+.clue.collected:hover{border-color:#444;transform:none}
+.clue.red-herring{border-color:#663333}
+#verdict-display{background:#1a1a2e;border:1px solid #444;border-radius:6px;padding:15px;margin-top:15px;text-align:center}
+#verdict-display .current-stv{font-size:1.2em;margin:10px 0}
+.f-display{color:#44ff44}.c-display{color:#4488ff}
+#action-buttons{display:flex;gap:10px;margin-top:10px;justify-content:center;flex-wrap:wrap}
+.btn{padding:8px 18px;border:1px solid #e8c840;background:transparent;color:#e8c840;border-radius:4px;cursor:pointer;font-family:inherit;font-size:0.95em;transition:all 0.2s}
+.btn:hover:not(:disabled){background:#e8c840;color:#0a0a12}
+.btn:disabled{opacity:0.3;cursor:default}
+.btn.convict{border-color:#ff4444;color:#ff4444}
+.btn.convict:hover:not(:disabled){background:#ff4444;color:#0a0a12}
+.btn.acquit{border-color:#44ff44;color:#44ff44}
+.btn.acquit:hover:not(:disabled){background:#44ff44;color:#0a0a12}
+#narrative{max-width:900px;width:95%;background:#12121e;border:1px solid #333;border-radius:8px;padding:15px;margin:15px 0;font-size:0.95em;line-height:1.5}
+.speaker{color:#e8c840;font-weight:bold}
+#level-info{color:#888;font-size:0.85em;margin-bottom:10px}
+#message{color:#ff8844;font-size:0.9em;min-height:20px;text-align:center;margin-top:8px}
+.bar{display:inline-block;width:60px;height:6px;background:#333;border-radius:3px;margin-left:4px;vertical-align:middle;position:relative}
+.bar-fill{position:absolute;height:100%;border-radius:3px}
+</style>
+</head>
+<body>
+<h1>🔍 NAL Evidence Detective</h1>
+<p class="subtitle">Build a case using NAL truth revision. Convict or acquit — but only when evidence is strong enough.</p>
+<div id="level-info">Case 1 of 5 — <span id="case-title">The Midnight Burglary</span></div>
+<div id="narrative"><span class="speaker">Detective Iter:</span> <span id="case-narrative"></span></div>
+<div id="game-container">
+  <div id="case-panel"><div class="panel-title">Available Evidence</div><div id="clues-list"></div></div>
+  <div id="evidence-panel">
+    <div class="panel-title">Case Status</div>
+    <div id="verdict-display">
+      <div>Current Belief about Guilt</div>
+      <div class="current-stv">f = <span class="f-display" id="current-f">0.500</span> | c = <span class="c-display" id="current-c">0.000</span></div>
+      <div style="font-size:0.8em;color:#888;margin:5px 0">Convict: f>0.90 &amp; c>0.85 | Acquit: f<0.10 &amp; c>0.85</div>
+      <div id="action-buttons">
+        <button class="btn convict" id="convict-btn" onclick="makeVerdict('convict')" disabled>⚖️ Convict</button>
+        <button class="btn acquit" id="acquit-btn" onclick="makeVerdict('acquit')" disabled>⚖️ Acquit</button>
+        <button class="btn" id="next-btn" onclick="nextCase()" style="display:none">Next Case →</button>
+      </div>
+      <div id="message"></div>
+    </div>
+  </div>
+</div>
+<script>
+const cases=[
+{title:"The Midnight Burglary",narrative:"The museum was robbed at midnight. Security guard Tom was found asleep at his post. A witness claims they saw a tall figure near the building at 11:45 PM. Fingerprints were found on the display case — but they belong to the cleaning crew. Tom has no alibi. Camera footage shows a figure, but the camera was obstructed. Tom recently filed for bankruptcy.",
+clues:[{text:"Tom was asleep at his post",f:0.85,c:0.90},{text:"Witness saw a tall figure at 11:45 PM",f:0.60,c:0.70},{text:"Fingerprints on display case (cleaning crew)",f:0.20,c:0.85},{text:"Tom has no alibi for the theft window",f:0.75,c:0.80},{text:"Camera footage partially obstructed",f:0.50,c:0.60},{text:"Tom filed for bankruptcy recently",f:0.55,c:0.75},{text:"Red herring: Unrelated pedestrian nearby",f:0.50,c:0.30,rh:1}]},
+{title:"The Lab Fire",narrative:"A fire broke out in the chemistry lab at 3 AM. Dr. Chen's keycard was used at 2:45 AM. The fire alarm was disabled 30 minutes before. Dr. Chen claims she was at home — and her smart home data shows activity at 2:50 AM. Another researcher, Lee, also had access.",
+clues:[{text:"Dr. Chen's keycard used at 2:45 AM",f:0.80,c:0.95},{text:"Fire alarm disabled 30 min before fire",f:0.70,c:0.85},{text:"Smart home shows Chen activity at 2:50 AM",f:0.15,c:0.80},{text:"Lee also had lab access",f:0.40,c:0.70},{text:"Competing paper published last week",f:0.60,c:0.65},{text:"Red herring: Chen has a pet cat",f:0.50,c:0.20,rh:1},{text:"Lab insurance recently increased",f:0.55,c:0.50},{text:"Chen's commute is 40 min from lab",f:0.30,c:0.75}]},
+{title:"The Stolen Algorithm",narrative:"Source code was stolen from a startup. The code appeared on a competitor's GitHub. Alice had access and was denied a promotion. The competitor is open-source and could have independently developed similar code. Alice's laptop shows access to the repository at the time of theft — but she also commits code at that time every day.",
+clues:[{text:"Code appeared on competitor's GitHub",f:0.75,c:0.85},{text:"Alice denied promotion last month",f:0.60,c:0.80},{text:"Competitor is open-source — independent dev possible",f:0.35,c:0.70},{text:"Alice's laptop accessed repo at theft time",f:0.80,c:0.90},{text:"Alice commits code at that time daily",f:0.25,c:0.75},{text:"Red herring: Alice prefers dark mode",f:0.50,c:0.15,rh:1},{text:"Git log shows unusual commit message style",f:0.65,c:0.60},{text:"Alice's access revoked 2 days later (standard offboarding)",f:0.45,c:0.50}]},
+{title:"The Poisoned Coffee",narrative:"Bob collapsed after drinking office coffee. The coffee pot was shared by 20 people — only Bob got sick. Eve brought pastries that morning and was seen near the coffee machine. Eve and Bob had a public argument last week. Toxicology found a rare compound — available only in Eve's lab. But the coffee was brewed at 7:30 by someone else.",
+clues:[{text:"Only Bob got sick from shared coffee",f:0.75,c:0.85},{text:"Eve seen near coffee machine",f:0.65,c:0.70},{text:"Eve and Bob argued publicly last week",f:0.55,c:0.80},{text:"Rare compound found in Bob's system",f:0.90,c:0.95},{text:"Compound only available in Eve's lab",f:0.80,c:0.90},{text:"Coffee brewed by someone else at 7:30",f:0.20,c:0.75},{text:"Eve's lab access log: entered at 7 AM",f:0.35,c:0.80},{text:"Red herring: Eve drinks coffee too",f:0.50,c:0.25,rh:1}]},
+{title:"The Data Breach",narrative:"Customer data was leaked from the company database. The breach occurred at 2 AM Sunday. Three employees had access: Frank, Grace, and Henry. Frank was on vacation (verified by passport stamps). Grace's credentials were used during the breach. Henry installed a new admin tool on Friday. Grace claims her credentials were phished — a phishing email was found in her inbox.",
+clues:[{text:"Grace's credentials used during breach",f:0.85,c:0.90},{text:"Frank verified abroad (passport stamps)",f:0.10,c:0.85},{text:"Phishing email found in Grace's inbox",f:0.30,c:0.80},{text:"Henry installed new admin tool Friday",f:0.50,c:0.65},{text:"Breach at 2 AM Sunday (Grace's timezone)",f:0.45,c:0.60},{text:"Grace's login IP traced to known VPN exit node",f:0.75,c:0.75},{text:"Henry's admin tool had remote-access capability",f:0.65,c:0.70},{text:"Red herring: Grace orders sushi every Sunday",f:0.50,c:0.20,rh:1},{text:"Henry resigned effective Monday",f:0.80,c:0.85}]}
+];
+
+let curCase=0,curF=0.5,curC=0.0,solved=false,collected=[];
+
+function nalRevise(f1,c1,f2,c2){
+  const w1=c1/(1-c1+0.001),w2=c2/(1-c2+0.001),w=w1+w2;
+  return{f:(w1*f1+w2*f2)/w,c:w/(w+1)};
+}
+
+function loadCase(idx){
+  curCase=idx;curF=0.5;curC=0.0;solved=false;collected=[];
+  const c=cases[idx];
+  document.getElementById('case-title').textContent=c.title;
+  document.getElementById('case-narrative').textContent=c.narrative;
+  document.getElementById('level-info').textContent=`Case ${idx+1} of ${cases.length} — ${c.title}`;
+  const cl=document.getElementById('clues-list');cl.innerHTML='';
+  c.clues.forEach((clue,i)=>{
+    const d=document.createElement('div');
+    d.className='clue'+(clue.rh?' red-herring':'');
+    d.id=`clue-${i}`;
+    const fc=clue.f>0.6?'#44ff44':clue.f<0.4?'#ff4444':'#aaaa00';
+    d.innerHTML=`<div class="clue-text">${clue.text}</div><div class="clue-stv">f:${clue.f.toFixed(2)}<span class="bar"><span class="bar-fill" style="width:${clue.f*100}%;background:${fc}"></span></span> c:${clue.c.toFixed(2)}<span class="bar"><span class="bar-fill" style="width:${clue.c*100}%;background:#4488ff"></span></span></div>`;
+    d.onclick=()=>collectClue(i);
+    cl.appendChild(d);
+  });
+  updateVerdict();
+  document.getElementById('next-btn').style.display='none';
+  document.getElementById('convict-btn').style.display='inline-block';
+  document.getElementById('acquit-btn').style.display='inline-block';
+  document.getElementById('message').textContent='';
+}
+
+function collectClue(idx){
+  if(solved||collected.includes(idx))return;
+  collected.push(idx);
+  const clue=cases[curCase].clues[idx];
+  document.getElementById(`clue-${idx}`).classList.add('collected');
+  if(clue.rh){
+    const r=nalRevise(curF,curC,0.5,0.15);
+    curF=r.f;curC=Math.max(0,r.c-0.05);
+  }else{
+    const r=nalRevise(curF,curC,clue.f,clue.c);
+    curF=r.f;curC=r.c;
+  }
+  updateVerdict();
+}
+
+function updateVerdict(){
+  document.getElementById('current-f').textContent=curF.toFixed(3);
+  document.getElementById('current-c').textContent=curC.toFixed(3);
+  const canConvict=curF>0.90&&curC>0.85;
+  const canAcquit=curF<0.10&&curC>0.85;
+  document.getElementById('convict-btn').disabled=!canConvict;
+  document.getElementById('acquit-btn').disabled=!canAcquit;
+}
+
+function makeVerdict(v){
+  if(solved)return;solved=true;
+  const btn=v==='convict'?'convict-btn':'acquit-btn';
+  const otherBtn=v==='convict'?'acquit-btn':'convict-btn';
+  document.getElementById(btn).disabled=true;
+  document.getElementById(otherBtn).style.display='none';
+  document.getElementById('next-btn').style.display='inline-block';
+  const msg=document.getElementById('message');
+  if(v==='convict'){
+    if(curCase<cases.length-1){
+      msg.innerHTML=`<span style="color:#ff4444">⚖️ CONVICTED</span> — f=${curF.toFixed(2)}, c=${curC.toFixed(2)}. Evidence strong enough for conviction.`;
+    }else{
+      msg.innerHTML=`<span style="color:#e8c840">🏆 All 5 cases solved! You've mastered NAL evidence accumulation.</span>`;
+      document.getElementById('next-btn').textContent='Play Again ↻';
+      document.getElementById('next-btn').onclick=()=>{loadCase(0);document.getElementById('next-btn').textContent='Next Case →';document.getElementById('next-btn').onclick=nextCase;};
+    }
+  }else{
+    if(curCase<cases.length-1){
+      msg.innerHTML=`<span style="color:#44ff44">⚖️ ACQUITTED</span> — f=${curF.toFixed(2)}, c=${curC.toFixed(2)}. Insufficient evidence for conviction.`;
+    }else{
+      msg.innerHTML=`<span style="color:#e8c840">🏆 All 5 cases solved! You've mastered NAL evidence accumulation.</span>`;
+      document.getElementById('next-btn').textContent='Play Again ↻';
+      document.getElementById('next-btn').onclick=()=>{loadCase(0);};
+    }
+  }
+}
+
+function nextCase(){
+  if(curCase<cases.length-1)loadCase(curCase+1);
+}
+
+loadCase(0);
+</script>
+</body>
+</html>
