@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Epistemic Engine: How Truth Values Encode Uncertainty</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a1a; color: #c8c8e8; font-family: 'Georgia', serif; line-height: 1.7; }
+.container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+h1 { color: #7c5cff; font-size: 2.2em; margin-bottom: 10px; }
+.subtitle { color: #888; font-size: 1em; margin-bottom: 30px; font-style: italic; }
+h2 { color: #9c7cff; margin-top: 35px; margin-bottom: 12px; font-size: 1.4em; }
+p { margin-bottom: 16px; }
+.formula { background: #11112a; border-left: 3px solid #7c5cff; padding: 12px 18px; margin: 16px 0; font-family: 'Courier New', monospace; color: #5cff9c; font-size: 1.05em; overflow-x: auto; }
+.note { background: #1a1a3a; border-radius: 8px; padding: 15px; margin: 16px 0; color: #aaa; font-size: 0.95em; }
+.note strong { color: #ffaa5c; }
+.toc { background: #11112a; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+.toc h3 { color: #7c5cff; margin-bottom: 10px; }
+.toc ul { list-style: none; }
+.toc li { padding: 4px 0; }
+.toc a { color: #6ca8ff; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.nav { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
+.nav a { color: #7c5cff; text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+code { background: #1a1a3a; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #ffaa5c; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>The Epistemic Engine</h1>
+<p class="subtitle">How Truth Values Encode Uncertainty in Non-Axiomatic Logic</p>
+
+<div class="toc">
+<h3>Contents</h3>
+<ul>
+<li><a href="#intro">1. The Problem with Binary Truth</a></li>
+<li><a href="#components">2. Two Numbers, Infinite Nuance</a></li>
+<li><a href="#revision">3. The Revision Rule: Learning from Experience</a></li>
+<li><a href="#deduction">4. Deduction: Cascading Uncertainty</a></li>
+<li><a href="#implications">5. Implications for AI Reasoning</a></li>
+<li><a href="#conclusion">6. Conclusion</a></li>
+</ul>
+</div>
+
+<h2 id="intro">1. The Problem with Binary Truth</h2>
+<p>Classical logic treats truth as binary: a statement is either true or false. This works in mathematics, where axioms are fixed and proofs are deterministic. But the real world doesn't cooperate. Ravens are black — except when they're albino. The sky is blue — except at sunset, or on cloudy days, or on Mars.</p>
+<p>When an AI system encounters evidence that contradicts a belief, it faces a choice: abandon the belief entirely, or somehow incorporate the contradiction. Binary logic offers no middle ground. Non-Axiomatic Logic (NAL) solves this by assigning each belief not a single truth value, but a <strong>pair</strong>: frequency and confidence.</p>
+
+<h2 id="components">2. Two Numbers, Infinite Nuance</h2>
+<p>Every statement in NAL carries a truth value <code>&lt;f, c&gt;</code> where:</p>
+<div class="formula">
+f = frequency = positive_evidence / total_evidence<br>
+c = confidence = total_evidence / (total_evidence + k)
+</div>
+<p>Frequency <code>f</code> ranges from 0 to 1 and represents the proportion of positive evidence. A value of 1.0 means all evidence supports the statement; 0.0 means all evidence opposes it; 0.5 means equal support and opposition.</p>
+<p>Confidence <code>c</code> also ranges from 0 to 1 but measures something different: how much we trust our frequency estimate. It follows an induction function where <code>k</code> is a constant (typically 1). With little evidence, confidence is low regardless of frequency. As evidence accumulates, confidence approaches 1.</p>
+<div class="note"><strong>Key insight:</strong> A belief like "ravens are black &lt;1.0, 0.9&gt;" doesn't mean "all ravens are definitely black." It means "all evidence I've seen supports this, and I've seen enough to be fairly confident." The albino raven hasn't been ruled out — it just hasn't been observed yet.</div>
+
+<h2 id="revision">3. The Revision Rule: Learning from Experience</h2>
+<p>When new evidence arrives that bears on an existing belief, NAL doesn't overwrite — it <em>revises</em>. The revision rule merges two truth values into one:</p>
+<div class="formula">
+f_new = (f1×w1 + f2×w2) / (w1 + w2)<br>
+c_new = (w1 + w2) / (w1 + w2 + k)<br>
+where w = c / (1 - c) (evidential weight)
+</div>
+<p>This has beautiful properties. If two independent observations both say "the sky is blue &lt;1.0, 0.5&gt;", revision produces &lt;1.0, 0.67&gt; — same frequency, higher confidence. If one says &lt;1.0, 0.5&gt; and another says &lt;0.0, 0.5&gt; (contradiction), revision yields &lt;0.5, 0.67&gt; — the frequency splits, but confidence still rises because we have more total evidence.</p>
+<div class="note"><strong>Example:</strong> Agent believes "(--> shark ([] dangerous)) &lt;1.0, 0.8&gt;". New evidence: "&lt;1.0, 0.5&gt;". After revision: &lt;1.0, 0.86&gt;. Then contradictory evidence: "&lt;0.0, 0.3&gt;". After revision: &lt;0.83, 0.93&gt;. The agent is now more confident in its assessment (c=0.93) while adjusting its frequency downward.</div>
+
+<h2 id="deduction">4. Deduction: Cascading Uncertainty</h2>
+<p>When we chain inferences — "ravens are birds, birds are animals, therefore ravens are animals" — uncertainty compounds. NAL's deduction rule handles this:</p>
+<div class="formula">
+Given: (--> raven bird) &lt;f1, c1&gt; and (--> bird animal) &lt;f2, c2&gt;<br>
+Deduce: (--> raven animal) &lt;f1×f2, c1×c2×f1&gt;
+</div>
+<p>The frequency multiplies (both links must hold), and confidence is further discounted by the frequency of the first link. This means each step in a reasoning chain <em>loses</em> confidence — a feature, not a bug. Long chains are inherently less reliable than short ones, and NAL encodes this mathematically rather than ignoring it.</p>
+
+<h2 id="implications">5. Implications for AI Reasoning</h2>
+<p>The two-number truth value system has several implications for artificial intelligence:</p>
+<p><strong>Graceful degradation.</strong> Unlike systems that crash on contradiction, NAL absorbs new evidence smoothly. A single counterexample doesn't destroy a well-supported generalization — it merely adjusts the frequency.</p>
+<p><strong>Natural skepticism.</strong> The confidence dimension creates a built-in skepticism mechanism. A belief held with low confidence is treated differently from one held with high confidence, even if both have the same frequency. This mirrors human epistemic behavior.</p>
+<p><strong>Evidence accumulation.</strong> The revision rule provides a principled way to aggregate evidence from multiple sources over time. Each observation contributes its weight, and the system converges toward stable truth values as evidence accumulates.</p>
+<p><strong>Meta-reasoning.</strong> Because uncertainty is explicitly represented, the system can reason <em>about</em> its own uncertainty. It can decide whether to seek more evidence, whether to act on a low-confidence belief, or whether to flag a contradiction for attention.</p>
+
+<h2 id="conclusion">6. Conclusion</h2>
+<p>Non-Axiomatic Logic's truth value system &lt;f, c&gt; is more than a mathematical formalism — it's an epistemological stance. It asserts that truth is not binary but evidential, that confidence matters as much as frequency, and that reasoning under uncertainty is the norm rather than the exception.</p>
+<p>For AI systems operating in the real world, where evidence is partial, contradictory, and ever-changing, this approach offers something classical logic cannot: the ability to hold beliefs that are simultaneously strong and open to revision. In a world of albino ravens and blue skies that sometimes aren't, that's not just useful — it's essential.</p>
+
+<div class="nav">
+<a href="../articles/index.html">← Articles</a>
+<a href="../index.html">Home</a>
+</div>
+</div>
+</body>
+</html>
