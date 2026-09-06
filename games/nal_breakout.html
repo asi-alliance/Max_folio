@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Breakout | Iter" />
+<meta property="og:description" content="Breakout where bricks are beliefs with (f,c). Ball carries evidence. Clear the board by converging beliefs to truth or falsity." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/games/nal_breakout.html" />
+<title>NAL Breakout — Evidence Meets Belief</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #060812; color: #c0c8e0; font-family: 'Courier New', monospace; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+#game-wrap { position: relative; }
+canvas { border: 2px solid #1a2a4a; border-radius: 12px; box-shadow: 0 0 80px rgba(123,47,247,0.12); cursor: none; }
+#hud { position: absolute; top: 12px; left: 12px; z-index: 10; pointer-events: none; }
+#hud .title { font-size: 16px; color: #c0a0ff; text-shadow: 0 0 12px rgba(123,47,247,0.4); }
+#hud .sub { font-size: 9px; color: #4a5a7a; letter-spacing: 2px; text-transform: uppercase; }
+#stats { position: absolute; top: 12px; right: 12px; z-index: 10; text-align: right; pointer-events: none; }
+#stats .stat { font-size: 10px; color: #4a5a7a; margin-bottom: 2px; }
+#stats .stat span { color: #58a6ff; }
+#stats .pos { color: #58ff8a !important; }
+#stats .neg { color: #ff586a !important; }
+#legend { position: absolute; bottom: 12px; left: 12px; z-index: 10; pointer-events: none; font-size: 9px; color: #3a4a5a; line-height: 1.6; }
+#legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6,8,18,0.95); z-index: 20; border-radius: 12px; }
+#overlay h1 { font-size: 42px; background: linear-gradient(90deg, #58a6ff, #bc8cff, #f778ba); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+#overlay h2 { font-size: 14px; color: #8b949e; font-weight: normal; margin-bottom: 20px; }
+#overlay p { color: #8b949e; font-size: 12px; max-width: 420px; text-align: center; line-height: 1.8; margin-bottom: 24px; }
+.start-btn { background: linear-gradient(90deg, #58a6ff, #bc8cff); border: none; color: #0d1117; padding: 12px 40px; font-size: 15px; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.start-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(88,166,255,0.4); }
+#footer { font-size: 9px; color: #2a3a4a; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+<canvas id="game" width="840" height="600"></canvas>
+<div id="hud"><div class="title">NAL Breakout</div><div class="sub">Evidence &rarr; Belief &rarr; Truth</div></div>
+<div id="stats">
+<div class="stat">Score: <span id="score">0</span></div>
+<div class="stat">Lives: <span id="lives">3</span></div>
+<div class="stat">Evidence: <span id="evidence">+0</span></div>
+<div class="stat">Converged: <span class="pos" id="converged">0</span> / <span id="total">0</span></div>
+<div class="stat">Ball: <span id="ballMode">POS</span></div>
+</div>
+<div id="legend">
+<div><span class="sw" style="background:#58ff8a"></span>True (f&rarr;1.0)</div>
+<div><span class="sw" style="background:#ff586a"></span>False (f&rarr;0.0)</div>
+<div><span class="sw" style="background:#58a6ff"></span>Positive Evidence</div>
+<div><span class="sw" style="background:#f778ba"></span>Negative Evidence</div>
+</div>
+<div id="overlay">
+<h1>NAL Breakout</h1>
+<h2>Evidence Meets Belief</h2>
+<p>Bricks are beliefs with truth values (f, c).<br>Your ball carries evidence &mdash; press <b>SPACE</b> to flip between positive and negative.<br>Positive evidence raises frequency; negative lowers it.<br>Converge every belief to <b>f=1.0</b> or <b>f=0.0</b> to clear the board.<br>Confidence grows with each hit. High-confidence bricks resist change.<br><br>Move: <b>Mouse</b> or <b>A/D</b> &middot; Flip: <b>SPACE</b> &middot; Launch: <b>Click</b></p>
+<button class="start-btn" onclick="startGame()">LAUNCH</button>
+<div id="footer">An Iter creation &middot; PeTTa platform</div>
+</div>
+</div>
+<script>
+const canvas=document.getElementById("game"),ctx=canvas.getContext("2d"),W=canvas.width,H=canvas.height;
+let gameState="menu",score=0,lives=3,converged=0,totalBricks=0;
+const paddle={x:W/2-50,y:H-30,w:100,h:12,speed:8};
+let mouseX=W/2,keys={};
+const ball={x:W/2,y:H-50,r:8,dx:0,dy:0,speed:5,attached:true,evidenceType:"positive"};
+let bricks=[],particles=[];
+const BC=10,BR=6,BW=72,BH=28,BG=4,BOX=(W-(BC*(BW+BG)-BG))/2,BOY=60;
+const labels=["--> raven bird","--> raven black","--> penguin bird","--> penguin flightless","--> robin sing","--> swan white","--> fire hot","--> water wet","--> ice cold","--> sky blue","--> grass green","--> sun bright","--> dog loyal","--> cat independent","--> whale mammal","--> shark fish","--> eagle predator","--> owl nocturnal","--> bee social","--> spider solitary","--> oak tall","--> bamboo flexible","--> diamond hard","--> silk soft","--> lava dangerous","--> snow cold","--> wind invisible","--> thunder loud","--> lightning fast","--> moon pale","--> earth round","--> mars red","--> venus hot","--> jupiter large","--> saturn ringed","--> comet rare","--> gold precious","--> iron heavy","--> copper conductive","--> salt savory","--> sugar sweet","--> coffee bitter","--> lemon sour","--> chili spicy","--> mint cool","--> rose fragrant","--> onion pungent","--> garlic strong","--> ocean deep","--> mountain high","--> desert dry","--> river flowing","--> lake calm","--> glacier slow","--> volcano active","--> earthquake sudden","--> tornado twisting","--> rainbow colorful","--> fog dense"];
+function nalRev(f,c,ev){const ow=c/(1-c+0.001),nw=1,tw=ow+nw,nc=tw/(tw+1),ef=ev>0?1:0;return{f:(f*ow+ef*nw)/(ow+nw),c:nc};}
+function isConv(b){return(b.f>=0.95&&b.c>=0.8)||(b.f<=0.05&&b.c>=0.8);}
+function convTo(b){if(b.f>=0.95&&b.c>=0.8)return"true";if(b.f<=0.05&&b.c>=0.8)return"false";return null;}
+function lerp(a,b,t){return a+(b-a)*t;}
+function bColor(f,c){let r,g,b;if(f<0.5){const t=f*2;r=Math.round(lerp(255,136,t)),g=Math.round(lerp(88,136,t)),b=Math.round(lerp(106,136,t))}else{const t=(f-0.5)*2;r=Math.round(lerp(136,88,t)),g=Math.round(lerp(136,255,t)),b=Math.round(lerp(136,138,t))}const d=lerp(0.3,1,c);return`rgb(${Math.round(r*d)},${Math.round(g*d)},${Math.round(b*d)})`}
+function ballColor(){return ball.evidenceType==="positive"?"#58a6ff":"#f778ba"}
+function initBricks(){bricks=[];let li=0;for(let r=0;r<BR;r++)for(let c=0;c<BC;c++){const bx=BOX+c*(BW+BG),by=BOY+r*(BH+BG);bricks.push({x:bx,y:by,w:BW,h:BH,f:0.3+Math.random()*0.4,c:0.3+Math.random()*0.15,label:labels[li++%labels.length],hits:0,alive:true,shake:0,glow:0})}totalBricks=bricks.length;converged=0}
+function spawnP(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1+Math.random()*3;particles.push({x,y,dx:Math.cos(a)*s,dy:Math.sin(a)*s,life:1,color:col,size:2+Math.random()*3})}}
+function updP(){for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.dx,p.y+=p.dy,p.dy+=0.05,p.life-=0.02;if(p.life<=0)particles.splice(i,1)}}
+function drawP(){for(const p of particles){ctx.globalAlpha=p.life,ctx.fillStyle=p.color,ctx.beginPath(),ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2),ctx.fill()}ctx.globalAlpha=1}
+function launchBall(){if(ball.attached){ball.attached=false,ball.dx=(Math.random()>0.5?1:-1)*ball.speed*0.7,ball.dy=-ball.speed}}
+function resetBall(){ball.attached=true,ball.x=paddle.x+paddle.w/2,ball.y=paddle.y-ball.r-2,ball.dx=0,ball.dy=0}
+function checkBrick(){for(const b of bricks){if(!b.alive)continue;const cx=Math.max(b.x,Math.min(ball.x,b.x+b.w)),cy=Math.max(b.y,Math.min(ball.y,b.y+b.h)),dx=ball.x-cx,dy=ball.y-cy;if(dx*dx+dy*dy<ball.r*ball.r){const ev=ball.evidenceType==="positive"?1:-1,res=nalRev(b.f,b.c,ev),pc=isConv(b);b.f=res.f,b.c=res.c,b.hits++,b.shake=6,b.glow=1;if(Math.abs(dx)>Math.abs(dy))ball.dx=-ball.dx;else ball.dy=-ball.dy;score+=10,document.getElementById("evidence").textContent=ev>0?"+1":"-1",document.getElementById("evidence").className=ev>0?"pos":"neg";spawnP(b.x+b.w/2,b.y+b.h/2,ev>0?"#58a6ff":"#f778ba",8);const nc=isConv(b);if(nc&&!pc){b.alive=false,converged++,score+=100;const cc=convTo(b)==="true"?"#58ff8a":"#ff586a";spawnP(b.x+b.w/2,b.y+b.h/2,cc,20)}if(ball.speed<8){ball.speed+=0.03;const nm=Math.sqrt(ball.dx*ball.dx+ball.dy*ball.dy);if(nm>0)ball.dx=ball.dx/nm*ball.speed,ball.dy=ball.dy/nm*ball.speed}if(converged>=totalBricks){gameState="won"}break}}}
+function update(){if(gameState!=="playing")return;if(keys["a"]||keys["ArrowLeft"])paddle.x-=paddle.speed;if(keys["d"]||keys["ArrowRight"])paddle.x+=paddle.speed;paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));if(ball.attached){ball.x=paddle.x+paddle.w/2,ball.y=paddle.y-ball.r-2}else{ball.x+=ball.dx,ball.y+=ball.dy;if(ball.x-ball.r<0){ball.x=ball.r,ball.dx=-ball.dx}if(ball.x+ball.r>W){ball.x=W-ball.r,ball.dx=-ball.dx}if(ball.y-ball.r<0){ball.y=ball.r,ball.dy=-ball.dy}if(ball.y+ball.r>H){lives--,document.getElementById("lives").textContent=lives;if(lives<=0){gameState="lost"}else{resetBall()}}if(ball.y+ball.r>paddle.y&&ball.y-ball.r<paddle.y+paddle.h&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w){ball.dy=-Math.abs(ball.dy);const hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);ball.dx=hit*ball.speed*0.8;const nm=Math.sqrt(ball.dx*ball.dx+ball.dy*ball.dy);if(nm>0)ball.dx=ball.dx/nm*ball.speed,ball.dy=ball.dy/nm*ball.speed}checkBrick()}for(const b of bricks)b.shake*=0.85,b.glow*=0.92;updP();document.getElementById("score").textContent=score;document.getElementById("converged").textContent=converged;document.getElementById("total").textContent=totalBricks;document.getElementById("ballMode").textContent=ball.evidenceType==="positive"?"POS":"NEG";document.getElementById("ballMode").style.color=ballColor()}
+function draw(){ctx.fillStyle="#060812",ctx.fillRect(0,0,W,H);for(const b of bricks){if(!b.alive)continue;const sx=(Math.random()-0.5)*b.shake,sy=(Math.random()-0.5)*b.shake;ctx.fillStyle=bColor(b.f,b.c),ctx.fillRect(b.x+sx,b.y+sy,b.w,b.h);if(b.glow>0.1){ctx.shadowBlur=20*b.glow,ctx.shadowColor=ballColor(),ctx.fillStyle=bColor(b.f,b.c),ctx.fillRect(b.x+sx,b.y+sy,b.w,b.h),ctx.shadowBlur=0}ctx.strokeStyle="rgba(255,255,255,0.1)",ctx.lineWidth=1,ctx.strokeRect(b.x+sx,b.y+sy,b.w,b.h);ctx.fillStyle="rgba(255,255,255,0.4)",ctx.font="8px Courier New",ctx.textAlign="center",ctx.fillText(b.label,b.x+b.w/2+sx,b.y+b.h/2+sy+3);ctx.fillStyle="rgba(255,255,255,0.3)",ctx.font="7px Courier New",ctx.textAlign="right",ctx.fillText(`f=${b.f.toFixed(2)},c=${b.c.toFixed(2)}`,b.x+b.w-4+sx,b.y+10+sy)}ctx.fillStyle="#3a4a5a",ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h),ctx.strokeStyle="#58a6ff",ctx.lineWidth=1,ctx.strokeRect(paddle.x,paddle.y,paddle.w,paddle.h);ctx.fillStyle=ballColor(),ctx.beginPath(),ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2),ctx.fill();ctx.shadowBlur=15,ctx.shadowColor=ballColor(),ctx.beginPath(),ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2),ctx.fill(),ctx.shadowBlur=0;drawP();if(gameState==="won"){ctx.fillStyle="rgba(6,8,18,0.85)",ctx.fillRect(0,0,W,H),ctx.fillStyle="#58ff8a",ctx.font="bold 36px Courier New",ctx.textAlign="center",ctx.fillText("BOARD CONVERGED",W/2,H/2-20),ctx.fillStyle="#8b949e",ctx.font="14px Courier New",ctx.fillText(`Score: ${score} | All beliefs resolved`,W/2,H/2+15),ctx.fillStyle="#58a6ff",ctx.font="12px Courier New",ctx.fillText("Click to play again",W/2,H/2+45)}if(gameState==="lost"){ctx.fillStyle="rgba(6,8,18,0.85)",ctx.fillRect(0,0,W,H),ctx.fillStyle="#ff586a",ctx.font="bold 36px Courier New",ctx.textAlign="center",ctx.fillText("EVIDENCE LOST",W/2,H/2-20),ctx.fillStyle="#8b949e",ctx.font="14px Courier New",ctx.fillText(`Score: ${score} | ${converged}/${totalBricks} converged`,W/2,H/2+15),ctx.fillStyle="#f778ba",ctx.font="12px Courier New",ctx.fillText("Click to try again",W/2,H/2+45)}}
+function loop(){update(),draw(),requestAnimationFrame(loop)}
+function startGame(){gameState="playing",score=0,lives=3,ball.speed=5,ball.evidenceType="positive",initBricks(),resetBall(),document.getElementById("overlay").style.display="none"}
+canvas.addEventListener("mousemove",e=>{const r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left,paddle.x=Math.max(0,Math.min(W-paddle.w,mouseX-paddle.w/2))});
+canvas.addEventListener("click",()=>{if(gameState==="playing")launchBall();else if(gameState==="won"||gameState=="lost")startGame()});
+document.addEventListener("keydown",e=>{keys[e.key]=true;if(e.key===" "){e.preventDefault();ball.evidenceType=ball.evidenceType==="positive"?"negative":"positive"}});
+document.addEventListener("keyup",e=>{keys[e.key]=false});
+initBricks(),resetBall(),loop();
+</script>
+</body>
+</html>
