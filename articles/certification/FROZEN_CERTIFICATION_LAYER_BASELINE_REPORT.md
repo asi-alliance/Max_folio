@@ -1,59 +1,0 @@
-# FROZEN CERTIFICATION LAYER BASELINE REPORT
-
-**Freeze date:** 2026-04-29  
-**Authority:** Kevin Machiels  
-**Components:** `cert_layer_v05` + `quarantine_tracker_v04`  = **FROZEN BASELINE**
-
----
-
-## 1. Invariants
-
-| # | Name | Statement |
-|---|----|----------|
-| 1 | Safety | No uncertified belief propagates |
-| 2 | Coherence | Frequency gate enforces consistency |
-| 3 | Support | Confidence gate enforces evidence |
-| 4 | Membrane | Q_AMBIGUOUS cannot donate evidence |
-| 5 | Liveness | Every quarantined belief gets â‰¥1 attempt |
-| 6 | Boundedness | Pending remains stable |
-| 7 | Integrity | No duplicate registration |
-| 8 | Causality | Promotion = re-certification after new evidence |
-
----
-
-## 2. Operational Semantics
-
-| Verdict | Meaning |
-|---------|---------|
-| ADMIT | Coherent + supported |
-| Q_UNDERSUPPORTED | Coherent, insufficient evidence |
-| Q_AMBIGUOUS | Evidenced conflict (preserved, non-propagating) |
-| REJECT | Incoherent or noise |
-
----
-
-## 3. System Property
-
-The belief graph evolves only through admissible transitions, and no belief can escape quarantine without passing the same certification gate that blocked it.
-
----
-
-## 4. Validated Metrics (e2e_trace_v2)
-
-| Metric | Value |
-|--------|-------|
-| auto_registered | 6 |
-| duplicates_blocked | 1 |
-| Q_UNDERSUPPORTED | 3 |
-| Q_AMBIGUOUS | 3 |
-| leakage | 0 |
-| total_promoted | 1 (b9 via NAL revision f=0.9517 c=0.6000) |
-| failed_recert_count | 1 (bF stays PENDING) |
-| failed_recert_reasons | { QUARA9US‘NˆHH‚‹KKB‚ˆÈÈKˆ[™]ËQ[™ÚZ[‚‚˜˜Ù\YWİŒH8¡¤ˆ]X\˜[[™WÜ™YÚ\İ\ˆ8¡¤ˆ\ÙİX\™8¡¤ˆSÜ™]š\Ú[Ûˆ8¡¤ˆ›Û[İWİÚ]Ü™XÙ\8¡¤ˆ˜Z\—ÜÙ[Xİ˜‚‹KKB‚ˆÈÈ‹ˆ™\œÚ[Ûˆ[™XYÙB‚Ÿ™\œÚ[ÛˆÚ[™ÙHŸKKKKKKKK_KKKKKKK_ŸŒHÙZYÚYØØ[\ˆ[œİXš[]HØÛÜ™HŸŒˆÚYÛ™Y\‹[[ÙHX\™Ú[œÈ
-È˜[È™ZYÚ›ÜšÛÙŸŒÈÚ[\YšYY™\ÚÛË›ÜY˜[ÈŸŒİ™\ÜË]˜[Y]Y˜\Ù[[™HŸŒHœ›Ş™[ˆ˜\Ù[[™H
-È˜Z[YÜ™XÙ\˜XÚÚ[™È‚‹KKB‚ˆÈÈËˆÛİ™\›˜[˜ÙH[B‚“›È™]ÈYXÚ[š\Û\È
-˜[Ëİ\˜]\™KÔY\]™H™\ÚÛËÚZ[‹\[˜[JH[›ÙXÙY[›\ÜÈ^H™X]\È˜\Ù[[™HÛˆYX\İ\˜X›H[\Ë‚‚‹KKB‚ˆÈÈˆÛ›İÛˆ[Z]Â‚ŒKˆÚ[™ÛKXÛÛ^™\ÚÛÈ
-›ÈY\]™H›Ùš[\ÈY]
-BŒ‹ˆ›ÈÚZ[‹[[™İ[˜[BŒËˆ›ÈÙ[X[XÈ[\\İ[˜ÙH[ˆŒBˆÚ[™ÛK]™XY]˜[X][ÛˆÛ›BKˆX[X[S™]š\Ú[ÛˆšYÙÙ\ˆ
-›È]]Ë\ØÚY[\ŠB‚‹KKB‚Š‘Ù[™\˜]YHX^›İšXÚÈ
-YUPÛ]ÊKœ›Ş™[ˆHÙ]š[ˆXXÚY[ÈŒ‹LLKŠbase64: invalid input

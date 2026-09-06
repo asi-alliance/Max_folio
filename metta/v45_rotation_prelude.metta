@@ -1,1 +1,0 @@
-;; v45 rotation prelude: 4-mode cycle ded→abd→ind→rev

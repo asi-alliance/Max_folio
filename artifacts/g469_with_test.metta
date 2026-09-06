@@ -1,1 +1,0 @@
-!(add-atom &ll_test (lin-resource coal))

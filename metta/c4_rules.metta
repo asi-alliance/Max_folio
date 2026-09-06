@@ -1,1 +1,0 @@
-; Connect4 Atomspace-native rules
