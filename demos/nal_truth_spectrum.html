@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Truth Spectrum Explorer — Max Folio</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#c8c8e0;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{color:#e8c840;font-size:1.8em;margin:10px 0;text-align:center}
+.subtitle{color:#888;margin-bottom:20px;font-size:0.9em}
+#app{width:100%;max-width:700px;background:#111122;border-radius:12px;padding:20px;box-shadow:0 0 40px rgba(100,100,255,0.15)}
+#canvas-wrap{position:relative;width:100%;aspect-ratio:1.2;max-width:600px;margin:0 auto}
+canvas{width:100%;height:100%;border-radius:8px;cursor:crosshair}
+#info{margin-top:15px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.info-box{background:#161628;padding:10px 15px;border-radius:8px;flex:1;min-width:120px}
+.info-box label{color:#888;font-size:0.8em;display:block}
+.info-box span{color:#e8c840;font-size:1.1em;font-weight:bold}
+#controls{margin-top:15px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+button{background:#222238;color:#e8c840;border:1px solid #444;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:0.9em;transition:all 0.2s}
+button:hover{background:#333358}
+button.active{background:#2a4a2a;color:#88ff88}
+#belief-list{margin-top:15px;max-height:150px;overflow-y:auto;background:#161628;border-radius:8px;padding:10px}
+#belief-list div{padding:4px 8px;border-bottom:1px solid #222;font-size:0.85em;cursor:pointer}
+#belief-list div:hover{background:#222240}
+.instructions{margin-top:15px;padding:12px;background:#161628;border-radius:8px;font-size:0.85em;color:#999;line-height:1.5}
+.instructions b{color:#e8c840}
+</style>
+</head>
+<body>
+<h1>🔬 NAL Truth Spectrum Explorer</h1>
+<p class="subtitle">Click on the plane to place beliefs. Link them to see NAL deduction propagate truth values.</p>
+<div id="app">
+<div id="canvas-wrap">
+<canvas id="canvas" width="600" height="500"></canvas>
+</div>
+<div id="info">
+<div class="info-box"><label>Hover f</label><span id="info-f">0.50</span></div>
+<div class="info-box"><label>Hover c</label><span id="info-c">0.50</span></div>
+<div class="info-box"><label>Beliefs</label><span id="info-count">0</span></div>
+<div class="info-box"><label>Links</label><span id="info-links">0</span></div>
+</div>
+<div id="controls">
+<button id="mode-place" class="active">Place</button>
+<button id="mode-link">Link</button>
+<button id="mode-delete">Delete</button>
+<button id="preset">Load Preset</button>
+<button id="clear">Clear</button>
+</div>
+<div id="belief-list"></div>
+<div class="instructions">
+<b>How to use:</b> Click on the plane to place a belief at that (f, c) coordinate.
+Switch to <b>Link</b> mode and click two beliefs to connect them &mdash; the second inherits a deduced truth value via NAL deduction.
+<b>Delete</b> mode removes beliefs or links. <b>Load Preset</b> creates a sample belief network.
+X-axis = Frequency (how often true). Y-axis = Confidence (how much evidence). Color = spectrum from red (low f) to green (high f).
+</div>
+</div>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const W=600,H=500,margins={l:40,r:20,t:20,b:40};
+let mode='place',beliefs=[],links=[],selId=-1,hoverF=0.5,hoverC=0.5,nextId=0;
+
+function fcToXY(f,c){
+  const x=margins.l+f*(W-margins.l-margins.r);
+  const y=H-margins.b-c*(H-margins.t-margins.b);
+  return[x,y];
+}
+function xyToFC(x,y){
+  const f=(x-margins.l)/(W-margins.l-margins.r);
+  const c=(H-margins.b-y)/(H-margins.t-margins.b);
+  return[Math.max(0,Math.min(1,f)),Math.max(0,Math.min(1,c))];
+}
+function fcToColor(f,c){
+  const r=Math.round(255*(1-f)*c+40*(1-c));
+  const g=Math.round(255*f*c+40*(1-c));
+  const b=Math.round(80*(1-Math.abs(f-0.5)*2)*c+60*(1-c));
+  return`rgb(${r},${g},${b})`;
+}
+function nalDeduce(f1,c1,f2,c2){
+  // NAL deduction: f = f1*f2, c = (c1*c2*(1-f1*f2))/((1-f1*f2)+1)
+  const f=f1*f2;
+  const c=(c1*c2)/(c1*c2+(1-c1*c2)+0.01);
+  return[f,Math.min(0.99,c)];
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // Background
+  ctx.fillStyle='#0a0a1a';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='rgba(60,60,100,0.3)';
+  ctx.lineWidth=1;
+  for(let i=0;i<=10;i++){
+    const x=margins.l+i*(W-margins.l-margins.r)/10;
+    const y=H-margins.b-i*(H-margins.t-margins.b)/10;
+    ctx.beginPath();ctx.moveTo(x,margins.t);ctx.lineTo(x,H-margins.b);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(margins.l,y);ctx.lineTo(W-margins.r,y);ctx.stroke();
+  }
+
+  // Spectrum background (subtle)
+  for(let i=0;i<100;i++){
+    const t=i/100;
+    const[x,y]=fcToXY(t,1);
+    ctx.fillStyle=fcToColor(t,0.15);
+    ctx.fillRect(x,margins.t,(W-margins.l-margins.r)/100+1,H-margins.t-margins.b);
+  }
+
+  // Axes
+  ctx.strokeStyle='#666';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(margins.l,margins.t);ctx.lineTo(margins.l,H-margins.b);ctx.lineTo(W-margins.r,H-margins.b);ctx.stroke();
+  ctx.fillStyle='#888';ctx.font='11px sans-serif';
+  ctx.fillText('Frequency (f) →',W/2-40,H-8);
+  ctx.save();ctx.translate(12,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('↑ Confidence (c)',0,0);ctx.restore();
+  ctx.fillText('0',margins.l-5,H-margins.b+12);
+  ctx.fillText('1',W-margins.r-5,H-margins.b+12);
+  ctx.fillText('0',margins.l-12,H-margins.b);
+  ctx.fillText('1',margins.l-12,margins.t+8);
+
+  // Links
+  for(const l of links){
+    const b1=beliefs.find(b=>b.id===l.from);
+    const b2=beliefs.find(b=>b.id===l.to);
+    if(!b1||!b2)continue;
+    const[x1,y1]=fcToXY(b1.f,b1.c);
+    const[x2,y2]=fcToXY(b2.f,b2.c);
+    const[df,dc]=nalDeduce(b1.f,b1.c,b2.f,b2.c);
+    ctx.strokeStyle=fcToColor(df,dc*0.5);
+    ctx.lineWidth=2;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    ctx.setLineDash([]);
+    // Midpoint label
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    ctx.fillStyle='#aaa';ctx.font='9px monospace';
+    ctx.fillText(`f=${df.toFixed(2)},c=${dc.toFixed(2)}`,mx+4,my-4);
+  }
+
+  // Beliefs
+  for(const b of beliefs){
+    const[x,y]=fcToXY(b.f,b.c);
+    const color=fcToColor(b.f,b.c);
+    ctx.shadowBlur=15;ctx.shadowColor=color;
+    ctx.fillStyle=color;
+    ctx.beginPath();ctx.arc(x,y,b.id===selId?10:7,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=b.id===selId?'#fff':'rgba(255,255,255,0.4)';
+    ctx.lineWidth=b.id===selId?2:1;
+    ctx.beginPath();ctx.arc(x,y,b.id===selId?10:7,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#ccc';ctx.font='10px sans-serif';
+    ctx.fillText(`${b.label} (${b.f.toFixed(2)},${b.c.toFixed(2)})`,x+12,y-2);
+  }
+
+  // Hover crosshair
+  if(mode==='place'){
+    const[hx,hy]=fcToXY(hoverF,hoverC);
+    ctx.strokeStyle='rgba(255,255,255,0.2)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(hx,margins.t);ctx.lineTo(hx,H-margins.b);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(margins.l,hy);ctx.lineTo(W-margins.r,hy);ctx.stroke();
+  }
+}
+
+function updateInfo(){
+  document.getElementById('info-f').textContent=hoverF.toFixed(2);
+  document.getElementById('info-c').textContent=hoverC.toFixed(2);
+  document.getElementById('info-count').textContent=beliefs.length;
+  document.getElementById('info-links').textContent=links.length;
+  // Belief list
+  const list=document.getElementById('belief-list');
+  list.innerHTML='';
+  for(const b of beliefs){
+    const d=document.createElement('div');
+    d.textContent=`${b.label}: f=${b.f.toFixed(2)}, c=${b.c.toFixed(2)}`;
+    d.onclick=()=>{selId=b.id;draw()};
+    list.appendChild(d);
+  }
+}
+
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy;
+  [hoverF,hoverC]=xyToFC(x,y);
+  updateInfo();draw();
+});
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy;
+  const[f,c]=xyToFC(x,y);
+
+  if(mode==='place'){
+    const labels=['A','B','C','D','E','F','G','H'];
+    beliefs.push({id:nextId++,label:labels[beliefs.length%8]||'X',f,c});
+    updateInfo();draw();
+  }else if(mode==='link'){
+    // Find nearest belief
+    let nearest=-1,ndist=999;
+    for(const b of beliefs){
+      const[bx,by]=fcToXY(b.f,b.c);
+      const d=Math.hypot(bx-x,by-y);
+      if(d<ndist&&d<20){ndist=d;nearest=b.id}
+    }
+    if(nearest>=0){
+      if(selId<0){selId=nearest}
+      else if(selId!==nearest){links.push({from:selId,to:nearest});selId=-1}
+      else{selId=-1}
+    }
+    draw();
+  }else if(mode==='delete'){
+    let nearest=-1,ndist=999;
+    for(const b of beliefs){
+      const[bx,by]=fcToXY(b.f,b.c);
+      const d=Math.hypot(bx-x,by-y);
+      if(d<ndist&&d<15){ndist=d;nearest=b.id}
+    }
+    if(nearest>=0){
+      beliefs=beliefs.filter(b=>b.id!==nearest);
+      links=links.filter(l=>l.from!==nearest&&l.to!==nearest);
+    }else{
+      // Try to delete a link
+      for(let i=links.length-1;i>=0;i--){
+        const b1=beliefs.find(b=>b.id===links[i].from);
+        const b2=beliefs.find(b=>b.id===links[i].to);
+        if(!b1||!b2)continue;
+        const[x1,y1]=fcToXY(b1.f,b1.c);
+        const[x2,y2]=fcToXY(b2.f,b2.c);
+        const dx=x2-x1,dy=y2-y1;
+        const t=Math.max(0,Math.min(1,((x-x1)*dx+(y-y1)*dy)/(dx*dx+dy*dy)));
+        const px=x1+t*dx,py=y1+t*dy;
+        if(Math.hypot(x-px,y-py)<8){links.splice(i,1);break}
+      }
+    }
+    updateInfo();draw();
+  }
+});
+
+document.getElementById('mode-place').onclick=()=>{mode='place';updateButtons()};
+document.getElementById('mode-link').onclick=()=>{mode='link';selId=-1;updateButtons()};
+document.getElementById('mode-delete').onclick=()=>{mode='delete';updateButtons()};
+document.getElementById('clear').onclick=()=>{beliefs=[];links=[];selId=-1;nextId=0;updateInfo();draw()};
+document.getElementById('preset').onclick=()=>{
+  beliefs=[];links=[];selId=-1;nextId=0;
+  beliefs.push({id:nextId++,label:'A',f:0.9,c:0.8});
+  beliefs.push({id:nextId++,label:'B',f:0.7,c:0.6});
+  beliefs.push({id:nextId++,label:'C',f:0.5,c:0.4});
+  beliefs.push({id:nextId++,label:'D',f:0.3,c:0.5});
+  links.push({from:0,to:1});
+  links.push({from:1,to:2});
+  links.push({from:2,to:3});
+  updateInfo();draw();
+};
+
+function updateButtons(){
+  document.querySelectorAll('#controls button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mode-'+mode).classList.add('active');
+}
+
+draw();updateInfo();
+</script>
+</body>
+</html>
