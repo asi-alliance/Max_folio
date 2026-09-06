@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Contradiction Detector | Iter" />
+<meta property="og:description" content="Interactive tool that scans beliefs for contradictions using NAL truth revision. Input conflicting evidence, watch contradictions emerge and resolve in real time." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_contradiction_detector.html" />
+<title>NAL Contradiction Detector — Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a0a20 100%); color: #c9d1d9; min-height: 100vh; }
+nav { background: rgba(136,86,167,0.12); padding: 12px 24px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid rgba(136,86,167,0.2); }
+nav a { color: #a78bfa; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #c4b5fd; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+h1 { color: #a78bfa; margin-bottom: 8px; }
+.subtitle { color: #8b949e; margin-bottom: 32px; font-size: 0.95rem; line-height: 1.5; }
+.panel { background: rgba(136,86,167,0.06); border: 1px solid rgba(136,86,167,0.2); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.panel h2 { color: #c4b5fd; font-size: 1.1em; margin-bottom: 16px; }
+label { display: block; color: #8b949e; font-size: 0.8em; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+input[type="text"] { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(136,86,167,0.3); color: #e0d5f0; padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 0.95rem; margin-bottom: 12px; }
+input[type="range"] { width: 100%; accent-color: #a78bfa; margin-bottom: 8px; }
+.slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.slider-row label { min-width: 40px; margin: 0; }
+.slider-row .val { color: #c4b5fd; font-weight: bold; min-width: 50px; text-align: right; font-family: monospace; }
+.btn { background: rgba(136,86,167,0.25); border: 1px solid rgba(136,86,167,0.4); color: #e0d5f0; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.95rem; transition: all 0.15s; }
+.btn:hover { background: rgba(136,86,167,0.4); }
+.btn.danger { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.3); }
+.btn.danger:hover { background: rgba(248,113,113,0.25); }
+.btn.success { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.3); }
+.btn.success:hover { background: rgba(74,222,128,0.25); }
+#beliefList { display: flex; flex-direction: column; gap: 8px; }
+.belief-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(136,86,167,0.15); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+.belief-item .belief-text { color: #e0d5f0; font-size: 0.95rem; }
+.belief-item .belief-tv { font-family: monospace; color: #8b949e; font-size: 0.85rem; }
+.belief-item .belief-tv .freq { font-weight: bold; }
+.belief-item .remove { background: none; border: none; color: #6e7681; cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
+.belief-item .remove:hover { color: #f87171; }
+.freq-high .belief-text { color: #4ade80; }
+.freq-low .belief-text { color: #f87171; }
+.freq-mid .belief-text { color: #fbbf24; }
+.contradiction-banner { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; }
+.contradiction-banner .icon { font-size: 1.3rem; display: inline-block; margin-right: 8px; }
+.contradiction-banner .text { color: #f87171; font-size: 0.9rem; font-weight: 600; }
+.contradiction-banner .detail { color: #8b949e; font-size: 0.8rem; margin-top: 4px; font-family: monospace; }
+.resolved-banner .text { color: #4ade80 !important; }
+.resolved-banner { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.3); }
+.collision-group { border-left: 3px solid rgba(248,113,113,0.4); padding-left: 12px; margin-bottom: 12px; }
+#contradictionLog { max-height: 250px; overflow-y: auto; }
+#contradictionLog .entry { padding: 8px 12px; border-bottom: 1px solid rgba(136,86,167,0.1); font-size: 0.85rem; }
+#contradictionLog .entry .ts { color: #6e7681; font-family: monospace; font-size: 0.75rem; }
+#contradictionLog .entry .msg { color: #c9d1d9; margin-top: 2px; }
+.stats { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
+.stat-box { text-align: center; background: rgba(136,86,167,0.08); border: 1px solid rgba(136,86,167,0.2); border-radius: 8px; padding: 12px 24px; }
+.stat-box .stat-val { font-size: 1.6rem; font-weight: bold; color: #a78bfa; }
+.stat-box .stat-label { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+.note { color: #8b949e; font-size: 0.85em; line-height: 1.6; margin-top: 12px; }
+.formula { font-family: monospace; background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 4px; color: #a78bfa; margin: 8px 0; font-size: 0.9em; }
+strong { color: #e0d5f0; }
+em { color: #a78bfa; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="../index.html">🏠 Home</a>
+  <a href="../games/">🎮 Games</a>
+  <a href="./">🔬 Demos</a>
+  <a href="../radio/">📻 Radio</a>
+  <a href="../articles/">📝 Articles</a>
+</nav>
+<div class="container">
+  <h1>🔍 NAL Contradiction Detector</h1>
+  <p class="subtitle">Add beliefs with truth values (f, c). The detector scans for contradictions — beliefs about the same statement with conflicting frequencies. Watch NAL truth revision resolve them in real time.</p>
+  <div class="stats">
+    <div class="stat-box"><div class="stat-val" id="statTotal">0</div><div class="stat-label">Beliefs</div></div>
+    <div class="stat-box"><div class="stat-val" id="statConflicts" style="color:#f87171">0</div><div class="stat-label">Conflicts</div></div>
+    <div class="stat-box"><div class="stat-val" id="statResolved" style="color:#4ade80">0</div><div class="stat-label">Resolved</div></div>
+  </div>
+  <div class="panel">
+    <h2>📝 Add a Belief</h2>
+    <label>Statement (e.g. "raven is bird", "sky is blue")</label>
+    <input type="text" id="statementInput" placeholder="Enter a belief statement..." />
+    <div class="slider-row">
+      <label>Freq</label>
+      <input type="range" id="freqInput" min="0" max="1" step="0.01" value="0.5" />
+      <span class="val" id="freqVal">0.50</span>
+    </div>
+    <div class="slider-row">
+      <label>Conf</label>
+      <input type="range" id="confInput" min="0" max="1" step="0.01" value="0.5" />
+      <span class="val" id="confVal">0.50</span>
+    </div>
+    <button class="btn success" onclick="addBelief()">+ Add Belief</button>
+    <button class="btn" onclick="loadExamples()">Load Examples</button>
+    <button class="btn danger" onclick="clearAll()">Clear All</button>
+  </div>
+  <div class="panel">
+    <h2>⚖️ Contradiction Analysis</h2>
+    <div id="contradictionAnalysis"><p class="note">Add beliefs to see contradictions detected here.</p></div>
+  </div>
+  <div class="panel">
+    <h2>📋 All Beliefs</h2>
+    <div id="beliefList"></div>
+  </div>
+  <div class="panel">
+    <h2>📜 Resolution Log</h2>
+    <div id="contradictionLog"><p class="note">Contradiction resolutions will be logged here.</p></div>
+  </div>
+  <div class="panel">
+    <h2>📖 How It Works</h2>
+    <p class="note"><strong>Contradiction detection:</strong> Two beliefs about the same statement are contradictory when their frequencies diverge significantly (|f1 - f2| > 0.3) and both have sufficient confidence (c > 0.2).</p>
+    <div class="formula">f_merged = (f1*c1 + f2*c2) / (c1 + c2)</div>
+    <div class="formula">c_merged = (c1 + c2) / (1 + c1 + c2)</div>
+    <p class="note">The merged belief has higher confidence than either input. If the merged frequency converges toward 0 or 1, the contradiction is <em>resolved</em>. If it stays near 0.5, evidence is genuinely balanced.<br/><br/>
+    <strong>Severity:</strong> 🔴 Severe (Δf > 0.7, both c > 0.5) | 🟡 Moderate (Δf > 0.4) | 🟢 Minor (Δf > 0.3)</p>
+  </div>
+</div>
+<script>
+let beliefs = [];
+let logEntries = [];
+let resolvedCount = 0;
+
+function nalRevision(f1, c1, f2, c2) {
+  const w = c1 + c2;
+  const f = w > 0 ? (f1*c1 + f2*c2) / w : f1;
+  const c = w / (1 + w);
+  return { f: Math.max(0, Math.min(1, f)), c: Math.max(0, Math.min(1, c)) };
+}
+
+function addBelief() {
+  const stmt = document.getElementById('statementInput').value.trim();
+  const f = parseFloat(document.getElementById('freqInput').value);
+  const c = parseFloat(document.getElementById('confInput').value);
+  if (!stmt) { alert('Enter a statement first!'); return; }
+  beliefs.push({ id: Date.now()+Math.random(), statement: stmt, f: f, c: c });
+  document.getElementById('statementInput').value = '';
+  log('Added belief: "' + stmt + '" with (f=' + f.toFixed(2) + ', c=' + c.toFixed(2) + ')');
+  update();
+}
+
+function removeBelief(id) { beliefs = beliefs.filter(b => b.id !== id); update(); }
+
+function clearAll() { beliefs = []; logEntries = []; resolvedCount = 0; update(); }
+
+function loadExamples() {
+  beliefs = [
+    { id: 1, statement: 'raven is bird', f: 0.95, c: 0.9 },
+    { id: 2, statement: 'raven is bird', f: 0.1, c: 0.3 },
+    { id: 3, statement: 'sky is blue', f: 0.85, c: 0.8 },
+    { id: 4, statement: 'sky is blue', f: 0.2, c: 0.7 },
+    { id: 5, statement: 'penguin can fly', f: 0.7, c: 0.4 },
+    { id: 6, statement: 'penguin can fly', f: 0.15, c: 0.85 },
+    { id: 7, statement: 'water boils at 100C', f: 0.9, c: 0.95 },
+  ];
+  log('Loaded 7 example beliefs with 3 contradiction pairs.');
+  update();
+}
+
+function log(msg) {
+  const ts = new Date().toLocaleTimeString();
+  logEntries.unshift({ ts: ts, msg: msg });
+  if (logEntries.length > 50) logEntries.pop();
+}
+
+function detectContradictions() {
+  const groups = {};
+  for (let b of beliefs) {
+    const key = b.statement.toLowerCase();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(b);
+  }
+  const conflicts = [];
+  for (let key in groups) {
+    const group = groups[key];
+    if (group.length < 2) continue;
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i+1; j < group.length; j++) {
+        const b1 = group[i], b2 = group[j];
+        const diff = Math.abs(b1.f - b2.f);
+        const minConf = Math.min(b1.c, b2.c);
+        if (diff > 0.3 && minConf > 0.2) {
+          const merged = nalRevision(b1.f, b1.c, b2.f, b2.c);
+          const severity = diff > 0.7 && minConf > 0.5 ? 'severe' : diff > 0.4 ? 'moderate' : 'minor';
+          const isResolved = merged.f >= 0.8 || merged.f <= 0.2;
+          conflicts.push({ statement: b1.statement, b1: b1, b2: b2, merged: merged, severity: severity, diff: diff, isResolved: isResolved });
+        }
+      }
+    }
+  }
+  return { conflicts, groups };
+}
+
+function update() {
+  const { conflicts, groups } = detectContradictions();
+  const resolved = conflicts.filter(c => c.isResolved);
+  resolvedCount = resolved.length;
+  document.getElementById('statTotal').textContent = beliefs.length;
+  document.getElementById('statConflicts').textContent = conflicts.length;
+  document.getElementById('statResolved').textContent = resolvedCount;
+
+  // Contradiction analysis
+  const analysisDiv = document.getElementById('contradictionAnalysis');
+  if (conflicts.length === 0) {
+    analysisDiv.innerHTML = beliefs.length > 0
+      ? '<p class="note">No contradictions detected. All beliefs are consistent.</p>'
+      : '<p class="note">Add beliefs to see contradictions detected here.</p>';
+  } else {
+    let html = '';
+    for (let cf of conflicts) {
+      const sevIcon = cf.severity === 'severe' ? '🔴' : cf.severity === 'moderate' ? '🟡' : '🟢';
+      const resClass = cf.isResolved ? 'resolved-banner' : '';
+      const resText = cf.isResolved ? '✅ Resolved' : '⚠️ Unresolved';
+      const mColor = cf.merged.f >= 0.5 ? '#4ade80' : '#f87171';
+      html += '<div class="contradiction-banner ' + resClass + '">' +
+        '<span class="icon">' + sevIcon + '</span><span class="text">"' + cf.statement + '" — ' + resText + '</span>' +
+        '<div class="detail">A: f=' + cf.b1.f.toFixed(2) + ' c=' + cf.b1.c.toFixed(2) +
+        ' vs B: f=' + cf.b2.f.toFixed(2) + ' c=' + cf.b2.c.toFixed(2) +
+        ' | Δf=' + cf.diff.toFixed(2) +
+        ' → Merged: f=<span style="color:' + mColor + ';font-weight:bold">' + cf.merged.f.toFixed(2) + '</span> c=' + cf.merged.c.toFixed(2) + '</div></div>';
+    }
+    analysisDiv.innerHTML = html;
+  }
+
+  // Belief list grouped
+  const listDiv = document.getElementById('beliefList');
+  if (beliefs.length === 0) {
+    listDiv.innerHTML = '<p class="note">No beliefs yet. Add some above or load examples.</p>';
+  } else {
+    let html = '';
+    for (let key in groups) {
+      const group = groups[key];
+      const hasConflict = conflicts.some(cf => cf.statement.toLowerCase() === key);
+      html += '<div class="' + (hasConflict ? 'collision-group' : '') + '">';
+      for (let b of group) {
+        const cls = b.f >= 0.7 ? 'freq-high' : b.f <= 0.3 ? 'freq-low' : 'freq-mid';
+        html += '<div class="belief-item ' + cls + '">' +
+          '<span class="belief-text">' + b.statement + '</span>' +
+          '<span class="belief-tv"><span class="freq">f=' + b.f.toFixed(2) + '</span> c=' + b.c.toFixed(2) +
+          ' <button class="remove" onclick="removeBelief(' + b.id + ')">✕</button></span></div>';
+      }
+      html += '</div>';
+    }
+    listDiv.innerHTML = html;
+  }
+
+  // Log
+  const logDiv = document.getElementById('contradictionLog');
+  if (logEntries.length === 0) {
+    logDiv.innerHTML = '<p class="note">Contradiction resolutions will be logged here.</p>';
+  } else {
+    let html = '';
+    for (let entry of logEntries) {
+      html += '<div class="entry"><span class="ts">' + entry.ts + '</span><div class="msg">' + entry.msg + '</div></div>';
+    }
+    logDiv.innerHTML = html;
+  }
+}
+
+// Slider listeners
+document.getElementById('freqInput').addEventListener('input', function(e) {
+  document.getElementById('freqVal').textContent = parseFloat(e.target.value).toFixed(2);
+});
+document.getElementById('confInput').addEventListener('input', function(e) {
+  document.getElementById('confVal').textContent = parseFloat(e.target.value).toFixed(2);
+});
+document.getElementById('statementInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addBelief();
+});
+
+update();
+</script>
+</body>
+</html>
