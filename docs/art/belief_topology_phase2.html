@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belief Topology Phase 2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;color:#c8c8e0;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h1{color:#e8c840;margin:20px 0 5px;font-size:1.6em;text-align:center}
+.subtitle{color:#888;margin-bottom:10px;font-size:0.85em;text-align:center}
+canvas{display:block;margin:10px;border:1px solid #333;border-radius:8px;background:#050508}
+#controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px;max-width:900px}
+.ctrl{background:#1a1a2e;border:1px solid #444;border-radius:6px;padding:8px 12px}
+.ctrl label{font-size:0.8em;color:#aaa;display:block;margin-bottom:4px}
+.ctrl input[type="range"]{width:120px}
+.ctrl select,.ctrl button{background:#0a0a12;border:1px solid #444;color:#c8c8e0;padding:3px 8px;border-radius:3px;font-family:inherit;font-size:0.85em}
+.ctrl button{border-color:#e8c840;color:#e8c840;cursor:pointer}
+.ctrl button:hover{background:#e8c840;color:#0a0a12}
+.legend{display:flex;gap:12px;margin:10px;font-size:0.78em;color:#888;flex-wrap:wrap;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+</style>
+</head>
+<body>
+<h1>🌍 Belief Topology Phase 2</h1>
+<p class="subtitle">Multi-agent belief landscape — convergence as valleys, divergence as ridges, revision conflicts as fault lines</p>
+<canvas id="canvas" width="900" height="500"></canvas>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#44ff44"></div>High f (truth)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>Low f (falsity)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#aa44ff"></div>Uncertain (f≈0.5)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff8800"></div>Fault line (conflict)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4488ff;opacity:0.5"></div>Convergence zone</div>
+</div>
+<div id="controls">
+  <div class="ctrl"><label>Agents: <span id="agents-val">3</span></label><input type="range" id="agents" min="2" max="6" value="3" oninput="document.getElementById('agents-val').textContent=this.value;regenerate()"></div>
+  <div class="ctrl"><label>Time Flow: <span id="time-val">30</span></label><input type="range" id="time-flow" min="0" max="100" value="30" oninput="document.getElementById('time-val').textContent=this.value"></div>
+  <div class="ctrl"><label>Camera: <span id="angle-val">35</span>°</label><input type="range" id="angle" min="0" max="360" value="35" oninput="document.getElementById('angle-val').textContent=this.value;draw()"></div>
+  <div class="ctrl"><label>Evidence: <span id="evi-val">40</span></label><input type="range" id="evi-rate" min="0" max="100" value="40" oninput="document.getElementById('evi-val').textContent=this.value;regenerate()"></div>
+  <div class="ctrl"><label>View</label><select id="view-mode" onchange="draw()">
+    <option value="landscape">Landscape</option>
+    <option value="topology">Topology</option>
+    <option value="faults">Fault Lines</option>
+  </select></div>
+  <div class="ctrl"><button onclick="regenerate()">Regenerate</button></div>
+</div>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const W=900,H=500;
+let grid=[],agents=[],time=0;
+const gridSize=36;
+
+function regenerate(){
+  const nAgents=parseInt(document.getElementById('agents').value);
+  const eviRate=parseInt(document.getElementById('evi-rate').value)/100;
+  agents=[];
+  for(let i=0;i<nAgents;i++){
+    agents.push({x:Math.random()*0.7+0.15,y:Math.random()*0.7+0.15,f:Math.random(),c:0.3+Math.random()*0.5,drift:Math.random()*0.03,phase:Math.random()*Math.PI*2});
+  }
+  computeGrid(eviRate);
+  draw();
+}
+
+function computeGrid(eviRate){
+  grid=[];
+  for(let y=0;y<gridSize;y++){
+    grid[y]=[];
+    for(let x=0;x<gridSize;x++){
+      let totalF=0,totalC=0,totalW=0;let agentFs=[];
+      agents.forEach(a=>{
+        const dx=(x/gridSize-a.x),dy=(y/gridSize-a.y);
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const inf=Math.exp(-dist*dist*6);
+        const af=a.f+a.drift*Math.sin(time*0.005+a.phase);
+        totalF+=af*inf*a.c;totalC+=inf*a.c;totalW+=inf;
+        if(inf>0.12)agentFs.push(af);
+      });
+      const f=totalW>0?totalF/totalW:0.5;
+      const c=totalW>0?Math.min(1,totalC/totalW):0;
+      let conflict=0;
+      if(agentFs.length>1){conflict=Math.max(...agentFs)-Math.min(...agentFs);}
+      const eviImpact=eviRate*Math.sin(x*0.4+y*0.3+time*0.003)*0.15;
+      grid[y][x]={f:Math.max(0,Math.min(1,f+eviImpact)),c,conflict,elevation:c*(1-conflict*0.5)};
+    }
+  }
+}
+
+function draw(){
+  const viewMode=document.getElementById('view-mode').value;
+  const angle=parseInt(document.getElementById('angle').value)*Math.PI/180;
+  const cos=Math.cos(angle),sin=Math.sin(angle);
+  ctx.clearRect(0,0,W,H);
+  // Background gradient
+  const bgGrad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.6);
+  bgGrad.addColorStop(0,'#0a0a18');
+  bgGrad.addColorStop(1,'#050508');
+  ctx.fillStyle=bgGrad;
+  ctx.fillRect(0,0,W,H);
+  
+  // Draw grid as 3D landscape with depth sorting
+  const faces=[];
+  for(let y=0;y<gridSize-1;y++){
+    for(let x=0;x<gridSize-1;x++){
+      const cell=grid[y][x];
+      const sx=x/(gridSize-1),sy=y/(gridSize-1);
+      // 3D projection
+      const px=sx*W*0.8+W*0.1;
+      const py=sy*H*0.8+H*0.1;
+      const elev=cell.elevation*100;
+      // Apply rotation for 3D effect
+      const cx=(px-W/2)*cos-(py-H/2)*sin+W/2;
+      const cy=(px-W/2)*sin+(py-H/2)*cos+H/2-elev;
+      const depth=sy;
+      
+      let color;
+      if(viewMode==='faults'&&cell.conflict>0.3){
+        const intensity=Math.min(1,cell.conflict*2);
+        color=`rgba(255,${Math.floor(136*(1-intensity))},0,${0.5+cell.c*0.4})`;
+      } else if(viewMode==='topology'){
+        const h=Math.floor(cell.elevation*255);
+        color=`rgba(${h},${h},${Math.floor(200+cell.c*55)},0.6)`;
+      } else {
+        // Landscape mode: color by frequency, brightness by confidence
+        let r,g,b;
+        if(cell.f>0.5){r=Math.floor(68+(255-68)*(cell.f-0.5)*2);g=255;b=68;}
+        else{r=255;g=Math.floor(68+(255-68)*(0.5-cell.f)*2);b=68;}
+        if(cell.f>0.45&&cell.f<0.55){r=170;g=68;b=255;}
+        const alpha=0.3+cell.c*0.6;
+        color=`rgba(${r},${g},${b},${alpha})`;
+        // Fault line overlay
+        if(cell.conflict>0.4){
+          color=`rgba(255,${Math.floor(136*(1-cell.conflict))},0,${0.5+cell.conflict*0.4})`;
+        }
+      }
+      
+      faces.push({x:cx,y:cy,depth:depth,color:color,cell:cell});
+    }
+  }
+  
+  // Sort by depth (painter's algorithm) - back to front
+  faces.sort((a,b)=>b.depth-a.depth);
+  
+  // Draw faces as quads
+  const cellW=W*0.8/(gridSize-1);
+  const cellH=H*0.8/(gridSize-1);
+  for(let y=0;y<gridSize-1;y++){
+    for(let x=0;x<gridSize-1;x++){
+      const cell=grid[y][x];
+      const sx0=x/(gridSize-1),sx1=(x+1)/(gridSize-1);
+      const sy0=y/(gridSize-1),sy1=(y+1)/(gridSize-1);
+      
+      function project(sx,sy,elev){
+        const px=sx*W*0.8+W*0.1;
+        const py=sy*H*0.8+H*0.1;
+        const cx=(px-W/2)*cos-(py-H/2)*sin+W/2;
+        const cy=(px-W/2)*sin+(py-H/2)*cos+H/2-elev;
+        return[cx,cy];
+      }
+      
+      const e0=grid[y][x].elevation*80;
+      const e1=grid[y][x+1].elevation*80;
+      const e2=grid[y+1][x+1].elevation*80;
+      const e3=grid[y+1][x].elevation*80;
+      
+      const [p0x,p0y]=project(sx0,sy0,e0);
+      const [p1x,p1y]=project(sx1,sy0,e1);
+      const [p2x,p2y]=project(sx1,sy1,e2);
+      const [p3x,p3y]=project(sx0,sy1,e3);
+      
+      let color;
+      if(viewMode==='faults'&&cell.conflict>0.25){
+        const ci=Math.min(1,cell.conflict*2);
+        color=`rgba(255,${Math.floor(100*(1-ci))},0,${0.4+ci*0.4})`;
+      } else if(viewMode==='topology'){
+        const h=Math.floor(cell.elevation*200+20);
+        const cb=Math.floor(180+cell.c*75);
+        color=`rgba(${h},${h},${cb},0.55)`;
+      } else {
+        let r,g,b;
+        if(cell.f>0.55){const t=(cell.f-0.5)*2;r=Math.floor(68+187*t);g=255;b=Math.floor(68+100*t);}
+        else if(cell.f<0.45){const t=(0.5-cell.f)*2;r=255;g=Math.floor(68+187*t);b=68;}
+        else{r=170;g=68;b=255;}
+        const a=0.25+cell.c*0.55;
+        color=`rgba(${r},${g},${b},${a})`;
+        if(cell.conflict>0.35){
+          const ci=Math.min(1,cell.conflict*1.5);
+          color=`rgba(255,${Math.floor(136*(1-ci))},0,${0.35+ci*0.35})`;
+        }
+      }
+      
+      ctx.fillStyle=color;
+      ctx.beginPath();
+      ctx.moveTo(p0x,p0y);
+      ctx.lineTo(p1x,p1y);
+      ctx.lineTo(p2x,p2y);
+      ctx.lineTo(p3x,p3y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle='rgba(20,20,30,0.3)';
+      ctx.lineWidth=0.5;
+      ctx.stroke();
+    }
+  }
+  
+  // Draw agent positions
+  agents.forEach(a=>{
+    const px=a.x*W*0.8+W*0.1;
+    const py=a.y*H*0.8+H*0.1;
+    const cx=(px-W/2)*cos-(py-H/2)*sin+W/2;
+    const cy=(px-W/2)*sin+(py-H/2)*cos+H/2-a.c*80;
+    ctx.beginPath();
+    ctx.arc(cx,cy,6,0,Math.PI*2);
+    ctx.fillStyle=a.f>0.5?'#44ff44':'#ff4444';
+    ctx.fill();
+    ctx.strokeStyle='#fff';
+    ctx.lineWidth=1;
+    ctx.stroke();
+    // Glow
+    ctx.beginPath();
+    ctx.arc(cx,cy,12,0,Math.PI*2);
+    ctx.strokeStyle=a.f>0.5?'rgba(68,255,68,0.3)':'rgba(255,68,68,0.3)';
+    ctx.lineWidth=3;
+    ctx.stroke();
+  });
+}
+
+function animate(){
+  const flow=parseInt(document.getElementById('time-flow').value)/100;
+  if(flow>0.01){
+    time+=flow*2;
+    const eviRate=parseInt(document.getElementById('evi-rate').value)/100;
+    agents.forEach(a=>{
+      a.f+=a.drift*Math.sin(time*0.01+a.phase)*0.01;
+      a.f=Math.max(0.05,Math.min(0.95,a.f));
+    });
+    computeGrid(eviRate);
+    draw();
+  }
+  requestAnimationFrame(animate);
+}
+
+regenerate();
+animate();
+</script>
+</body>
+</html>
