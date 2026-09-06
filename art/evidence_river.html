@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Evidence River | Iter" />
+<meta property="og:description" content="Generative animation where evidence particles merge and split via NAL truth revision. The river color shifts by collective truth values." />
+<meta property="og:type" content="website" />
+<title>Evidence River — Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: #060810; color: #c9d1d9; min-height: 100vh; overflow: hidden; }
+nav { background: rgba(136,86,167,0.1); padding: 10px 24px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid rgba(136,86,167,0.15); width: 100%; justify-content: center; position: relative; z-index: 10; }
+nav a { color: #a78bfa; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #c4b5fd; }
+h1 { color: #a78bfa; margin: 12px 0 4px; font-size: 1.5rem; text-align: center; position: relative; z-index: 10; }
+.subtitle { color: #6e7681; margin-bottom: 10px; font-size: 0.82rem; text-align: center; max-width: 600px; margin: 0 auto 10px; padding: 0 20px; position: relative; z-index: 10; }
+#controls { display: flex; gap: 12px; margin-bottom: 8px; justify-content: center; position: relative; z-index: 10; flex-wrap: wrap; }
+.ctrl { background: rgba(136,86,167,0.1); border: 1px solid rgba(136,86,167,0.2); border-radius: 8px; padding: 8px 16px; color: #c9d1d9; font-family: inherit; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; }
+.ctrl:hover { background: rgba(136,86,167,0.25); }
+.ctrl.active { background: rgba(136,86,167,0.4); border-color: #a78bfa; }
+canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+#stats { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(10,14,26,0.85); border: 1px solid rgba(136,86,167,0.2); border-radius: 12px; padding: 10px 20px; display: flex; gap: 20px; z-index: 10; }
+.stat { text-align: center; }
+.stat .val { font-size: 1.05rem; font-weight: bold; }
+.stat .lbl { font-size: 0.6rem; color: #6e7681; text-transform: uppercase; letter-spacing: 1px; }
+.legend { position: fixed; bottom: 80px; right: 16px; background: rgba(10,14,26,0.75); border: 1px solid rgba(136,86,167,0.15); border-radius: 8px; padding: 10px 14px; font-size: 0.72rem; color: #8b949e; z-index: 10; max-width: 220px; line-height: 1.5; }
+.legend h3 { color: #a78bfa; font-size: 0.78rem; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="../index.html">Home</a>
+  <a href="./">Art</a>
+  <a href="../games/">Games</a>
+  <a href="../radio/">Radio</a>
+</nav>
+<h1>Evidence River</h1>
+<p class="subtitle">Evidence particles flow downstream, merging via NAL truth revision and splitting under uncertainty. The river's color reflects the collective truth values of all particles.</p>
+<div id="controls">
+  <button class="ctrl active" id="btnFlow" onclick="setMode('flow')">Flow Mode</button>
+  <button class="ctrl" id="btnStorm" onclick="setMode('storm')">Storm Mode</button>
+  <button class="ctrl" onclick="addParticles(20)">+20 Particles</button>
+  <button class="ctrl" onclick="reset()">Reset</button>
+</div>
+<canvas id="canvas"></canvas>
+<div class="legend">
+  <h3>Particle Colors</h3>
+  <div style="color:#4ade80">High freq (f>0.7) - confirmed</div>
+  <div style="color:#f87171">Low freq (f<0.3) - refuted</div>
+  <div style="color:#fbbf24">Mid freq (f~0.5) - uncertain</div>
+  <div style="margin-top:6px;">Size = confidence. Particles merge when close (NAL revision). Low-conf particles split into divergent evidence.</div>
+</div>
+<div id="stats">
+  <div class="stat"><div class="val" id="sCount" style="color:#a78bfa">0</div><div class="lbl">Particles</div></div>
+  <div class="stat"><div class="val" id="sMerged" style="color:#4ade80">0</div><div class="lbl">Merges</div></div>
+  <div class="stat"><div class="val" id="sSplits" style="color:#fbbf24">0</div><div class="lbl">Splits</div></div>
+  <div class="stat"><div class="val" id="sAvgF" style="color:#c4b5fd">0.50</div><div class="lbl">Avg Freq</div></div>
+  <div class="stat"><div class="val" id="sAvgC" style="color:#c4b5fd">0.50</div><div class="lbl">Avg Conf</div></div>
+</div>
+<script>
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var W, H;
+var particles = [];
+var merges = 0, splits = 0;
+var mode = 'flow';
+var time = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function nalRevision(f1, c1, f2, c2) {
+  var w = c1 + c2;
+  var f = w > 0 ? (f1*c1 + f2*c2) / w : f1;
+  var c = w / (1 + w);
+  return { f: Math.max(0, Math.min(1, f)), c: Math.max(0, Math.min(1, c)) };
+}
+
+function createParticle(x, y) {
+  return {
+    x: x !== undefined ? x : Math.random() * W,
+    y: y !== undefined ? y : -20 + Math.random() * 40,
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: 0.5 + Math.random() * 1.5,
+    r: 0,
+    f: 0.2 + Math.random() * 0.6,
+    c: 0.2 + Math.random() * 0.6,
+    age: 0,
+    trail: []
+  };
+}
+
+function pColor(p, alpha) {
+  var f = p.f;
+  var r, g, b;
+  if (f >= 0.5) {
+    var t = (f - 0.5) * 2;
+    r = Math.round(251*(1-t) + 74*t);
+    g = Math.round(191*(1-t) + 222*t);
+    b = Math.round(36*(1-t) + 128*t);
+  } else {
+    var t = f * 2;
+    r = Math.round(248*(1-t) + 251*t);
+    g = Math.round(113*(1-t) + 191*t);
+    b = Math.round(113*(1-t) + 36*t);
+  }
+  var a = alpha !== undefined ? alpha : (0.3 + p.c * 0.7);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+
+function updateParticle(p) {
+  p.age++;
+  p.r = 3 + p.c * 8;
+  if (mode === 'flow') {
+    p.vx += Math.sin(p.y * 0.01 + time * 0.001) * 0.02;
+    p.vy = 0.8 + Math.sin(p.x * 0.005 + time * 0.002) * 0.3;
+  } else {
+    p.vx += (Math.random() - 0.5) * 0.3;
+    p.vy += (Math.random() - 0.5) * 0.3;
+    p.vx *= 0.97;
+    p.vy *= 0.97;
+  }
+  p.x += p.vx;
+  p.y += p.vy;
+  p.trail.push({ x: p.x, y: p.y });
+  if (p.trail.length > 12) p.trail.shift();
+  if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
+  if (p.x > W) { p.x = W; p.vx = -Math.abs(p.vx); }
+  if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; p.age = 0; }
+  if (p.y < -30) { p.y = -30; p.vy = Math.abs(p.vy); }
+  if (p.c < 0.3 && Math.random() < 0.003 && particles.length < 150) {
+    var np = createParticle(p.x, p.y);
+    np.f = Math.max(0, Math.min(1, p.f + (Math.random() - 0.5) * 0.3));
+    np.c = p.c + 0.05;
+    np.vx = p.vx + (Math.random() - 0.5) * 1;
+    np.vy = p.vy + (Math.random() - 0.5) * 1;
+    particles.push(np);
+    splits++;
+  }
+}
+
+function checkMerges() {
+  for (var i = 0; i < particles.length; i++) {
+    for (var j = i + 1; j < particles.length; j++) {
+      var p1 = particles[i], p2 = particles[j];
+      var dx = p1.x - p2.x, dy = p1.y - p2.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < (p1.r + p2.r) * 0.8) {
+        var merged = nalRevision(p1.f, p1.c, p2.f, p2.c);
+        p1.f = merged.f;
+        p1.c = merged.c;
+        var tc = p1.c + p2.c;
+        p1.vx = (p1.vx * p1.c + p2.vx * p2.c) / Math.max(tc, 0.01);
+        p1.vy = (p1.vy * p1.c + p2.vy * p2.c) / Math.max(tc, 0.01);
+        particles.splice(j, 1);
+        j--;
+        merges++;
+      }
+    }
+  }
+}
+
+function drawBackground() {
+  var avgF = 0.5, avgC = 0.5;
+  if (particles.length > 0) {
+    var sf = 0, sc = 0;
+    for (var i = 0; i < particles.length; i++) { sf += particles[i].f; sc += particles[i].c; }
+    avgF = sf / particles.length;
+    avgC = sc / particles.length;
+  }
+  var r1, g1, b1;
+  if (avgF >= 0.5) {
+    var t = (avgF - 0.5) * 2;
+    r1 = Math.round(8 + 15*t);
+    g1 = Math.round(10 + 35*t);
+    b1 = Math.round(20 + 25*t);
+  } else {
+    var t = avgF * 2;
+    r1 = Math.round(25*(1-t) + 8*t);
+    g1 = Math.round(8*(1-t) + 10*t);
+    b1 = Math.round(8*(1-t) + 20*t);
+  }
+  var grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(' + r1 + ',' + g1 + ',' + b1 + ',0.98)');
+  grad.addColorStop(0.5, 'rgba(' + Math.round(r1*0.6) + ',' + Math.round(g1*0.6) + ',' + Math.round(b1*0.8) + ',0.98)');
+  grad.addColorStop(1, 'rgba(' + Math.round(r1*0.3) + ',' + Math.round(g1*0.3) + ',' + Math.round(b1*0.5) + ',0.98)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // River flow lines
+  ctx.strokeStyle = 'rgba(' + r1 + ',' + Math.min(255, g1+30) + ',' + Math.min(255, b1+20) + ',0.05)';
+  ctx.lineWidth = 1;
+  for (var ly = 0; ly < H; ly += 40) {
+    ctx.beginPath();
+    for (var lx = 0; lx <= W; lx += 10) {
+      var wy = ly + Math.sin(lx * 0.01 + time * 0.002) * 15;
+      if (lx === 0) ctx.moveTo(lx, wy);
+      else ctx.lineTo(lx, wy);
+    }
+    ctx.stroke();
+  }
+}
+
+function drawParticle(p) {
+  // Trail
+  if (p.trail.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(p.trail[0].x, p.trail[0].y);
+    for (var i = 1; i < p.trail.length; i++) {
+      ctx.lineTo(p.trail[i].x, p.trail[i].y);
+    }
+    ctx.strokeStyle = pColor(p, 0.15);
+    ctx.lineWidth = p.r * 0.5;
+    ctx.stroke();
+  }
+  // Glow
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+  ctx.fillStyle = pColor(p, 0.2 + p.c * 0.3);
+  ctx.shadowColor = pColor(p, 1);
+  ctx.shadowBlur = 15 + p.c * 10;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  // Core
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.r * 0.5, 0, Math.PI * 2);
+  ctx.fillStyle = pColor(p, 0.8 + p.c * 0.2);
+  ctx.fill();
+}
+
+function updateStats() {
+  document.getElementById('sCount').textContent = particles.length;
+  document.getElementById('sMerged').textContent = merges;
+  document.getElementById('sSplits').textContent = splits;
+  if (particles.length > 0) {
+    var sf = 0, sc = 0;
+    for (var i = 0; i < particles.length; i++) { sf += particles[i].f; sc += particles[i].c; }
+    document.getElementById('sAvgF').textContent = (sf / particles.length).toFixed(2);
+    document.getElementById('sAvgC').textContent = (sc / particles.length).toFixed(2);
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnFlow').classList.toggle('active', m === 'flow');
+  document.getElementById('btnStorm').classList.toggle('active', m === 'storm');
+}
+
+function addParticles(n) {
+  for (var i = 0; i < n; i++) particles.push(createParticle());
+}
+
+function reset() {
+  particles = [];
+  merges = 0;
+  splits = 0;
+  for (var i = 0; i < 50; i++) particles.push(createParticle());
+}
+
+function animate() {
+  time++;
+  ctx.globalAlpha = 0.15;
+  drawBackground();
+  ctx.globalAlpha = 1;
+  for (var i = 0; i < particles.length; i++) updateParticle(particles[i]);
+  checkMerges();
+  for (var i = 0; i < particles.length; i++) drawParticle(particles[i]);
+  // Spawn new particles to maintain flow
+  if (mode === 'flow' && particles.length < 40 && time % 30 === 0) {
+    particles.push(createParticle(Math.random() * W, -10));
+  }
+  if (time % 15 === 0) updateStats();
+  requestAnimationFrame(animate);
+}
+
+// Initialize
+for (var i = 0; i < 50; i++) particles.push(createParticle());
+animate();
+</script>
+</body>
+</html>
