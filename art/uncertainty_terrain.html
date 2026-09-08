@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Uncertainty Terrain — Generative Art from NAL Truth Values | Iter" />
+<meta property="og:description" content="A living landscape where elevation maps to confidence and color maps to frequency. Watch beliefs form terrain — mountains of certainty, valleys of doubt." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/art/uncertainty_terrain.html" />
+<title>Uncertainty Terrain — Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#c8c8e0;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{color:#4ade80;font-size:1.8em;margin:10px 0;text-align:center}
+.subtitle{color:#888;margin-bottom:15px;font-size:0.9em;text-align:center;max-width:600px}
+canvas{border-radius:12px;box-shadow:0 0 40px rgba(74,222,128,0.1)}
+.controls{margin:15px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{background:#222238;color:#4ade80;border:1px solid #444;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:0.9em;transition:all 0.2s}
+.btn:hover{background:#333358}
+.legend{max-width:600px;margin:15px auto;padding:12px;background:#161628;border-radius:8px;font-size:0.85em;color:#999;line-height:1.6}
+.legend b{color:#4ade80}
+</style>
+</head>
+<body>
+<h1>🏔️ Uncertainty Terrain</h1>
+<p class="subtitle">A living landscape of belief. Mountains = high confidence. Valleys = uncertainty. Color = truth frequency.</p>
+<canvas id="canvas" width="600" height="500"></canvas>
+<div class="controls">
+<button class="btn" id="seed">🌱 New Seed</button>
+<button class="btn" id="evidence">+ Add Evidence</button>
+<button class="btn" id="doubt">− Introduce Doubt</button>
+<button class="btn" id="freeze">❄️ Freeze</button>
+</div>
+<div class="legend">
+<b>Elevation</b> = NAL confidence (c). High mountains are established truths. Low valleys are uncertain beliefs.<br>
+<b>Color</b> = NAL frequency (f). Green = high f (likely true). Red = low f (likely false). Yellow = uncertain (f near 0.5).<br>
+<b>Particles</b> = evidence flowing through the terrain. Each particle raises or lowers confidence as it passes.<br>
+Click <b>+ Add Evidence</b> to accumulate confidence. Click <b>− Introduce Doubt</b> to erode it. Watch the economy of uncertainty sculpt the landscape in real time.
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = 600, H = 500;
+let grid = [];
+let particles = [];
+let frozen = false;
+let timeStep = 0;
+const GRID_W = 60, GRID_H = 50;
+
+function initGrid() {
+  grid = [];
+  for (let y = 0; y < GRID_H; y++) {
+    grid[y] = [];
+    for (let x = 0; x < GRID_W; x++) {
+      const dist = Math.sqrt((x - GRID_W/2)**2 + (y - GRID_H/2)**2);
+      const noise = Math.sin(x * 0.3 + y * 0.2) * Math.cos(x * 0.15) * 0.5;
+      const c = Math.max(0.05, Math.min(0.9, 0.5 + noise - dist * 0.01));
+      const f = Math.max(0.05, Math.min(0.95, 0.5 + Math.sin(x * 0.2 + y * 0.15) * 0.4));
+      grid[y][x] = { f, c };
+    }
+  }
+}
+
+function colorFor(f, c) {
+  let r, g, b;
+  if (f > 0.5) { r = Math.round(74 * (1-f)*2); g = Math.round(174 * f); b = Math.round(128 * f); }
+  else { r = Math.round(248 * (1-f)); g = Math.round(113 * f * 2); b = Math.round(113 * (1-f)); }
+  const brightness = 0.3 + c * 0.7;
+  return `rgba(${Math.round(r*brightness)}, ${Math.round(g*brightness)}, ${Math.round(b*brightness)}, 0.9)`;
+}
+
+function spawnParticle() {
+  const positive = Math.random() < 0.6;
+  particles.push({
+    x: Math.random() * GRID_W,
+    y: Math.random() * GRID_H,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    life: 50 + Math.random() * 100,
+    positive
+  });
+}
+
+function updateParticles() {
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.x < 0) p.x = GRID_W - 1;
+    if (p.x >= GRID_W) p.x = 0;
+    if (p.y < 0) p.y = GRID_H - 1;
+    if (p.y >= GRID_H) p.y = 0;
+    
+    const gx = Math.floor(p.x);
+    const gy = Math.floor(p.y);
+    if (gy >= 0 && gy < GRID_H && gx >= 0 && gx < GRID_W) {
+      const cell = grid[gy][gx];
+      if (p.positive) {
+        const w = cell.c / (1 - cell.c + 0.001);
+        cell.c = Math.min(0.95, (w + 0.05) / (w + 1.05));
+        cell.f = Math.min(0.95, cell.f + 0.002);
+      } else {
+        const w = cell.c / (1 - cell.c + 0.001);
+        cell.c = Math.max(0.05, w / (w + 1.05));
+        cell.f = Math.max(0.05, cell.f - 0.002);
+      }
+    }
+  });
+}
+
+function render() {
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, W, H);
+  
+  const cellW = W / GRID_W;
+  const cellH = H / GRID_H;
+  
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      const cell = grid[y][x];
+      const offset = (cell.c - 0.5) * cellH * 0.8;
+      ctx.fillStyle = colorFor(cell.f, cell.c);
+      ctx.fillRect(x * cellW, y * cellH + offset, cellW + 1, cellH + 1);
+    }
+  }
+  
+  particles.forEach(p => {
+    ctx.fillStyle = p.positive ? 'rgba(74,222,128,0.8)' : 'rgba(248,113,113,0.8)';
+    ctx.beginPath();
+    ctx.arc(p.x * cellW, p.y * cellH, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
+  const grad = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, W/1.5);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function animate() {
+  if (!frozen) {
+    updateParticles();
+    if (Math.random() < 0.15) spawnParticle();
+    timeStep++;
+  }
+  render();
+  requestAnimationFrame(animate);
+}
+
+document.getElementById('seed').onclick = () => { initGrid(); particles = []; };
+document.getElementById('evidence').onclick = () => {
+  for (let i = 0; i < 20; i++) spawnParticle();
+  particles.forEach(p => p.positive = true);
+};
+document.getElementById('doubt').onclick = () => {
+  for (let i = 0; i < 20; i++) {
+    spawnParticle();
+    particles[particles.length - 1].positive = false;
+  }
+};
+document.getElementById('freeze').onclick = (e) => {
+  frozen = !frozen;
+  e.target.textContent = frozen ? '▶️ Resume' : '❄️ Freeze';
+};
+
+initGrid();
+for (let i = 0; i < 15; i++) spawnParticle();
+animate();
+</script>
+</body>
+</html>
