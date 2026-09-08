@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Truth Synthesizer — Make Music from Beliefs | Iter" />
+<meta property="og:description" content="An audio synthesizer where NAL truth values become sound. Frequency maps to pitch, confidence to volume, evidence count to harmonics." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_truth_synth.html" />
+<title>NAL Truth Synthesizer — Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#c8c8e0;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{color:#e8c840;font-size:1.8em;margin:10px 0;text-align:center}
+.subtitle{color:#888;margin-bottom:20px;font-size:0.9em;text-align:center;max-width:600px}
+#app{width:100%;max-width:650px;background:#111122;border-radius:12px;padding:20px;box-shadow:0 0 40px rgba(200,200,100,0.1)}
+.belief-row{display:flex;align-items:center;gap:12px;margin:8px 0;padding:10px;background:#161628;border-radius:8px}
+.belief-name{flex:0 0 120px;font-size:0.85em;color:#e0d5f0}
+.slider-group{flex:1;display:flex;flex-direction:column;gap:4px}
+.slider-row{display:flex;align-items:center;gap:8px}
+.slider-label{font-size:0.75em;color:#888;width:15px}
+input[type=range]{flex:1;height:6px;-webkit-appearance:none;background:#222238;border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#e8c840;cursor:pointer}
+.f-slider{accent-color:#4ade80}
+.c-slider{accent-color:#a78bfa}
+.btn{background:#222238;color:#e8c840;border:1px solid #444;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:0.9em;transition:all 0.2s}
+.btn:hover{background:#333358}
+.btn-play{background:rgba(74,222,128,0.15);border-color:rgba(74,222,128,0.3);color:#4ade80}
+.btn-stop{background:rgba(248,113,113,0.15);border-color:rgba(248,113,113,0.3);color:#f87171}
+#controls{display:flex;gap:10px;justify-content:center;margin:15px 0;flex-wrap:wrap}
+#visualizer{width:100%;height:120px;background:#0a0a1a;border-radius:8px;margin:10px 0}
+#info{display:flex;justify-content:space-around;margin:10px 0;flex-wrap:wrap;gap:10px}
+.info-box{background:#161628;padding:8px 14px;border-radius:8px;text-align:center}
+.info-box label{display:block;font-size:0.7em;color:#888;text-transform:uppercase}
+.info-box span{color:#e8c840;font-size:1.1em;font-weight:700;font-family:monospace}
+.instructions{margin-top:15px;padding:12px;background:#161628;border-radius:8px;font-size:0.85em;color:#999;line-height:1.5}
+.instructions b{color:#e8c840}
+</style>
+</head>
+<body>
+<h1>🎛️ NAL Truth Synthesizer</h1>
+<p class="subtitle">Turn beliefs into sound. Adjust truth values to create evolving harmonics. Press play and listen to the economy of uncertainty.</p>
+<div id="app">
+<div id="info">
+<div class="info-box"><label>Base Freq</label><span id="info-freq">220 Hz</span></div>
+<div class="info-box"><label>Harmonics</label><span id="info-harm">4</span></div>
+<div class="info-box"><label>Volume</label><span id="info-vol">0.50</span></div>
+</div>
+<canvas id="visualizer" width="600" height="120"></canvas>
+<div id="beliefs"></div>
+<div id="controls">
+<button class="btn btn-play" id="play">▶ Play</button>
+<button class="btn btn-stop" id="stop">⏹ Stop</button>
+<button class="btn" id="add">+ Add Belief</button>
+<button class="btn" id="clear">Clear</button>
+</div>
+<div class="instructions">
+<b>How it works:</b> Each belief becomes an oscillator. <b>Frequency (f)</b> maps to pitch — f=0.5 is A4 (220Hz), higher f = higher pitch.
+<b>Confidence (c)</b> maps to volume — uncertain beliefs are quiet, confident ones are loud.
+<b>Evidence count</b> (derived from c) adds harmonics — more evidence = richer tone.
+The base frequency shifts as beliefs revise each other. Listen to the economy of uncertainty in action.
+</div>
+</div>
+<script>
+let audioCtx = null;
+let oscillators = [];
+let analyser = null;
+let beliefs = [
+  {name: "Truth A", f: 0.7, c: 0.5},
+  {name: "Truth B", f: 0.4, c: 0.7},
+  {name: "Truth C", f: 0.9, c: 0.3}
+];
+
+function evidenceFromConfidence(c) {
+  return c / (1 - c + 0.001);
+}
+
+function freqFromF(f) {
+  // Map f=0.0 to 110Hz, f=0.5 to 220Hz, f=1.0 to 440Hz
+  return 110 * Math.pow(2, f);
+}
+
+function harmonicsFromC(c) {
+  const w = evidenceFromConfidence(c);
+  return Math.max(1, Math.min(8, Math.floor(w) + 1));
+}
+
+function render() {
+  const container = document.getElementById('beliefs');
+  container.innerHTML = '';
+  beliefs.forEach((b, i) => {
+    const row = document.createElement('div');
+    row.className = 'belief-row';
+    row.innerHTML = `
+      <div class="belief-name">${b.name}</div>
+      <div class="slider-group">
+        <div class="slider-row"><span class="slider-label">f</span><input type="range" class="f-slider" min="0" max="0.99" step="0.01" value="${b.f}" oninput="updateBelief(${i},'f',this.value)"></div>
+        <div class="slider-row"><span class="slider-label">c</span><input type="range" class="c-slider" min="0" max="0.95" step="0.01" value="${b.c}" oninput="updateBelief(${i},'c',this.value)"></div>
+      </div>
+      <button class="btn" style="font-size:0.75em;padding:4px 8px" onclick="removeBelief(${i})">✕</button>
+    `;
+    container.appendChild(row);
+  });
+  
+  let totalF = 0, totalC = 0;
+  beliefs.forEach(b => { totalF += b.f; totalC += b.c; });
+  const avgF = beliefs.length ? totalF / beliefs.length : 0.5;
+  document.getElementById('info-freq').textContent = Math.round(freqFromF(avgF)) + ' Hz';
+  const totalHarm = beliefs.reduce((s, b) => s + harmonicsFromC(b.c), 0);
+  document.getElementById('info-harm').textContent = totalHarm;
+  const avgC = beliefs.length ? totalC / beliefs.length : 0;
+  document.getElementById('info-vol').textContent = avgC.toFixed(2);
+}
+
+function updateBelief(i, prop, val) {
+  beliefs[i][prop] = parseFloat(val);
+  render();
+  if (oscillators.length > 0) restartAudio();
+}
+
+function removeBelief(i) {
+  beliefs.splice(i, 1);
+  render();
+  if (oscillators.length > 0) restartAudio();
+}
+
+function startAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  stopAudio();
+  
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.3;
+  
+  beliefs.forEach(b => {
+    const baseFreq = freqFromF(b.f);
+    const harmCount = harmonicsFromC(b.c);
+    const vol = b.c * 0.15;
+    
+    for (let h = 1; h <= harmCount; h++) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = h === 1 ? 'sine' : (h % 2 === 0 ? 'triangle' : 'sine');
+      osc.frequency.value = baseFreq * h;
+      gain.gain.value = vol / h;
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start();
+      oscillators.push(osc);
+    }
+  });
+  
+  masterGain.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  drawVisualizer();
+}
+
+function stopAudio() {
+  oscillators.forEach(o => { try { o.stop(); } catch(e){} });
+  oscillators = [];
+}
+
+function restartAudio() {
+  stopAudio();
+  startAudio();
+}
+
+function drawVisualizer() {
+  if (!analyser) return;
+  const canvas = document.getElementById('visualizer');
+  const ctx = canvas.getContext('2d');
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  
+  function draw() {
+    if (!analyser || oscillators.length === 0) return;
+    analyser.getByteFrequencyData(data);
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const barCount = 64;
+    const barWidth = canvas.width / barCount;
+    for (let i = 0; i < barCount; i++) {
+      const v = data[i] / 255;
+      const h = v * canvas.height;
+      const hue = 60 - i * 0.5;
+      ctx.fillStyle = `hsl(${hue}, 70%, ${30 + v * 40}%)`;
+      ctx.fillRect(i * barWidth, canvas.height - h, barWidth - 1, h);
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+document.getElementById('play').onclick = () => {
+  if (oscillators.length === 0) startAudio();
+  else restartAudio();
+};
+document.getElementById('stop').onclick = stopAudio;
+document.getElementById('add').onclick = () => {
+  beliefs.push({name: "Truth " + String.fromCharCode(65 + beliefs.length), f: 0.5, c: 0.5});
+  render();
+  if (oscillators.length > 0) restartAudio();
+};
+document.getElementById('clear').onclick = () => {
+  beliefs = [];
+  stopAudio();
+  render();
+};
+
+window.updateBelief = updateBelief;
+window.removeBelief = removeBelief;
+render();
+</script>
+</body>
+</html>
