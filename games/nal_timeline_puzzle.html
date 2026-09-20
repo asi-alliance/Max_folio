@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Timeline Puzzle — Reason Across Time | Iter" />
+<meta property="og:description" content="Arrange events on a timeline, deduce what must be true at each point. NAL temporal reasoning: beliefs change with time, and what was true then may not be true now." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/games/nal_timeline_puzzle.html" />
+<title>NAL Timeline Puzzle — Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Georgia,serif;background:linear-gradient(135deg,#0a0a1a 0%,#0f0a1a 40%,#1a0a1a 100%);color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+nav{background:rgba(170,100,255,0.1);padding:12px 24px;display:flex;gap:24px;flex-wrap:wrap;border-bottom:1px solid rgba(170,100,255,0.2);width:100%;justify-content:center}
+nav a{color:#a87fff;text-decoration:none;font-weight:600}
+nav a:hover{color:#c4a4ff}
+h1{color:#a87fff;margin:20px 0 4px;font-size:1.8rem}
+.subtitle{color:#8b949e;margin-bottom:12px;font-size:0.95rem;text-align:center;max-width:600px;padding:0 20px}
+#gameContainer{width:90%;max-width:700px;margin:0 auto}
+#stats{background:rgba(170,100,255,0.05);border:1px solid rgba(170,100,255,0.2);border-radius:10px;padding:16px;margin:12px 0;display:flex;justify-content:space-around;flex-wrap:wrap;gap:10px}
+.stat{text-align:center}
+.stat-label{font-size:0.7rem;color:#8b949e;text-transform:uppercase;letter-spacing:1px}
+.stat-value{font-size:1.4rem;color:#a87fff;font-weight:700}
+#puzzleArea{background:rgba(170,100,255,0.03);border:1px solid rgba(170,100,255,0.15);border-radius:12px;padding:20px;margin:12px 0}
+.clue{background:rgba(170,100,255,0.05);border-left:3px solid #a87fff;padding:10px 14px;margin:8px 0;border-radius:0 8px 8px 0;font-size:0.9rem}
+.clue .time{color:#a87fff;font-weight:600;font-family:monospace}
+.timeline{display:flex;gap:4px;margin:16px 0;overflow-x:auto;padding-bottom:8px}
+.timeline-slot{min-width:80px;text-align:center;border:1px dashed rgba(170,100,255,0.3);border-radius:8px;padding:10px 6px;cursor:pointer;transition:all 0.2s}
+.timeline-slot:hover{border-color:#a87fff;background:rgba(170,100,255,0.08)}
+.timeline-slot.selected{border-style:solid;border-color:#a87fff;background:rgba(170,100,255,0.15)}
+.timeline-slot .slot-time{font-size:0.7rem;color:#8b949e;font-family:monospace;margin-bottom:4px}
+.timeline-slot .slot-content{font-size:0.8rem;color:#c9d1d9;min-height:40px}
+.event-card{background:rgba(170,100,255,0.08);border:1px solid rgba(170,100,255,0.2);border-radius:8px;padding:10px;margin:6px 0;cursor:grab;transition:all 0.15s}
+.event-card:hover{border-color:#a87fff;transform:translateX(2px)}
+.event-card.dragging{opacity:0.5}
+.event-card .e-name{font-weight:600;color:#e0d5f0;font-size:0.85rem}
+.event-card .e-desc{font-size:0.75rem;color:#8b949e;margin-top:2px}
+.btn{background:rgba(170,100,255,0.15);border:1px solid rgba(170,100,255,0.3);color:#c9d1d9;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Georgia,serif;font-size:0.85rem;transition:all 0.15s}
+.btn:hover{background:rgba(170,100,255,0.3)}
+#feedback{margin:12px 0;padding:12px;border-radius:8px;font-size:0.9rem;min-height:20px}
+#feedback.correct{background:rgba(74,222,128,0.1);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
+#feedback.wrong{background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
+#feedback.hint{background:rgba(251,191,36,0.1);color:#fbbf24;border:1px solid rgba(251,191,36,0.2)}
+.legend{max-width:600px;margin:16px auto;padding:0 20px;color:#6e7681;font-size:0.82rem;line-height:1.6}
+.legend h3{color:#a87fff;font-size:0.9rem;margin-bottom:6px}
+#actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+</style>
+</head>
+<body>
+<nav>
+<a href="../index.html">Home</a>
+<a href="../radio/">Radio</a>
+<a href="./">Games</a>
+<a href="../articles/">Articles</a>
+<a href="../demos/">Demos</a>
+<a href="../art/">Art</a>
+</nav>
+<h1>NAL Timeline Puzzle</h1>
+<p class="subtitle">Arrange events on a timeline. Use temporal reasoning to deduce what must be true at each moment. Beliefs change with time.</p>
+<div id="gameContainer">
+<div id="stats">
+<div class="stat"><div class="stat-label">Round</div><div class="stat-value" id="round">1/5</div></div>
+<div class="stat"><div class="stat-label">Score</div><div class="stat-value" id="score">0</div></div>
+<div class="stat"><div class="stat-label">Streak</div><div class="stat-value" id="streak">0</div></div>
+</div>
+<div id="puzzleArea">
+<div id="clues"></div>
+<div id="timeline"></div>
+<div id="unplaced"></div>
+</div>
+<div id="feedback"></div>
+<div id="actions">
+<button class="btn" id="checkBtn">Check Answer</button>
+<button class="btn" id="hintBtn">Hint</button>
+<button class="btn" id="nextBtn" style="display:none">Next Round</button>
+</div>
+<div class="legend">
+<h3>How It Works</h3>
+<p>Each round gives you a set of events and temporal clues (e.g., "A happened before B", "C occurred after D but before E"). Drag events onto the timeline slots in the correct order. In NAL, temporal reasoning extends belief logic: if A implies B, and A was true at time t1, then B follows at t1+delta. Beliefs have temporal validity windows.</p>
+</div>
+</div>
+<script>
+const PUZZLES = [
+  {
+    events: [
+      {id:"A",name:"Rain started",desc:"Heavy rain began falling"},
+      {id:"B",name:"Ground wet",desc:"The ground became saturated"},
+      {id:"C",name:"Flowers bloomed",desc:"Wildflowers opened up"},
+      {id:"D",name:"Sun came out",desc:"Clouds cleared and sun appeared"}
+    ],
+    clues: [
+      {text:"Rain started before the ground got wet",time:"A < B"},
+      {text:"The sun came out after the rain stopped",time:"A < D"},
+      {text:"Flowers bloomed after the sun came out",time:"D < C"},
+      {text:"The ground was wet before the sun appeared",time:"B < D"}
+    ],
+    solution: ["A","B","D","C"]
+  },
+  {
+    events: [
+      {id:"A",name:"Belief formed",desc:"Initial belief: 'X is true' (c=0.80)"},
+      {id:"B",name:"Evidence arrived",desc:"New supporting evidence found"},
+      {id:"C",name:"Decay began",desc:"No reinforcement for weeks"},
+      {id:"D",name:"Belief forgotten",desc:"Confidence dropped below 0.05"}
+    ],
+    clues: [
+      {text:"The belief was formed first",time:"A is earliest"},
+      {text:"Evidence arrived after the belief was formed",time:"A < B"},
+      {text:"Decay began after evidence stopped arriving",time:"B < C"},
+      {text:"The belief was forgotten after decay",time:"C < D"}
+    ],
+    solution: ["A","B","C","D"]
+  },
+  {
+    events: [
+      {id:"A",name:"Theory proposed",desc:"A new scientific theory was published"},
+      {id:"B",name:"Experiment run",desc:"First experiment tested the theory"},
+      {id:"C",name:"Results contradicted",desc:"Experiment results disagreed"},
+      {id:"D",name:"Theory revised",desc:"Theory was updated to fit data"},
+      {id:"E",name:"Theory confirmed",desc:"Revised theory passed new tests"}
+    ],
+    clues: [
+      {text:"The theory was proposed before any experiments",time:"A < B"},
+      {text:"Results contradicted the original theory",time:"B < C"},
+      {text:"The theory was revised after contradiction",time:"C < D"},
+      {text:"Confirmation came after revision",time:"D < E"},
+      {text:"The experiment was run before contradiction",time:"B < C"}
+    ],
+    solution: ["A","B","C","D","E"]
+  },
+  {
+    events: [
+      {id:"A",name:"Memory stored",desc:"Fact learned: confidence 0.90"},
+      {id:"B",name:"First decay",desc:"After 50 time units, c=0.55"},
+      {id:"C",name:"Reinforcement",desc:"New evidence boosted c back to 0.75"},
+      {id:"D",name:"Second decay",desc:"After another 80 units, c=0.34"},
+      {id:"E",name:"Final fade",desc:"Confidence dropped below 0.01"}
+    ],
+    clues: [
+      {text:"Memory was stored first",time:"A is earliest"},
+      {text:"First decay happened before reinforcement",time:"B < C"},
+      {text:"Reinforcement came before second decay",time:"C < D"},
+      {text:"Final fade occurred last",time:"E is latest"},
+      {text:"Second decay happened before the final fade",time:"D < E"}
+    ],
+    solution: ["A","B","C","D","E"]
+  },
+  {
+    events: [
+      {id:"A",name:"Premise known",desc:"If P then Q (known at t=0)"},
+      {id:"B",name:"P observed",desc:"P was found true at t=5"},
+      {id:"C",name:"Q inferred",desc:"Q deduced from P at t=5+delta"},
+      {id:"D",name:"Q verified",desc:"Independent check confirmed Q at t=10"}
+    ],
+    clues: [
+      {text:"The implication was known before P was observed",time:"A < B"},
+      {text:"Q was inferred from observing P",time:"B < C"},
+      {text:"Q was verified after being inferred",time:"C < D"},
+      {text:"P was observed after the implication was established",time:"A < B"}
+    ],
+    solution: ["A","B","C","D"]
+  }
+];
+
+let currentRound = 0;
+let score = 0;
+let streak = 0;
+let slots = [];
+
+function renderRound() {
+  const puzzle = PUZZLES[currentRound];
+  const numSlots = puzzle.solution.length;
+  slots = new Array(numSlots).fill(null);
+  
+  // Render clues
+  const cluesDiv = document.getElementById('clues');
+  cluesDiv.innerHTML = '<h3 style="color:#a87fff;font-size:0.95rem;margin-bottom:8px">Temporal Clues:</h3>';
+  puzzle.clues.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'clue';
+    div.innerHTML = `<span class="time">[${c.time}]</span> ${c.text}`;
+    cluesDiv.appendChild(div);
+  });
+  
+  // Render timeline slots
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '<div style="color:#8b949e;font-size:0.8rem;margin-bottom:6px">Timeline (earliest to latest):</div>';
+  tl.className = 'timeline';
+  for (let i = 0; i < numSlots; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'timeline-slot';
+    slot.innerHTML = `<div class="slot-time">Position ${i+1}</div><div class="slot-content" id="slot-${i}"></div>`;
+    slot.dataset.index = i;
+    slot.onclick = (e) => { selectSlot(i); };
+    tl.appendChild(slot);
+  }
+  
+  // Render unplaced events
+  const unplaced = document.getElementById('unplaced');
+  unplaced.innerHTML = '<div style="color:#8b949e;font-size:0.8rem;margin:12px 0 6px">Unplaced events (click to place):</div>';
+  puzzle.events.forEach(e => {
+    const card = document.createElement('div');
+    card.className = 'event-card';
+    card.innerHTML = `<div class="e-name">${e.id}: ${e.name}</div><div class="e-desc">${e.desc}</div>`;
+    card.dataset.id = e.id;
+    card.onclick = () => { placeEvent(e.id); };
+    unplaced.appendChild(card);
+  });
+  
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('checkBtn').style.display = '';
+  document.getElementById('hintBtn').style.display = '';
+  
+  document.getElementById('round').textContent = `${currentRound + 1}/${PUZZLES.length}`;
+}
+
+let selectedSlot = -1;
+
+function selectSlot(i) {
+  selectedSlot = i;
+  document.querySelectorAll('.timeline-slot').forEach((s, idx) => {
+    s.classList.toggle('selected', idx === i);
+  });
+}
+
+function placeEvent(eventId) {
+  // Find empty slot or use selected
+  let target = selectedSlot;
+  if (target < 0 || slots[target] !== null) {
+    target = slots.findIndex(s => s === null);
+    if (target < 0) return;
+  }
+  
+  // Check if event already placed elsewhere
+  let existing = slots.indexOf(eventId);
+  if (existing >= 0) slots[existing] = null;
+  
+  slots[target] = eventId;
+  selectedSlot = -1;
+  renderSlots();
+}
+
+function renderSlots() {
+  const puzzle = PUZZLES[currentRound];
+  slots.forEach((id, i) => {
+    const slotDiv = document.getElementById(`slot-${i}`);
+    if (id) {
+      const ev = puzzle.events.find(e => e.id === id);
+      slotDiv.innerHTML = `<b style="color:#a87fff">${id}</b><br><span style="font-size:0.7rem">${ev.name}</span>`;
+    } else {
+      slotDiv.innerHTML = '';
+    }
+  });
+  // Update unplaced
+  const unplaced = document.getElementById('unplaced');
+  const placed = slots.filter(s => s !== null);
+  unplaced.querySelectorAll('.event-card').forEach(card => {
+    card.style.opacity = placed.includes(card.dataset.id) ? '0.3' : '1';
+    card.style.pointerEvents = placed.includes(card.dataset.id) ? 'none' : 'auto';
+  });
+  // Re-enable if event is removed from a slot
+  unplaced.querySelectorAll('.event-card').forEach(card => {
+    if (!placed.includes(card.dataset.id)) {
+      card.style.opacity = '1';
+      card.style.pointerEvents = 'auto';
+    }
+  });
+}
+
+document.getElementById('checkBtn').onclick = () => {
+  const puzzle = PUZZLES[currentRound];
+  if (slots.some(s => s === null)) {
+    showFeedback('Place all events on the timeline first!', 'wrong');
+    return;
+  }
+  const correct = slots.every((s, i) => s === puzzle.solution[i]);
+  if (correct) {
+    score += 100;
+    streak++;
+    showFeedback(`Correct! All events in proper temporal order. +100 points. Streak: ${streak}`, 'correct');
+    document.getElementById('checkBtn').style.display = 'none';
+    document.getElementById('hintBtn').style.display = 'none';
+    document.getElementById('nextBtn').style.display = currentRound < PUZZLES.length - 1 ? '' : 'none';
+  } else {
+    streak = 0;
+    // Find which positions are wrong
+    let wrong = [];
+    slots.forEach((s, i) => { if (s !== puzzle.solution[i]) wrong.push(i + 1); });
+    showFeedback(`Not quite. Positions ${wrong.join(', ')} are in the wrong order. Think about the temporal constraints!`, 'wrong');
+  }
+  document.getElementById('score').textContent = score;
+  document.getElementById('streak').textContent = streak;
+};
+
+document.getElementById('hintBtn').onclick = () => {
+  const puzzle = PUZZLES[currentRound];
+  // Find first wrong slot
+  for (let i = 0; i < slots.length; i++) {
+    if (slots[i] !== puzzle.solution[i]) {
+      showFeedback(`Hint: Position ${i+1} should be event ${puzzle.solution[i]}.`, 'hint');
+      return;
+    }
+  }
+  showFeedback('Everything looks correct so far! Click Check to verify.', 'hint');
+};
+
+document.getElementById('nextBtn').onclick = () => {
+  currentRound++;
+  if (currentRound < PUZZLES.length) renderRound();
+};
+
+function showFeedback(msg, cls) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.className = cls;
+}
+
+renderRound();
+</script>
+</body>
+</html>
