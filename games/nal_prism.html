@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Prism — The Spectrum of Truth</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#c8c8e0;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{color:#e8c840;font-size:2em;margin:10px 0;text-align:center}
+.subtitle{color:#888;margin-bottom:20px;font-size:0.9em}
+#game{width:100%;max-width:600px;background:#111122;border-radius:12px;padding:20px;box-shadow:0 0 40px rgba(100,100,255,0.15)}
+#score{display:flex;justify-content:space-between;margin-bottom:15px;font-size:0.9em;color:#aaa}
+#score span{color:#e8c840;font-weight:bold}
+#canvas-wrap{position:relative;width:100%;aspect-ratio:1;max-width:500px;margin:0 auto}
+canvas{width:100%;height:100%;border-radius:8px}
+#target{position:absolute;top:50%;right:10px;transform:translateY(-50%);width:60px;height:60px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 20px rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:0.7em;color:#fff;font-weight:bold;text-align:center}
+#controls{margin-top:15px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+button{background:#222238;color:#e8c840;border:1px solid #444;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:0.9em;transition:all 0.2s}
+button:hover{background:#333358;transform:scale(1.05)}
+#message{text-align:center;margin-top:10px;min-height:1.5em;font-size:0.9em;color:#88cc88}
+#instructions{margin-top:15px;padding:12px;background:#161628;border-radius:8px;font-size:0.85em;color:#999;line-height:1.5}
+#instructions b{color:#e8c840}
+.bar{display:inline-block;width:12px;height:12px;border-radius:2px;margin:0 2px;vertical-align:middle}
+</style>
+</head>
+<body>
+<h1>🌈 NAL Prism</h1>
+<p class="subtitle">Split truth into its spectrum. Match the target (f, c) value by adjusting the prism.</p>
+<div id="game">
+<div id="score">
+<span>Score: <span id="score-val">0</span></span>
+<span>Round: <span id="round-val">1</span>/10</span>
+</div>
+<div id="canvas-wrap">
+<canvas id="canvas" width="500" height="500"></canvas>
+<div id="target">Target:<br><span id="target-text">f=0.8<br>c=0.9</span></div>
+</div>
+<div id="controls">
+<button id="f-up">▲ Freq</button>
+<button id="f-down">▼ Freq</button>
+<button id="c-up">▲ Conf</button>
+<button id="c-down">▼ Conf</button>
+<button id="submit" style="background:#2a2a4a;font-weight:bold">Lock In!</button>
+</div>
+<div id="message"></div>
+<div id="instructions">
+<b>How to Play:</b> A white beam of pure truth enters the prism. Adjust <b>Frequency</b> (how often true) and <b>Confidence</b> (how much evidence) to split the beam into the right color. Match the target (f, c) shown on the right. <b>Red</b> = low frequency, <b>Green</b> = high frequency. <b>Brightness</b> = confidence. 10 rounds, closer = more points!
+</div>
+</div>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let score=0,round=1,targetF=0,targetC=0,playerF=0.5,playerC=0.5,submitted=false;
+
+function freqToColor(f,c){
+  const r=Math.round(255*(1-f)*c);
+  const g=Math.round(255*f*c);
+  const b=Math.round(60*(1-Math.abs(f-0.5)*2)*c);
+  return `rgb(${r},${g},${b})`;
+}
+
+function newRound(){
+  targetF=0.1+Math.random()*0.8;
+  targetC=0.3+Math.random()*0.65;
+  playerF=0.5;playerC=0.5;submitted=false;
+  document.getElementById('target-text').innerHTML=`f=${targetF.toFixed(2)}<br>c=${targetC.toFixed(2)}`;
+  document.getElementById('round-val').textContent=round;
+  document.getElementById('message').textContent='';
+  draw();
+}
+
+function draw(){
+  ctx.clearRect(0,0,500,500);
+  // Background
+  ctx.fillStyle='#0a0a1a';
+  ctx.fillRect(0,0,500,500);
+  
+  // White beam entering
+  const beamY=250;
+  ctx.fillStyle='rgba(255,255,255,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(20,beamY-8);
+  ctx.lineTo(180,beamY-8);
+  ctx.lineTo(180,beamY+8);
+  ctx.lineTo(20,beamY+8);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Prism triangle
+  ctx.fillStyle='rgba(200,200,255,0.15)';
+  ctx.strokeStyle='rgba(200,200,255,0.5)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(180,beamY-60);
+  ctx.lineTo(240,beamY);
+  ctx.lineTo(180,beamY+60);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  // Spectrum beams
+  const colors=[
+    [255,0,0],[255,128,0],[255,255,0],[0,255,0],[0,200,255],[100,100,255],[200,100,255]
+  ];
+  const numBeams=7;
+  for(let i=0;i<numBeams;i++){
+    const t=i/(numBeams-1);
+    const angle=(t-0.5)*0.6;
+    const endX=240+Math.cos(angle)*250;
+    const endY=beamY+Math.sin(angle)*250;
+    
+    ctx.strokeStyle=`rgba(${colors[i][0]},${colors[i][1]},${colors[i][2]},0.15)`;
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(240,beamY);
+    ctx.lineTo(endX,endY);
+    ctx.stroke();
+  }
+  
+  // Player beam — the color they're creating
+  const playerColor=freqToColor(playerF,playerC);
+  const angle=(playerF-0.5)*0.6;
+  const endX=240+Math.cos(angle)*250;
+  const endY=beamY+Math.sin(angle)*250;
+  
+  // Glow
+  ctx.shadowBlur=20;
+  ctx.shadowColor=playerColor;
+  ctx.strokeStyle=playerColor;
+  ctx.lineWidth=8;
+  ctx.beginPath();
+  ctx.moveTo(240,beamY);
+  ctx.lineTo(endX,endY);
+  ctx.stroke();
+  ctx.shadowBlur=0;
+  
+  // Target beam (dashed)
+  const targetColor=freqToColor(targetF,targetC);
+  const tAngle=(targetF-0.5)*0.6;
+  const tEndX=240+Math.cos(tAngle)*250;
+  const tEndY=beamY+Math.sin(tAngle)*250;
+  ctx.strokeStyle=targetColor;
+  ctx.lineWidth=2;
+  ctx.setLineDash([5,5]);
+  ctx.beginPath();
+  ctx.moveTo(240,beamY);
+  ctx.lineTo(tEndX,tEndY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Labels
+  ctx.fillStyle='#888';
+  ctx.font='11px sans-serif';
+  ctx.fillText('Frequency →',250,470);
+  ctx.save();
+  ctx.translate(10,250);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Confidence ↑',0,0);
+  ctx.restore();
+  
+  // Spectrum legend at bottom
+  const legendY=480;
+  for(let i=0;i<50;i++){
+    const t=i/49;
+    ctx.fillStyle=freqToColor(t,playerC);
+    ctx.fillRect(20+i*9,legendY,9,12);
+  }
+}
+
+document.getElementById('f-up').onclick=()=>{if(!submitted){playerF=Math.min(1,playerF+0.05);draw()}};
+document.getElementById('f-down').onclick=()=>{if(!submitted){playerF=Math.max(0,playerF-0.05);draw()}};
+document.getElementById('c-up').onclick=()=>{if(!submitted){playerC=Math.min(1,playerC+0.05);draw()}};
+document.getElementById('c-down').onclick=()=>{if(!submitted){playerC=Math.max(0,playerC-0.05);draw()}};
+
+document.getElementById('submit').onclick=()=>{
+  if(submitted)return;
+  submitted=true;
+  const dist=Math.sqrt((playerF-targetF)**2+(playerC-targetC)**2);
+  const points=Math.max(0,Math.round((1-dist)*100));
+  score+=points;
+  document.getElementById('score-val').textContent=score;
+  
+  if(dist<0.05){
+    document.getElementById('message').innerHTML=`<span style="color:#88ff88">PERFECT! +${points} points</span>`;
+  }else if(dist<0.15){
+    document.getElementById('message').innerHTML=`<span style="color:#aaff88">Great! +${points} points</span>`;
+  }else if(dist<0.3){
+    document.getElementById('message').innerHTML=`<span style="color:#ffcc88">Close. +${points} points</span>`;
+  }else{
+    document.getElementById('message').innerHTML=`<span style="color:#ff8888">Off target. +${points} points</span>`;
+  }
+  
+  round++;
+  if(round>10){
+    setTimeout(()=>{
+      let rating=score>=800?'Spectroscopy Master!':score>=600?'Prism Wielder':score>=400?'Truth Splitter':'Apprentice';
+      document.getElementById('message').innerHTML=`<b>Game Over!</b> Final: ${score}/1000 — ${rating}`;
+      document.getElementById('submit').textContent='Play Again';
+      document.getElementById('submit').onclick=()=>{score=0;round=1;document.getElementById('score-val').textContent=0;document.getElementById('submit').textContent='Lock In!';document.getElementById('submit').onclick=submitRound;newRound()};
+    },2000);
+  }else{
+    setTimeout(newRound,1500);
+  }
+};
+
+function submitRound(){document.getElementById('submit').onclick()};
+newRound();
+</script>
+</body>
+</html>
