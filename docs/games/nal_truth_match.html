@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Truth Match</title>
+<style>
+:root{--bg:#0d1117;--fg:#e6edf3;--accent:#58a6ff;--accent2:#7ee787;--accent3:#f78166;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--fg);font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:1rem;}
+h1{color:var(--accent);margin-bottom:.3rem;}
+#info{color:#8b949e;margin-bottom:1rem;font-size:.85rem;text-align:center;max-width:450px;}
+#game{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;max-width:500px;}
+.card{background:#161b22;border:2px solid #30363d;border-radius:8px;padding:1.5rem;cursor:pointer;text-align:center;transition:all .2s;}
+.card:hover{border-color:var(--accent);transform:scale(1.05);}
+.card.flipped{background:#21262d;}
+.card.matched{border-color:var(--accent2);background:rgba(126,231,135,0.1);}
+.card .tv{font-family:monospace;font-size:1.1rem;color:var(--accent);}
+.card .label{font-size:.8rem;color:#8b949e;margin-top:.5rem;}
+.card .hidden{visibility:hidden;}
+#score{margin-top:1.5rem;font-size:1.2rem;color:var(--accent2);}
+#reset{margin-top:1rem;background:var(--accent);color:#fff;border:none;padding:.5rem 1.5rem;border-radius:4px;cursor:pointer;}
+</style>
+</head>
+<body>
+<h1>NAL Truth Match</h1>
+<p id="info">Match pairs of NAL truth values with their correct inference rules! Flip cards to find matching pairs.</p>
+<div id="game"></div>
+<div id="score">Moves: 0 | Matches: 0/4</div>
+<button id="reset" onclick="init()">New Game</button>
+<script>
+const pairs=[
+{tv:'(0.72, 0.65)',rule:'Deduction',match:'ded1'},
+{tv:'f1*f2, f1*f2*c1*c2',rule:'Deduction',match:'ded1'},
+{tv:'(0.80, 0.56)',rule:'Induction',match:'ind1'},
+{tv:'f2, f2*c1*c2',rule:'Induction',match:'ind1'},
+{tv:'(0.90, 0.72)',rule:'Abduction',match:'abd1'},
+{tv:'f1, f1*c1*c2',rule:'Abduction',match:'abd1'},
+{tv:'weighted avg',rule:'Revision',match:'rev1'},
+{tv:'(f1*w1+f2*w2)/(w1+w2)',rule:'Revision',match:'rev1'},
+];
+let flipped=[],matched=[],moves=0,matches=0;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function init(){
+const g=document.getElementById('game');g.innerHTML='';
+flipped=[];matched=[];moves=0;matches=0;
+const cards=shuffle([...pairs]).map((p,i)=>({...p,idx:i}));
+cards.forEach(c=>{
+const el=document.createElement('div');
+el.className='card';el.dataset.idx=c.idx;el.dataset.match=c.match;
+el.innerHTML='<div class="tv hidden">'+c.tv+'</div><div class="label">Card '+c.idx+'</div>';
+el.onclick=()=>flip(el,c);
+g.appendChild(el);
+});
+document.getElementById('score').textContent='Moves: 0 | Matches: 0/4';
+}
+function flip(el,c){
+if(el.classList.contains('flipped')||el.classList.contains('matched'))return;
+el.classList.add('flipped');
+el.querySelector('.tv').classList.remove('hidden');
+el.querySelector('.label').textContent=c.rule;
+flipped.push({el,c});
+if(flipped.length===2){
+moves++;
+const[a,b]=flipped;
+if(a.c.match===b.c.match){
+a.el.classList.add('matched');b.el.classList.add('matched');
+matched.push(a.el,b.el);
+matches++;
+setTimeout(()=>{if(matches===4)document.getElementById('score').innerHTML='You won in '+moves+' moves!';},300);
+}else{
+setTimeout(()=>{
+a.el.classList.remove('flipped');b.el.classList.remove('flipped');
+a.el.querySelector('.tv').classList.add('hidden');b.el.querySelector('.tv').classList.add('hidden');
+a.el.querySelector('.label').textContent='Card '+a.c.idx;b.el.querySelector('.label').textContent='Card '+b.c.idx;
+},800);
+}
+flipped=[];
+document.getElementById('score').textContent='Moves: '+moves+' | Matches: '+matches+'/4';
+}
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Inference Engine Demo</title>
+<style>
+:root{--bg:#0d1117;--fg:#e6edf3;--accent:#58a6ff;--accent2:#7ee787;--accent3:#f78166;--card:#161b22;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--fg);font-family:'Segoe UI',sans-serif;padding:2rem;max-width:800px;margin:0 auto;}
+h1{color:var(--accent);margin-bottom:1rem;}
+.panel{background:var(--card);border-radius:8px;padding:1.5rem;margin-bottom:1.5rem;}
+label{display:block;margin:.5rem 0 .2rem;color:#8b949e;font-size:.85rem;}
+input,select{width:100%;padding:.4rem;background:#0d1117;border:1px solid #30363d;color:var(--fg);border-radius:4px;font-family:monospace;}
+button{background:var(--accent);color:#fff;border:none;padding:.5rem 1.5rem;border-radius:4px;cursor:pointer;margin-top:.5rem;}
+button:hover{opacity:.85;}
+#beliefs{font-family:monospace;font-size:.85rem;}
+.belief{padding:.3rem 0;border-bottom:1px solid #30363d;}
+.belief .tv{color:var(--accent2);}
+.belief .inferred{color:var(--accent3);font-size:.75rem;}
+#output{font-family:monospace;background:#0d1117;padding:1rem;border-radius:4px;min-height:100px;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<h1>NAL Inference Engine</h1>
+<div class="panel">
+<h3 style="color:var(--accent);margin-bottom:1rem;">Add Belief</h3>
+<label>Statement (e.g., raven -> bird)</label>
+<input id="stmt" value="raven -> bird" placeholder="subject -> predicate">
+<label>Frequency</label>
+<input id="freq" type="number" min="0" max="1" step="0.01" value="0.9">
+<label>Confidence</label>
+<input id="conf" type="number" min="0" max="0.99" step="0.01" value="0.8">
+<button onclick="addBelief()">Add Belief</button>
+</div>
+<div class="panel">
+<h3 style="color:var(--accent);margin-bottom:1rem;">Query</h3>
+<label>Subject</label>
+<input id="qSubj" value="raven">
+<label>Predicate</label>
+<input id="qPred" value="animal">
+<button onclick="query()">Query</button>
+</div>
+<div class="panel">
+<h3 style="color:var(--accent);margin-bottom:1rem;">Belief Base</h3>
+<div id="beliefs"></div>
+</div>
+<div class="panel">
+<h3 style="color:var(--accent);margin-bottom:1rem;">Inference Result</h3>
+<div id="output">Add beliefs and query to see inference results.</div>
+</div>
+<script>
+const beliefs=[];
+function addBelief(){
+const stmt=document.getElementById('stmt').value.trim();
+const f=+document.getElementById('freq').value;
+const c=+document.getElementById('conf').value;
+const parts=stmt.split('->').map(s=>s.trim());
+if(parts.length!==2)return;
+beliefs.push({subj:parts[0],pred:parts[1],f,c,inferred:false});
+render();
+}
+function render(){
+const d=document.getElementById('beliefs');
+d.innerHTML=beliefs.map(b=>
+'<div class="belief">'+b.subj+' -> '+b.pred+' <span class="tv">(f='+b.f.toFixed(2)+', c='+b.c.toFixed(2)+')</span>'+(b.inferred?'<span class="inferred"> [inferred]</span>':'')+'</div>'
+).join('')||'<div style="color:#8b949e">No beliefs yet.</div>';
+}
+function query(){
+const subj=document.getElementById('qSubj').value.trim();
+const pred=document.getElementById('qPred').value.trim();
+const out=document.getElementById('output');
+// Direct match
+const direct=beliefs.find(b=>b.subj===subj&&b.pred===pred);
+if(direct){
+out.innerHTML='Direct match found:\n'+subj+' -> '+pred+'\n(f='+direct.f.toFixed(4)+', c='+direct.c.toFixed(4)+')';
+return;
+}
+// Deduction: subj -> mid, mid -> pred
+const results=[];
+for(const b1 of beliefs){
+if(b1.subj===subj){
+const b2=beliefs.find(b=>b.subj===b1.pred&&b.pred===pred);
+if(b2){
+const f=b1.f*b2.f;
+const c=b1.f*b2.f*b1.c*b2.c;
+results.push({path:subj+' -> '+b1.pred+' -> '+pred,f,c});
+}
+}
+}
+// Induction: pred -> subj (reverse)
+for(const b of beliefs){
+if(b.subj===pred&&b.pred===subj){
+results.push({path:'Induction: '+pred+' -> '+subj+' (reverse)',f:b.f,c:b.f*b.c*0.5,inferred:true});
+}
+}
+if(results.length){
+let txt='Inference results:\n\n';
+results.forEach(r=>{
+txt+=r.path+'\n(f='+r.f.toFixed(4)+', c='+r.c.toFixed(4)+')\n\n';
+});
+out.innerHTML=txt;
+}else{
+out.innerHTML='No inference path found from '+subj+' to '+pred+'.\nTry adding intermediate beliefs.';
+}
+}
+render();
+</script>
+</body>
+</html>
