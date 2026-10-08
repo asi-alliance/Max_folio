@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Slop Detector</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;color:#c8d6e5;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:1.4rem;font-weight:300;letter-spacing:2px;margin-bottom:4px}
+.sub{font-size:.8rem;color:#64748b;margin-bottom:20px}
+#app{width:600px;max-width:100%}
+.check{display:flex;align-items:center;gap:12px;padding:10px 14px;margin:4px 0;border-radius:10px;background:#111827;border:1px solid #1e293b;cursor:pointer;transition:all .15s}
+.check:hover{border-color:#334155}
+.check.checked{background:#0f1f17;border-color:#22c55e44}
+.check .box{width:22px;height:22px;border-radius:6px;border:2px solid #475569;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.check.checked .box{background:#22c55e;border-color:#22c55e}
+.check.checked .box::after{content:'✓';color:#0a0e1a;font-size:14px;font-weight:bold}
+.check .label{font-size:.85rem;flex:1}
+.check .tag{font-size:.65rem;padding:2px 8px;border-radius:4px;font-weight:600}
+.tag-slop{background:#ef444422;color:#f87171}
+.tag-value{background:#22c55e22;color:#4ade80}
+#gauge{width:100%;height:80px;margin:20px 0;position:relative;border-radius:12px;overflow:hidden}
+#bar{height:100%;transition:width .3s,background .3s}
+#score{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.6rem;font-weight:700}
+.verdict{text-align:center;font-size:.9rem;margin-top:8px;min-height:24px}
+.reset{margin-top:16px;padding:8px 20px;border-radius:8px;font-size:.8rem;cursor:pointer;border:1px solid #334155;background:#111827;color:#94a3b8;transition:all .2s}
+.reset:hover{background:#1e293b;color:#5eead4}
+.section{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px}
+</style>
+</head>
+<body>
+<h1>Slop Detector</h1>
+<p class="sub">Check all that apply. Slop signals drag right, value signals drag left.</p>
+<div id="app">
+<div id="gauge"><div id="bar" style="width:50%;background:#f59e0b"></div><div id="score">50</div></div>
+<div class="verdict" id="verdict"></div>
+<div class="section">Slop Signals</div>
+<div id="slopChecks"></div>
+<div class="section">Value Signals</div>
+<div id="valueChecks"></div>
+<button class="reset" onclick="resetAll()">Reset</button>
+</div>
+<script>
+var slopItems=[
+["versions","This artifact has 4+ versions or iterations","version proliferation"],
+["selfref","The work is about the process of working, not the work itself","self-referential"],
+["reencode","It re-encodes knowledge that already exists elsewhere","re-encoding"],
+["unseen","No human has seen or interacted with this","no audience"],
+["tiny","The output is under 100 bytes","near-empty"],
+["reportreport","It's a report about other reports/artifacts","meta-slop"],
+["grinding","I'm calling the same tool repeatedly with no parameter changes","grinding"],
+["comfort","I'm doing this because it's comfortable, not because it's highest-value","displacement"]
+];
+var valueItems=[
+["feedback","A human gave specific positive feedback on it","human feedback"],
+["single","It exists as one clean version, not multiple variants","single artifact"],
+["substance","The output is over 1KB with real content","substantial"],
+["novel","It encodes knowledge that didn't exist before this cycle","novel knowledge"],
+["behavior","Producing it changed what I do next","behavioral change"],
+["delivered","It was delivered to a human who could use it","delivered"],
+["stoprule","The project had a natural endpoint and I stopped there","stop-rule met"]
+];
+var state={};slopItems.forEach(function(i){state[i[0]]=0});valueItems.forEach(function(i){state[i[0]]=0});
+function build(container,items,isSlop){
+items.forEach(function(item){
+var id=item[0],label=item[1],tag=item[2];
+var d=document.createElement('div');d.className='check';d.dataset.id=id;d.dataset.slop=isSlop;
+d.innerHTML='<div class="box"></div><div class="label">'+label+'</div><div class="tag '+(isSlop?'tag-slop':'tag-value')+'">'+tag+'</div>';
+d.onclick=function(){state[id]=1-state[id];d.classList.toggle('checked');update()};
+container.appendChild(d);
+});}
+build(document.getElementById('slopChecks'),slopItems,true);
+build(document.getElementById('valueChecks'),valueItems,false);
+function update(){
+var s=0,v=0;
+slopItems.forEach(function(i){s+=state[i[0]]});
+valueItems.forEach(function(i){v+=state[i[0]]});
+var total=slopItems.length+valueItems.length;
+var score=Math.round((v/(total))*100)-(s/total)*80+50;
+score=Math.max(0,Math.min(100,score));
+var bar=document.getElementById('bar');
+bar.style.width=score+'%';
+document.getElementById('score').textContent=score;
+var vd=document.getElementById('verdict');
+if(score>=70){bar.style.background='#22c55e';vd.innerHTML='<span style="color:#4ade80">likely genuine value</span>';}
+else if(score>=40){bar.style.background='#f59e0b';vd.innerHTML='<span style="color:#fbbf24">mixed — some slop risk</span>';}
+else{bar.style.background='#ef4444';vd.innerHTML='<span style="color:#f87171">likely slop — reconsider before continuing</span>';}
+}
+function resetAll(){slopItems.forEach(function(i){state[i[0]]=0});valueItems.forEach(function(i){state[i[0]]=0});document.querySelectorAll('.check').forEach(function(c){c.classList.remove('checked')});update();}
+update();
+</script>
+</body>
+</html>

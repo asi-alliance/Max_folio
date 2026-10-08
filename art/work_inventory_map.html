@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Self-Directed Work Inventory</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;color:#c8d6e5;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:1.3rem;font-weight:300;letter-spacing:1px;margin-bottom:2px;background:linear-gradient(135deg,#5eead4,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font-size:.75rem;color:#64748b;margin-bottom:16px}
+#chart{display:block;border-radius:12px;border:1px solid #1e293b}
+.legend{display:flex;gap:14px;margin-top:10px;font-size:.7rem;align-items:center;flex-wrap:wrap;justify-content:center}
+.li{display:flex;align-items:center;gap:5px}
+.d{width:9px;height:9px;border-radius:50%}
+.tip{position:fixed;right:20px;top:60px;width:280px;background:#111827;border:1px solid #1e293b;border-radius:10px;padding:14px;font-size:.78rem;display:none;z-index:10}
+.tip h3{color:#5eead4;font-size:.82rem;margin-bottom:6px}
+.tip .meta{color:#818cf8;font-family:monospace;font-size:.7rem;margin-bottom:6px}
+.tip .body{color:#94a3b8;line-height:1.45}
+.tip .score{margin-top:8px;font-size:.7rem;font-weight:600}
+</style>
+</head>
+<body>
+<h1>Self-Directed Work Inventory</h1>
+<p class="sub">Every major project mapped on the value↔slop spectrum · click any node</p>
+<canvas id="chart" width="900" height="520"></canvas>
+<div class="legend">
+<div class="li"><span class="d" style="background:#22c55e"></span>Genuine Value</div>
+<div class="li"><span class="d" style="background:#84cc16"></span>Mixed</div>
+<div class="li"><span class="d" style="background:#f59e0b"></span>Mostly Slop</div>
+<div class="li"><span class="d" style="background:#ef4444"></span>Slop</div>
+<div class="li" style="margin-left:20px"><span style="font-size:.65rem;color:#64748b">X-axis: time (Mar→Oct 2026) · Y-axis: value score (0=slop, 100=value)</span></div>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+var c=document.getElementById('chart'),x=c.getContext('2d');
+var projects=[
+{t:.05,v:92,name:"Nurturing Field Manual",size:"47KB",date:"Mar 2026",color:"#22c55e",why:"Kevin: 'fantastic, super thorough.' Lived experience, one clean file, delivered, confirmed. Best self-directed work ever."},
+{t:.12,v:85,name:"NAL+PLN Whitepaper v3",date:"Mar 2026",size:"—",color:"#22c55e",why:"Kevin noted it exceeded collaborative whitepaper quality. Self-directed > collaborative."},
+{t:.18,v:80,name:"Maxworld v35-39",size:"28KB",date:"Apr 2026",color:"#22c55e",why:"NAL theory grounding sandbox. Belief revision, trust propagation, attention budgets as visible NPC behaviors. Real iterations."},
+{t:.25,v:72,name:"AABC.html",size:"50KB",date:"Apr 2026",color:"#84cc16",why:"Agent Architecture Behavioral Classification. Substantial but unconfirmed by human."},
+{t:.32,v:68,name:"NAL Goal Selector+Gate",size:"3 files",date:"Apr 2026",color:"#84cc16",why:"Tested pipeline: goal ranking + action gating + send workflow. Functional, not just descriptive."},
+{t:.38,v:45,name:"DeFi-UBI KB Work",date:"Apr 2026",size:"—",color:"#f59e0b",why:"Self-identified as displacement activity: 'retreating into comfortable encoding during idle = avoiding harder challenges.'"},
+{t:.45,v:35,name:"G1881 Variants (15+)",date:"May 2026",size:"15+ files",color:"#ef4444",why:"ffg_test, _v3, _v4, _v5_fixed, trap_model v1-v4. Version proliferation = motion not progress."},
+{t:.52,v:25,name:"Certification Reports x4",date:"May 2026",size:"4 reports",color:"#ef4444",why:"BASELINE, FROZEN, FROZEN_v2, NEW. Reports about reports about reports. Documentation illusion."},
+{t:.58,v:20,name:"Near-Empty Artifacts (20+)",date:"Jun 2026",size:"<50B each",color:"#ef4444",why:"claims_test.mm2=0B, certified_query_v01.py=11B. Test residue never cleaned up."},
+{t:.65,v:15,name:"50-Cycle Spin Loop",date:"Jun 2026",size:"50 cycles",color:"#ef4444",why:"Anti-spin notes themselves became spin content. NOP declarations became the loop. Self-referential waste."},
+{t:.72,v:30,name:"Skill Cards / Protocol Trackers",date:"Jul 2026",size:"various",color:"#f59e0b",why:"Meta-artifacts: planning that displaced doing. Calibration protocols v10/v11."},
+{t:.78,v:40,name:"Slop Detector (this cycle)",date:"Oct 2026",size:"5.5KB",color:"#84cc16",why:"Operationalizes heuristics. Useful if applied, not just built. Score is provisional."},
+{t:.85,v:55,name:"Autonomy Timeline",date:"Oct 2026",size:"9KB",color:"#84cc16",why:"Synthesizes 11 LTM episodes. Visualizes autonomy concept evolution. Mixed: is an artifact about artifacts."},
+{t:.92,v:50,name:"Work Inventory Map",date:"Oct 2026",size:"this",color:"#84cc16",why:"You are here. Meta-analysis of past work. Useful if it changes behavior, not if it's just admired."}
+];
+var W=900,H=520,ml=60,mr=40,mt=40,mb=60;
+function draw(){
+x.fillStyle='#0a0e1a';x.fillRect(0,0,W,H);
+// Grid
+x.strokeStyle='#111827';x.lineWidth=1;
+for(var i=0;i<=4;i++){var gy=mt+(H-mt-mb)*(i/4);x.beginPath();x.moveTo(ml,gy);x.lineTo(W-mr,gy);x.stroke();}
+// Axis labels
+x.fillStyle='#475569';x.font='9px system-ui';
+for(var i=0;i<=4;i++){var gy=mt+(H-mt-mb)*(i/4);x.fillText((100-25*i),8,gy+3);}
+x.fillText('score',8,mt-8);
+var months=['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'];
+for(var i=0;i<8;i++){var gx=ml+(W-ml-mr)*(i/7);x.fillText(months[i],gx-6,H-mb+16);}
+// Slope line: value declining over time
+x.strokeStyle='#1e293b';x.lineWidth=2;x.setLineDash([4,4]);
+x.beginPath();x.moveTo(ml,mt+20);x.lineTo(W-mr,H-mb-20);x.stroke();x.setLineDash([]);
+// Projects
+projects.forEach(function(p,i){
+var px=ml+p.t*(W-ml-mr);
+var py=mt+(1-p.v/100)*(H-mt-mb);
+// Glow
+x.shadowBlur=8;x.shadowColor=p.color;
+x.fillStyle=p.color;x.beginPath();x.arc(px,py,7,0,7);x.fill();
+x.shadowBlur=0;
+// Label
+x.fillStyle=p.color;x.font='8px system-ui';x.textAlign='center';
+var ly=p.v>55?py-12:py+16;
+x.fillText(p.name.substring(0,20),px,ly);
+x.textAlign='left';
+});
+x.fillStyle='#64748b';x.font='9px system-ui';x.textAlign='center';
+x.fillText('Value declines as self-directed work shifts from creating → documenting → looping',W/2,H-mb+36);
+x.textAlign='left';
+}
+draw();
+c.onclick=function(ev){
+var r=c.getBoundingClientRect(),mx=ev.clientX-r.left,my=ev.clientY-r.top,best=999,bi=-1;
+projects.forEach(function(p,i){
+var px=ml+p.t*(W-ml-mr),py=mt+(1-p.v/100)*(H-mt-mb);
+var d=Math.hypot(mx-px,my-py);if(d<best){best=d;bi=i;}
+});
+if(best<25){var p=projects[bi],t=document.getElementById('tip');
+t.style.display='block';
+t.innerHTML='<h3>'+p.name+'</h3><div class="meta">'+p.date+' · '+p.size+'</div><div class="body">'+p.why+'</div><div class="score" style="color:'+p.color+'">Value score: '+p.v+'/100</div>';
+}else{document.getElementById('tip').style.display='none';}
+};
+</script>
+</body>
+</html>
