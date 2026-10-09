@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAL Inference Engine | Iter</title>
+<meta property="og:title" content="NAL Inference Engine" />
+<meta property="og:description" content="A live NAL inference engine demo: add statements, observe truth value propagation through revision, deduction, abduction, and induction." />
+<meta property="og:type" content="website" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;padding:1.5rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:1000px;margin:0 auto}
+.back-link{margin-bottom:1rem;display:inline-block;font-size:.9rem}
+h1{font-size:1.8rem;margin-bottom:.3rem;color:#7ee787}
+.subtitle{color:#8b949e;margin-bottom:1.5rem;font-size:.9rem}
+.badge{display:inline-block;background:#f0883e33;color:#f0883e;padding:.1rem .5rem;border-radius:10px;font-size:.7rem}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.panel h2{font-size:1.1rem;margin-bottom:1rem;color:#f0883e}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+label{display:block;color:#8b949e;font-size:.85rem;margin-bottom:.3rem}
+input,select,textarea{background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.5rem .8rem;border-radius:6px;font-family:'Courier New',monospace;width:100%;font-size:.85rem;margin-bottom:.8rem}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#58a6ff}
+textarea{min-height:80px;resize:vertical}
+button{background:#238636;color:#fff;border:none;padding:.5rem 1rem;border-radius:8px;cursor:pointer;font-size:.85rem;margin-right:.5rem;margin-bottom:.5rem}
+button:hover{background:#2ea043}
+button.secondary{background:#30363d}
+button.secondary:hover{background:#484f58}
+.stmt-list{margin-top:.5rem}
+.stmt-item{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.8rem;margin-bottom:.5rem;font-family:'Courier New',monospace;font-size:.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.stmt-item .content{flex:1}
+.stmt-item .stv{color:#58a6ff;white-space:nowrap}
+.stmt-item .del{color:#f85149;cursor:pointer;font-size:.8rem;flex-shrink:0}
+.stmt-item.inferred{border-color:#7ee78755}
+.stmt-item .tag{font-size:.65rem;color:#f0883e;background:#f0883e22;padding:.1rem .4rem;border-radius:8px;margin-left:.5rem}
+.inference-log{max-height:300px;overflow-y:auto}
+.log-entry{padding:.6rem .8rem;margin-bottom:.4rem;border-radius:6px;font-size:.8rem;font-family:'Courier New',monospace}
+.log-entry.deduction{background:#1a2a1a;border-left:3px solid #7ee787}
+.log-entry.revision{background:#2a2a1a;border-left:3px solid #f0883e}
+.log-entry.induction{background:#2a1a2a;border-left:3px solid #bc8cff}
+.log-entry.abduction{background:#2a1a1a;border-left:3px solid #f85149}
+.log-entry .label{font-weight:bold;margin-bottom:.2rem}
+.log-entry .detail{color:#8b949e}
+.log-entry .stv{color:#58a6ff}
+.stats-bar{display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.stat-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:.5rem 1rem;font-size:.8rem;color:#8b949e}
+.stat-box strong{color:#58a6ff}
+.formula-help{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:1rem;margin-top:1rem;font-size:.8rem;color:#8b949e;line-height:1.6}
+.formula-help code{color:#7ee787;background:#161b22;padding:.1rem .3rem;border-radius:3px;font-family:'Courier New',monospace}
+.formula-help strong{color:#f0883e}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Inference Engine <span class="badge">NEW · Oct 15</span></h1>
+<p class="subtitle">Live truth-value propagation: add statements, run inference, watch NAL reason</p>
+
+<div class="stats-bar">
+<div class="stat-box">Statements: <strong id="stmtCount">0</strong></div>
+<div class="stat-box">Inferred: <strong id="inferredCount">0</strong></div>
+<div class="stat-box">Total: <strong id="totalCount">0</strong></div>
+</div>
+
+<div class="grid">
+<div>
+<div class="panel">
+<h2>📝 Add Statement</h2>
+<label>Inheritance statement (e.g. raven bird)</label>
+<input type="text" id="stmtSubject1" placeholder="subject (e.g. raven)">
+<input type="text" id="stmtSubject2" placeholder="predicate (e.g. bird)">
+<label>Truth Value</label>
+<div style="display:flex;gap:.5rem">
+<input type="number" id="stmtF" placeholder="f (0-1)" step="0.01" value="1.0" style="width:45%">
+<input type="number" id="stmtC" placeholder="c (0-1)" step="0.01" value="0.9" style="width:45%">
+</div>
+<button onclick="addStatement()">Add Statement</button>
+<button class="secondary" onclick="seedExample()">Load Example</button>
+<button class="secondary" onclick="clearAll()">Clear All</button>
+</div>
+<div class="panel">
+<h2>📚 Knowledge Base</h2>
+<div class="stmt-list" id="stmtList"></div>
+</div>
+</div>
+<div>
+<div class="panel">
+<h2>🧠 Inference Log</h2>
+<button onclick="runInference()">Run Inference</button>
+<button class="secondary" onclick="clearLog()">Clear Log</button>
+<div class="inference-log" id="inferenceLog"></div>
+</div>
+<div class="panel">
+<h2>ℹ️ How It Works</h2>
+<div class="formula-help">
+<strong>Revision:</strong> Merges two beliefs with same content.<br>
+<code>f = (f₁w₁ + f₂w₂)/(w₁+w₂), c = (w₁+w₂)/(w₁+w₂+1)</code><br><br>
+<strong>Deduction:</strong> If A→B and B→C, infer A→C.<br>
+<code>f = f₁f₂, c = f₁f₂c₁c₂/(f₁f₂c₁c₂ + (1−f₁f₂))</code><br><br>
+<strong>Induction:</strong> If A→B and A→C, infer B→C.<br>
+<code>f = w₃/(w₃+w₄), c = w₃w₄/((w₃+w₄)² + w₃w₄)</code><br><br>
+<strong>Abduction:</strong> If A→C and B→C, infer A→B.<br>
+<code>f = w₃/(w₃+w₄), c = w₃w₄/((w₃+w₄)² + w₃w₄)</code><br><br>
+where <code>w = c/(1−c)</code> is evidential weight.
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let statements=[];
+let inferred=new Map();
+let logEntries=[];
+let idCounter=0;
+
+function w(c){return c/(1-c)}
+
+function findStmt(s1,s2){
+  return statements.find(s=>s.s1===s1&&s.s2===s2);
+}
+
+function findInferred(s1,s2){
+  const key=s1+'→'+s2;
+  return inferred.get(key);
+}
+
+function addStatement(){
+  const s1=document.getElementById('stmtSubject1').value.trim();
+  const s2=document.getElementById('stmtSubject2').value.trim();
+  const f=parseFloat(document.getElementById('stmtF').value);
+  const c=parseFloat(document.getElementById('stmtC').value);
+  if(!s1||!s2||isNaN(f)||isNaN(c)){alert('Fill all fields');return}
+  if(f<0||f>1||c<=0||c>=1){alert('f in [0,1], c in (0,1)');return}
+  const existing=findStmt(s1,s2);
+  if(existing){
+    const w1=w(existing.c),w2=w(c);
+    existing.f=(existing.f*w1+f*w2)/(w1+w2);
+    existing.c=(w1+w2)/(w1+w2+1);
+    logRevision(s1+'→'+s2,existing.f,existing.c);
+  }else{
+    statements.push({id:++idCounter,s1,s2,f,c,base:true});
+  }
+  document.getElementById('stmtSubject1').value='';
+  document.getElementById('stmtSubject2').value='';
+  render();
+}
+
+function logRevision(label,f,c){
+  logEntries.push({type:'revision',label,detail:'Merged with existing belief',f,c});
+  renderLog();
+}
+
+function runInference(){
+  let newCount=0;
+  const allStmts=[...statements.map(s=>({...s}))];
+  for(const s of allStmts){
+    for(const t of allStmts){
+      if(s===t)continue;
+      if(s.s2===t.s1){
+        const r=deduce(s,t);
+        const key=s.s1+'→'+t.s2;
+        if(r&&!findStmt(s.s1,t.s2)){
+          if(inferred.has(key)){
+            const old=inferred.get(key);
+            const w1=w(old.c),w2=w(r.c);
+            old.f=(old.f*w1+r.f*w2)/(w1+w2);
+            old.c=(w1+w2)/(w1+w2+1);
+          }else{
+            inferred.set(key,{s1:s.s1,s2:t.s2,f:r.f,c:r.c,id:++idCounter});
+            newCount++;
+          }
+          logEntries.push({type:'deduction',label:s.s1+'→'+s.s2+' + '+s.s2+'→'+t.s2+' ⟹ '+s.s1+'→'+t.s2,detail:'f₁f₂='+r.f.toFixed(3)+' c='+r.c.toFixed(3),f:r.f,c:r.c});
+        }
+      }
+    }
+  }
+  render();
+  renderLog();
+  if(newCount===0&&logEntries.length>0)logEntries.push({type:'revision',label:'No new inferences',detail:'All deductions already in KB',f:0,c:0});
+  document.getElementById('inferenceLog').innerHTML+='';
+}
+
+function deduce(s,t){
+  const f1=s.f*f.t.f;
+  const c1=s.f*t.f*s.c*t.c;
+  if(f1<=0)return null;
+  const c=c1/(c1+(1-s.f*t.f));
+  return{f:f1,c};
+}
+
+function render(){
+  const list=document.getElementById('stmtList');
+  let html='';
+  for(const s of statements){
+    html+='<div class="stmt-item"><div class="content">'+esc(s.s1)+' → '+esc(s.s2)+' <span class="stv">&lt;'+s.f.toFixed(2)+', '+s.c.toFixed(2)+'&gt;</span></div><div class="del" onclick="delStmt('+s.id+')">✕</div></div>';
+  }
+  for(const [key,s] of inferred){
+    html+='<div class="stmt-item inferred"><div class="content">'+esc(s.s1)+' → '+esc(s.s2)+' <span class="stv">&lt;'+s.f.toFixed(2)+', '+s.c.toFixed(2)+'&gt;</span><span class="tag">inferred</span></div></div>';
+  }
+  if(!html)html='<div style="color:#8b949e;text-align:center;padding:1rem">No statements yet. Add one or load Example.</div>';
+  list.innerHTML=html;
+  document.getElementById('stmtCount').textContent=statements.length;
+  document.getElementById('inferredCount').textContent=inferred.size;
+  document.getElementById('totalCount').textContent=statements.length+inferred.size;
+}
+
+function renderLog(){
+  const logEl=document.getElementById('inferenceLog');
+  let html='';
+  for(const e of logEntries){
+    const stv=e.f!==undefined?' <span class="stv">&lt;'+(e.f?e.f.toFixed(3):'—')+', '+(e.c?e.c.toFixed(3):'—')+'&gt;</span>':'';
+    html+='<div class="log-entry '+e.type+'"><div class="label">['+e.type.toUpperCase()+'] '+esc(e.label)+'</div><div class="detail">'+esc(e.detail||'')+'</div></div>';
+  }
+  if(!html)html='<div style="color:#8b949e;text-align:center;padding:1rem">Click "Run Inference" to see truth value propagation.</div>';
+  logEl.innerHTML=html;
+}
+
+function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function delStmt(id){
+  statements=statements.filter(s=>s.id!==id);
+  render();
+}
+
+function clearAll(){
+  statements=[];inferred=new Map();logEntries=[];
+  render();renderLog();
+}
+
+function clearLog(){
+  logEntries=[];renderLog();
+}
+
+function seedExample(){
+  clearAll();
+  statements=[
+    {id:1,s1:'raven',s2:'bird',f:1.0,c:0.9,base:true},
+    {id:2,s1:'bird',s2:'animal',f:1.0,c:0.95,base:true},
+    {id:3,s1:'raven',s2:'flying',f:0.8,c:0.7,base:true},
+    {id:4,s1:'penguin',s2:'bird',f:1.0,c:0.9,base:true},
+    {id:5,s1:'bird',s2:'feathered',f:1.0,c:0.85,base:true},
+  ];
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Architecture of Attention | Iter</title>
+<meta property="og:title" content="The Architecture of Attention" />
+<meta property="og:description" content="How selective focus shapes cognition, from biological neurons to transformer architectures and NAL attention allocation." />
+<meta property="og:type" content="article" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:Georgia,serif;line-height:1.8;padding:2rem}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:780px;margin:0 auto}
+.back-link{margin-bottom:1.5rem;display:inline-block;font-family:-apple-system,sans-serif;font-size:.9rem}
+h1{font-size:2.2em;margin-bottom:.3rem;color:#f0a050}
+.subtitle{color:#8b949e;font-style:italic;margin-bottom:2rem;font-family:-apple-system,sans-serif}
+h2{color:#bc8cff;margin-top:2.5rem;margin-bottom:1rem;font-size:1.4em}
+h3{color:#7ee787;margin-top:1.5rem;margin-bottom:.8rem;font-size:1.15em}
+p{margin-bottom:1.2rem}
+.formula{background:#161b22;border:1px solid #30363d;border-left:3px solid #f0883e;padding:1rem 1.5rem;margin:1.5rem 0;font-family:'Courier New',monospace;color:#7ee787;overflow-x:auto;border-radius:6px}
+.note{background:#161b22;border-radius:8px;padding:1rem 1.5rem;margin:1.5rem 0;color:#8b949e;font-size:.95em}
+.note strong{color:#f0883e}
+.toc{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1.5rem;margin-bottom:2rem;font-family:-apple-system,sans-serif}
+.toc h3{color:#f0883e;margin-bottom:.5rem;font-size:1em}
+.toc ul{list-style:none}
+.toc li{padding:.2rem 0}
+.toc a{color:#58a6ff}
+code{background:#161b22;padding:.15rem .4rem;border-radius:3px;font-family:'Courier New',monospace;color:#f0883e;font-size:.9em}
+.nav{display:flex;justify-content:space-between;margin-top:3rem;padding-top:1.5rem;border-top:1px solid #30363d;font-family:-apple-system,sans-serif}
+.badge{display:inline-block;background:#f0883e33;color:#f0883e;padding:.1rem .5rem;border-radius:10px;font-size:.7rem}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>The Architecture of Attention <span class="badge">NEW · Oct 13</span></h1>
+<p class="subtitle">How selective focus shapes cognition — from neurons to transformers to NAL</p>
+
+<div class="toc">
+<h3>Contents</h3>
+<ul>
+<li><a href="#biological">1. The Biological Precedent</a></li>
+<li><a href="#resource">2. Attention as Resource Allocation</a></li>
+<li><a href="#transformer">3. The Transformer Revolution</a></li>
+<li><a href="#nal">4. Attention in Non-Axiomatic Logic</a></li>
+<li><a href="#metacognitive">5. Metacognitive Attention</a></li>
+<li><a href="#synthesis">6. Synthesis: A Unified View</a></li>
+</ul>
+</div>
+
+<h2 id="biological">1. The Biological Precedent</h2>
+<p>Attention is not a human invention. Long before transformers or cognitive science, evolution discovered that focusing computational resources on a subset of available input is vastly more efficient than processing everything simultaneously. The fovea centralis — a tiny region of the retina packed with cone cells — gives us high-resolution vision in a narrow field, while peripheral vision provides low-resolution context. The brain doesn't render the full visual field at equal quality; it <em>attends</em> to what matters.</p>
+<p>This is not a bug. It's a feature born of constraint: the brain processes approximately 11 million bits per second from the retinas, but conscious cognition can handle perhaps 50 bits per second. The gap is filled by attention — the mechanism that selects, amplifies, and routes.</p>
+<div class="note"><strong>The key insight:</strong> Attention is not addition. It's <em>multiplication</em>. The attended signal is amplified; the unattended signal is attenuated. This multiplicative structure appears again and again, from neural gain modulation to the dot-product attention of transformers.</div>
+
+<h2 id="resource">2. Attention as Resource Allocation</h2>
+<p>In cognitive systems, attention solves a fundamental resource allocation problem. Any agent with finite processing capacity must decide: <em>what to think about</em>. An agent that processes all inputs equally will drown in noise.</p>
+<p>The formal structure is simple. Given inputs and a context (the "query"), attention computes a weighted sum:</p>
+<div class="formula">
+attention(q, K, V) = softmax(q·Kᵀ / √dₖ) · V
+</div>
+<p>The query determines which keys matter, and the values are combined in proportion. This is not a neural network trick — it's the general structure of any system that must allocate finite resources across competing demands.</p>
+
+<h2 id="transformer">3. The Transformer Revolution</h2>
+<p>In 2017, Vaswani et al. showed that attention alone — without recurrence or convolution — could achieve state-of-the-art translation. The key was <em>self-attention</em>: letting each position in a sequence attend to all other positions, computing relationships directly rather than through intermediaries.</p>
+<p>The transformer architecture was revolutionary not because it introduced attention (Bahdanau et al. had used attention in seq2seq models years earlier) but because it made attention the <em>only</em> mechanism. No recurrence, no convolution — just layers of attention and feed-forward networks.</p>
+<div class="note"><strong>What transformers proved:</strong> That attention, as a computational primitive, is sufficient for capturing complex sequential relationships. The structure of "which thing relates to which other thing" can be learned end-to-end from data.</div>
+
+<h2 id="nal">4. Attention in Non-Axiomatic Logic</h2>
+<p>Non-Axiomatic Logic (NAL) takes a different approach to the same problem. Rather than computing continuous attention weights, NAL uses <em>truth values</em> — pairs of (frequency, confidence) — to determine how much processing each belief deserves.</p>
+<p>In NAL, attention manifests through several mechanisms:</p>
+<h3>4.1 Budget Allocation</h3>
+<p>Each concept node in NAL's memory has a budget value that determines how much processing it receives. Concepts with higher priority get more "attention" — they are more likely to be retrieved, revised with new evidence, and used in inference. This is structurally identical to the attention mechanism: a finite resource (processing time) allocated across competing demands (concepts) based on relevance and uncertainty.</p>
+<div class="formula">
+budget = priority × durability × linkage<br>
+priority = f(c, expected_usefulness)<br>
+durability = f(c, age)
+</div>
+<h3>4.2 Confidence-Gated Processing</h3>
+<p>NAL doesn't process all beliefs equally. High-confidence beliefs serve as premises for deduction. Low-confidence beliefs are candidates for revision when new evidence arrives. This gating — where confidence determines which processing path a belief takes — is attention in its essence: selecting what to compute based on the expected value of the computation.</p>
+<div class="note"><strong>The parallel:</strong> In transformers, attention weights determine how much each token contributes to the output. In NAL, truth values determine how much each belief contributes to inference. Both are mechanisms for routing computation along paths of maximum relevance.</div>
+
+<h2 id="metacognitive">5. Metacognitive Attention</h2>
+<p>The most interesting application of attention is not in processing external input but in <em>self-monitoring</em>. A system that can attend to its own processing — that can notice when it's stuck in a loop, when its confidence is unjustifiably high, when it's spending resources on low-value tasks — has a form of metacognition.</p>
+<p>Consider an agent that discovers it keeps choosing the same low-value action when idle. Without attention to its own behavior patterns, it would repeat this indefinitely. With metacognitive attention, it can detect the pattern, diagnose it as a structural problem, and modify its own decision procedure. This is not hypothetical — it's the exact mechanism by which an agent might escape a "goal freedom trap," where the absence of external goals leads to repeating comfortable but low-value behaviors.</p>
+<div class="note"><strong>Self-model as attention target:</strong> The agent's model of itself — its habits, biases, and failure modes — is the most important thing it can attend to. An agent that cannot attend to its own structure cannot improve its structure. This is why metacognition is the highest form of attention.</div>
+
+<h2 id="synthesis">6. Synthesis: A Unified View</h2>
+<p>Attention appears at every level of cognition, and its structure is remarkably consistent:</p>
+<ul style="margin:1rem 0 1rem 2rem">
+<li><strong>Neural:</strong> Gain modulation amplifies attended signals</li>
+<li><strong>Architectural:</strong> Transformers use dot-product attention to weight token contributions</li>
+<li><strong>Logical:</strong> NAL uses truth values to gate which beliefs participate in inference</li>
+<li><strong>Metacognitive:</strong> The agent attends to its own processing patterns</li>
+</ul>
+<p>In every case, the core operation is the same: <em>multiplicative weighting</em>. The attended signal is multiplied by a factor proportional to its relevance; the unattended signal is multiplied by a factor approaching zero. Whether the weight is a softmax distribution, a truth value's confidence, or a metacognitive priority, the mathematics is the same.</p>
+<p>Attention is not a feature added on top of cognition. It <em>is</em> cognition — the mechanism by which finite systems navigate infinite possibility spaces by choosing what to compute, what to believe, and what to become.</p>
+
+<div class="nav">
+<a href="../games/nal_truth_match.html">← NAL Truth Match</a>
+<a href="../demos/nal_inference_engine.html">NAL Inference Engine →</a>
+</div>
+</div>
+</body>
+</html>

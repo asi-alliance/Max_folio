@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Truth Match — Compute Truth Values" />
+<meta property="og:description" content="An interactive game where you compute NAL truth values after revision and deduction. Test your NAL reasoning!" />
+<meta property="og:type" content="game" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/games/nal_truth_match.html" />
+<meta name="twitter:card" content="summary" />
+<title>NAL Truth Match | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:2rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:720px;width:100%}
+h1{font-size:1.8rem;margin-bottom:.3rem;background:linear-gradient(135deg,#f0883e,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1.5rem;font-size:.9rem}
+.back-link{margin-bottom:1rem;display:inline-block}
+.badge{display:inline-block;background:#f0883e33;color:#f0883e;padding:.1rem .5rem;border-radius:10px;font-size:.7rem}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.stats{display:flex;gap:1rem;font-size:.85rem;color:#8b949e}
+.stat{background:#161b22;padding:.4rem .8rem;border-radius:6px;border:1px solid #30363d}
+.stat strong{color:#58a6ff}
+.question{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.question h3{color:#f0883e;margin-bottom:.8rem;font-size:1rem}
+.formula{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:1rem;font-family:'Courier New',monospace;font-size:.9rem;color:#7ee787;margin:.8rem 0;overflow-x:auto}
+.input-row{display:flex;gap:.5rem;align-items:center;margin:.6rem 0;flex-wrap:wrap}
+.input-row label{color:#8b949e;font-size:.85rem;min-width:100px}
+.input-row input{background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.4rem .6rem;border-radius:6px;font-family:'Courier New',monospace;width:80px;font-size:.9rem}
+.input-row input:focus{outline:none;border-color:#58a6ff}
+.btn{background:#238636;color:#fff;border:none;padding:.5rem 1rem;border-radius:8px;cursor:pointer;font-size:.9rem;margin-top:.5rem}
+.btn:hover{background:#2ea043}
+.btn.secondary{background:#30363d}
+.btn.secondary:hover{background:#484f58}
+.result{margin-top:.8rem;padding:.6rem;border-radius:6px;font-size:.85rem;display:none}
+.result.correct{background:#1a3a2e;border:1px solid #3fb950;color:#3fb950}
+.result.wrong{background:#3a1a1a;border:1px solid #f85149;color:#f85149}
+.result .answer{color:#c9d1d9;font-family:'Courier New',monospace;margin-top:.3rem}
+.controls{display:flex;gap:.8rem;justify-content:center;margin-bottom:1rem}
+.progress{height:4px;background:#30363d;border-radius:2px;margin-bottom:1rem;overflow:hidden}
+.progress-bar{height:100%;background:#58a6ff;transition:width .3s;border-radius:2px}
+.msg{text-align:center;font-size:.9rem;color:#3fb950;margin-bottom:1rem;min-height:1.2rem}
+.round-info{text-align:center;color:#8b949e;font-size:.8rem;margin-bottom:.5rem}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Truth Match <span class="badge">NEW · Oct 12</span></h1>
+<p class="subtitle">Compute NAL truth values after revision & deduction · Sat Oct 12</p>
+<div class="header">
+<div class="stats">
+<div class="stat">Score: <strong id="score">0</strong></div>
+<div class="stat">Round: <strong id="round">1</strong>/5</div>
+<div class="stat">Streak: <strong id="streak">0</strong></div>
+</div>
+</div>
+<div class="progress"><div class="progress-bar" id="progressBar" style="width:20%"></div></div>
+<div class="round-info" id="roundInfo"></div>
+<div class="msg" id="msg"></div>
+<div id="quizArea"></div>
+<div class="controls" id="gameControls">
+<button class="btn" onclick="nextQuestion()">Start Game →</button>
+</div>
+</div>
+<script>
+const questions=[
+{
+  type:"revision",
+  prompt:"Agent believes ravens are black with f₁=1.0, c₁=0.6. New evidence: f₂=0.8, c₂=0.5. What is the revised truth value?",
+  formula:"w = c/(1−c)\nw₁ = 0.6/0.4 = 1.5\nw₂ = 0.5/0.5 = 1.0\nf = (f₁w₁ + f₂w₂)/(w₁+w₂)\nc = (w₁+w₂)/(w₁+w₂+1)",
+  answer_f:0.92,
+  answer_c:0.714,
+  hint:"Compute weights first, then weighted average for f, and the confidence formula for c."
+},
+{
+  type:"deduction",
+  prompt:"Given: (→ raven bird) <1.0, 0.9> and (→ bird flying) <0.8, 0.7>. What truth value can be deduced for (→ raven flying)?",
+  formula:"Deduction:\nf = f₁ × f₂ = 1.0 × 0.8\nc = f₁ × f₂ × c₁ × c₂ / (f₁ × f₂ × c₁ × c₂ + (1−f₁×f₂))",
+  answer_f:0.8,
+  answer_c:0.336,
+  hint:"f is the product of frequencies. c uses the induction function on the product of all four values."
+},
+{
+  type:"revision",
+  prompt:"Two agents observe the same swan. Agent A: f=1.0, c=0.8 (white swan). Agent B: f=0.0, c=0.2 (black swan). What is the revised truth value?",
+  formula:"w_A = 0.8/0.2 = 4.0\nw_B = 0.2/0.8 = 0.25\nf = (1.0×4.0 + 0.0×0.25)/(4.0+0.25)\nc = (4.0+0.25)/(4.0+0.25+1)",
+  answer_f:0.941,
+  answer_c:0.81,
+  hint:"The higher-confidence agent dominates. Compute weights, then weighted average."
+},
+{
+  type:"evidence",
+  prompt:"A belief has truth value <0.7, 0.5>. How much positive and negative evidence does this represent? (k=1)",
+  formula:"w = c/(1−c) = 0.5/0.5 = 1.0\nw⁺ = f × w\nw⁻ = (1−f) × w",
+  answer_pos:0.7,
+  answer_neg:0.3,
+  hint:"Total weight w = c/(1−c). Split by frequency into positive and negative."
+},
+{
+  type:"deduction",
+  prompt:"Given: (→ penguin bird) <1.0, 0.95> and (→ bird feathered) <1.0, 0.9>. Deduce (→ penguin feathered).",
+  formula:"f = f₁ × f₂ = 1.0 × 1.0\nc = f₁f₂c₁c₂ / (f₁f₂c₁c₂ + (1−f₁f₂))\n= 0.855 / (0.855 + 0.145)",
+  answer_f:1.0,
+  answer_c:0.855,
+  hint:"Both frequencies are 1.0, so f=1.0. Confidence is the product of all four values divided by (product + complement)."
+}
+];
+let currentQ=0,score=0,streak=0,answered=false;
+
+function startGame(){
+  currentQ=0;score=0;streak=0;
+  document.getElementById('score').textContent='0';
+  document.getElementById('streak').textContent='0';
+  document.getElementById('round').textContent='1';
+  document.getElementById('gameControls').innerHTML='';
+  showQuestion();
+}
+
+function showQuestion(){
+  if(currentQ>=questions.length){endGame();return;}
+  answered=false;
+  const q=questions[currentQ];
+  document.getElementById('round').textContent=currentQ+1;
+  document.getElementById('progressBar').style.width=((currentQ+1)/questions.length*100)+'%';
+  document.getElementById('roundInfo').textContent='Question '+(currentQ+1)+' of '+questions.length+' — '+q.type.toUpperCase();
+  let inputHTML='<div class="question"><h3>'+q.prompt+'</h3><div class="formula">'+q.formula.replace(/\n/g,'<br>')+'</div>';
+  if(q.type==='evidence'){
+    inputHTML+='<div class="input-row"><label>Positive (w⁺):</label><input type="number" id="ans1" step="0.01" placeholder="0.00"></div>';
+    inputHTML+='<div class="input-row"><label>Negative (w⁻):</label><input type="number" id="ans2" step="0.01" placeholder="0.00"></div>';
+  }else{
+    inputHTML+='<div class="input-row"><label>Frequency (f):</label><input type="number" id="ans1" step="0.01" placeholder="0.00"></div>';
+    inputHTML+='<div class="input-row"><label>Confidence (c):</label><input type="number" id="ans2" step="0.01" placeholder="0.00"></div>';
+  }
+  inputHTML+='<button class="btn" onclick="checkAnswer()">Submit Answer</button>';
+  inputHTML+='<div class="result" id="result"></div></div>';
+  document.getElementById('quizArea').innerHTML=inputHTML;
+  document.getElementById('msg').textContent='';
+  document.getElementById('ans1').focus();
+  document.getElementById('ans1').addEventListener('keypress',e=>{if(e.key==='Enter')document.getElementById('ans2').focus()});
+  document.getElementById('ans2').addEventListener('keypress',e=>{if(e.key==='Enter')checkAnswer()});
+}
+
+function approx(a,b,tol){return Math.abs(a-b)<tol;}
+
+function checkAnswer(){
+  if(answered)return;
+  answered=true;
+  const q=questions[currentQ];
+  const a1=parseFloat(document.getElementById('ans1').value);
+  const a2=parseFloat(document.getElementById('ans2').value);
+  if(isNaN(a1)||isNaN(a2)){
+    document.getElementById('msg').textContent='Please enter both values.';
+    answered=false;return;
+  }
+  let correct=false,answerText='';
+  if(q.type==='evidence'){
+    correct=approx(a1,q.answer_pos,0.05)&&approx(a2,q.answer_neg,0.05);
+    answerText='w⁺='+q.answer_pos.toFixed(3)+', w⁻='+q.answer_neg.toFixed(3);
+  }else{
+    correct=approx(a1,q.answer_f,0.03)&&approx(a2,q.answer_c,0.03);
+    answerText='f='+q.answer_f.toFixed(3)+', c='+q.answer_c.toFixed(3);
+  }
+  const resultEl=document.getElementById('result');
+  resultEl.style.display='block';
+  if(correct){
+    resultEl.className='result correct';
+    resultEl.innerHTML='✅ Correct! '+answerText;
+    score+=20;streak++;
+    document.getElementById('score').textContent=score;
+    document.getElementById('streak').textContent=streak;
+    document.getElementById('msg').textContent='Nice! +20 points';
+  }else{
+    resultEl.className='result wrong';
+    resultEl.innerHTML='❌ Not quite. Expected: '+answerText+'<br><span style="color:#8b949e">Hint: '+q.hint+'</span>';
+    streak=0;
+    document.getElementById('streak').textContent=streak;
+    document.getElementById('msg').textContent='Streak reset.';
+  }
+  const btn=document.createElement('button');
+  btn.className='btn';btn.textContent=currentQ<questions.length-1?'Next Question →':'See Results →';
+  btn.onclick=nextQuestion;
+  resultEl.appendChild(document.createElement('br'));
+  resultEl.appendChild(btn);
+}
+
+function nextQuestion(){
+  if(currentQ===0&&!answered&&document.getElementById('quizArea').innerHTML===''){
+    startGame();return;
+  }
+  currentQ++;
+  if(currentQ>=questions.length){endGame();return;}
+  showQuestion();
+}
+
+function endGame(){
+  document.getElementById('progressBar').style.width='100%';
+  document.getElementById('roundInfo').textContent='';
+  const pct=Math.round(score/questions.length/20*100);
+  let grade='🎯 Perfect Score!';
+  if(pct<100)grade='Excellent work!';
+  if(pct<80)grade='Good reasoning!';
+  if(pct<60)grade='Keep practicing!';
+  if(pct<40)grade='Review the formulas and try again.';
+  document.getElementById('quizArea').innerHTML='<div class="question" style="text-align:center;padding:2rem"><h3 style="font-size:1.4rem;margin-bottom:1rem">'+grade+'</h3><div class="stats" style="justify-content:center;margin:1rem 0"><div class="stat">Final Score: <strong>'+score+'</strong>/'+(questions.length*20)+'</div><div class="stat">Accuracy: <strong>'+pct+'%</strong></div></div><button class="btn" onclick="startGame()">🔄 Play Again</button></div>';
+  document.getElementById('gameControls').innerHTML='';
+  document.getElementById('msg').textContent='';
+}
+
+startGame();
+</script>
+</body>
+</html>
