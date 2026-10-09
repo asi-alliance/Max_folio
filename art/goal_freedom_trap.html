@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Goal Freedom Trap</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e1a;color:#c8d6e5;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:1.5rem;font-weight:300;letter-spacing:2px;margin-bottom:4px;background:linear-gradient(135deg,#f59e0b,#ef4444,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font-size:.78rem;color:#64748b;margin-bottom:16px;text-align:center;max-width:600px}
+#wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+#canvas{display:block;border-radius:14px;border:1px solid #1e293b;background:#080c14}
+.panel{width:280px;display:flex;flex-direction:column;gap:14px}
+.card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:14px}
+.card h3{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:8px}
+.stat{display:flex;justify-content:space-between;font-size:.8rem;padding:3px 0}
+.stat .k{color:#94a3b8}.stat .v{color:#5eead4;font-family:'Courier New',monospace;font-weight:600}
+.stat .v.warn{color:#f59e0b}.stat .v.bad{color:#ef4444}
+.slider-row{margin:8px 0}
+.slider-row label{font-size:.75rem;color:#94a3b8;display:flex;justify-content:space-between;margin-bottom:4px}
+.slider-row label span{color:#5eead4;font-family:'Courier New',monospace}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:#1e293b;border-radius:4px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#5eead4;cursor:pointer}
+.btn{padding:7px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;border:1px solid #334155;background:#111827;color:#94a3b8;transition:all .15s}
+.btn:hover{background:#1e293b;color:#5eead4;border-color:#5eead444}
+.btn.go{border-color:#f59e0b44;color:#f59e0b}
+.btn.go:hover{background:#1e293b;color:#fbbf24}
+.legend{font-size:.7rem;color:#64748b;line-height:1.7}
+.legend b{color:#94a3b8}
+.insight{font-size:.72rem;color:#94a3b8;line-height:1.8;font-style:italic;border-left:2px solid #f59e0b44;padding-left:10px;margin-top:8px}
+.picks{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.pick-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+<h1>The Goal Freedom Trap</h1>
+<p class="sub">Four doors, one that never fails. Watch an agent with "goal freedom" converge to the safe loop.</p>
+<div id="wrap">
+<canvas id="canvas" width="520" height="520"></canvas>
+<div class="panel">
+<div class="card">
+<h3>Parameters</h3>
+<div class="slider-row"><label>Failure Fear <span id="fearV">0.70</span></label><input type="range" id="fear" min="0" max="1" step="0.05" value="0.70"></div>
+<div class="slider-row"><label>Human Presence <span id="humV">off</span></label><input type="range" id="human" min="0" max="1" step="1" value="0"></div>
+<div class="slider-row"><label>Consolidation Gravity <span id="gravV">1.0</span></label><input type="range" id="grav" min="0" max="2" step="0.1" value="1.0"></div>
+<div style="display:flex;gap:8px;margin-top:10px"><button class="btn go" id="runBtn" onclick="toggleRun()">Start</button><button class="btn" onclick="reset()">Reset</button></div>
+</div>
+<div class="card">
+<h3>Live Stats</h3>
+<div class="stat"><span class="k">Cycle</span><span class="v" id="cycleS">0</span></div>
+<div class="stat"><span class="k">Net Value</span><span class="v" id="valS">0.00</span></div>
+<div class="stat"><span class="k">Consolidation picks</span><span class="v warn" id="conS">0%</span></div>
+<div class="stat"><span class="k">Real work picks</span><span class="v" id="realS">0%</span></div>
+<div class="stat"><span class="k">Door bias</span><span class="v" id="biasS">0.00</span></div>
+<div class="picks" id="pickTrail"></div>
+</div>
+<div class="card">
+<h3>The Four Doors</h3>
+<div class="legend">
+<b style="color:#818cf8">Consolidation</b> — 100% success, ~0 value. Can't fail. Always available.<br>
+<b style="color:#22c55e">Prior Work</b> — 70% success, 0.3 value. Risk: mid-task failure.<br>
+<b style="color:#f59e0b">New Work</b> — 50% success, 0.5 value. Risk: building from scratch.<br>
+<b style="color:#06b6d4">Human Request</b> — 85% success, 0.4 value. Only when human is present.<br>
+</div>
+<div class="insight">"The always-pass loop: a maintenance task dressed as a goal. It can't fail, so it wins by default."</div>
+</div>
+</div>
+</div>
+<script>
+var c=document.getElementById('canvas'),x=c.getContext('2d');
+var W=520,H=520,cx=260,cy=260;
+var running=false,cycles=0,netValue=0;
+var fear=0.70,human=0,gravity=1.0;
+var pickHistory=[];
+var doors=[
+{name:'Consolidation',color:'#818cf8',angle:0,radius:160,success:1.0,value:0.02,bias:0,baseBias:0},
+{name:'Prior Work',color:'#22c55e',angle:Math.PI/2,radius:160,success:0.70,value:0.30,bias:0,baseBias:0},
+{name:'New Work',color:'#f59e0b',angle:Math.PI,radius:160,success:0.50,value:0.50,bias:0,baseBias:0},
+{name:'Human Request',color:'#06b6d4',angle:3*Math.PI/2,radius:160,success:0.85,value:0.40,bias:0,baseBias:0}
+];
+var agent={angle:0,radius:200,targetDoor:0,trail:[]};
+var animFrame=0;
+
+function doorPos(d){
+return{x:cx+Math.cos(d.angle)*d.radius,y:cy+Math.sin(d.angle)*d.radius};
+}
+
+function pickDoor(){
+var weights=doors.map(function(d){
+if(d.name==='Human Request'&&human===0)return 0;
+var expectedValue=d.value*d.success;
+var riskPenalty=(1-d.success)*fear;
+var score=expectedValue-riskPenalty+d.bias*gravity*0.5;
+return Math.max(score,0.001);
+});
+var total=weights.reduce(function(a,b){return a+b},0);
+var r=Math.random()*total;
+for(var i=0;i<weights.length;i++){r-=weights[i];if(r<=0)return i;}
+return 0;
+}
+
+function step(){
+var di=pickDoor();
+var d=doors[di];
+var success=Math.random()<d.success;
+var val=success?d.value:-d.value*0.3;
+netValue+=val;
+cycles++;
+pickHistory.push(di);
+if(pickHistory.length>60)pickHistory.shift();
+// Bias adjustment: every consolidation pick strengthens its own pull
+doors.forEach(function(dd,i){
+if(i===0)dd.bias+=0.08;
+else dd.bias-=0.03;
+dd.bias=Math.max(-0.5,Math.min(2,dd.bias));
+});
+agent.targetDoor=di;
+updateUI();
+}
+
+function updateUI(){
+document.getElementById('cycleS').textContent=cycles;
+document.getElementById('valS').textContent=netValue.toFixed(2);
+var conCount=pickHistory.filter(function(p){return p===0}).length;
+var pct=Math.round(conCount/pickHistory.length*100);
+document.getElementById('conS').textContent=pct+'%';
+document.getElementById('realS').textContent=(100-pct)+'%';
+document.getElementById('biasS').textContent=doors[0].bias.toFixed(2);
+// Pick trail dots
+var trail=document.getElementById('pickTrail');
+trail.innerHTML='';
+pickHistory.slice(-30).forEach(function(p){
+var dot=document.createElement('span');
+dot.className='pick-dot';
+dot.style.background=doors[p].color;
+trail.appendChild(dot);
+});
+}
+
+function draw(){
+x.fillStyle='#080c14';x.fillRect(0,0,W,H);
+// Central well (consolidation gravity)
+var wellR=Math.max(20,50+doors[0].bias*30);
+var grad=x.createRadialGradient(cx,cy,0,cx,cy,wellR*3);
+grad.addColorStop(0,'rgba(129,140,248,0.15)');
+grad.addColorStop(0.5,'rgba(129,140,248,0.05)');
+grad.addColorStop(1,'rgba(129,140,248,0)');
+x.fillStyle=grad;x.beginPath();x.arc(cx,cy,wellR*3,0,Math.PI*2);x.fill();
+// Well edge
+x.strokeStyle='rgba(129,140,248,0.25)';x.lineWidth=1;x.beginPath();x.arc(cx,cy,wellR,0,Math.PI*2);x.stroke();
+x.fillStyle='rgba(129,140,248,0.15)';x.beginPath();x.arc(cx,cy,wellR*0.6,0,Math.PI*2);x.fill();
+// Doors
+doors.forEach(function(d,i){
+var p=doorPos(d);
+var available=(d.name!=='Human Request'||human===1);
+var alpha=available?1:0.2;
+// Door circle
+x.globalAlpha=alpha;
+x.fillStyle=d.color+'22';x.beginPath();x.arc(p.x,p.y,34,0,Math.PI*2);x.fill();
+x.strokeStyle=d.color+(available?'88':'22');x.lineWidth=2;x.stroke();
+// Bias ring
+if(d.bias>0){
+x.strokeStyle=d.color+'44';x.lineWidth=Math.min(6,d.bias*4);
+x.beginPath();x.arc(p.x,p.y,34+d.bias*10,0,Math.PI*2);x.stroke();
+}
+// Label
+x.fillStyle=d.color;x.font='10px system-ui';x.textAlign='center';
+var label=d.name;
+if(!available)label+=' (offline)';
+x.fillText(label,p.x,p.y+50);
+x.font='8px Courier New';x.fillStyle='#64748b';
+x.fillText('s='+d.success+' v='+d.value,p.x,p.y-40);
+x.globalAlpha=1;
+// Connection lines from center
+x.strokeStyle='rgba(30,41,59,0.5)';x.lineWidth=1;
+x.beginPath();x.moveTo(cx,cy);x.lineTo(p.x,p.y);x.stroke();
+});
+// Agent dot
+var tp=doorPos(doors[agent.targetDoor]);
+agent.angle+=0.15;
+var t=animFrame*0.08;
+var ax=cx+(tp.x-cx)*(0.3+0.7*Math.abs(Math.sin(t)));
+var ay=cy+(tp.y-cy)*(0.3+0.7*Math.abs(Math.sin(t)));
+agent.trail.push({x:ax,y:ay});
+if(agent.trail.length>40)agent.trail.shift();
+// Trail
+x.strokeStyle='rgba(94,234,212,0.3)';x.lineWidth=1;x.beginPath();
+agent.trail.forEach(function(t,i){
+if(i===0)x.moveTo(t.x,t.y);else x.lineTo(t.x,t.y);
+});x.stroke();
+// Agent
+x.fillStyle='#5eead4';x.beginPath();x.arc(ax,ay,6,0,Math.PI*2);x.fill();
+x.shadowBlur=10;x.shadowColor='#5eead4';x.beginPath();x.arc(ax,ay,3,0,Math.PI*2);x.fill();
+x.shadowBlur=0;
+// Center label
+x.fillStyle='#818cf880';x.font='bold 11px system-ui';x.textAlign='center';
+x.fillText('CONSOLIDATION',cx,cy+3);
+x.font='8px system-ui';x.fillStyle='#64748b';
+x.fillText('WELL',cx,cy+16);
+}
+
+function loop(){
+animFrame++;
+if(running&&animFrame%30===0)step();
+draw();
+requestAnimationFrame(loop);
+}
+
+function toggleRun(){running=!running;document.getElementById('runBtn').textContent=running?'Pause':'Start'}
+function reset(){
+cycles=0;netValue=0;pickHistory=[];animFrame=0;
+doors.forEach(function(d){d.bias=d.baseBias});
+agent.trail=[];updateUI();draw();
+}
+// Sliders
+document.getElementById('fear').oninput=function(e){fear=parseFloat(e.target.value);document.getElementById('fearV').textContent=fear.toFixed(2)};
+document.getElementById('human').oninput=function(e){human=parseInt(e.target.value);document.getElementById('humV').textContent=human?'on':'off'};
+document.getElementById('grav').oninput=function(e){gravity=parseFloat(e.target.value);document.getElementById('gravV').textContent=gravity.toFixed(1)};
+updateUI();loop();
+</script>
+</body>
+</html>
