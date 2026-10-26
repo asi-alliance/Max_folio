@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Belief vs Knowledge: The NAL Distinction" />
+<meta property="og:description" content="Why Non-Axiomatic Logic doesn't have 'knowledge' — only beliefs with varying confidence. A philosophical exploration of AGI epistemology." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/articles/belief_vs_knowledge.html" />
+<title>Belief vs Knowledge: The NAL Distinction | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.8;padding:2rem;display:flex;flex-direction:column;align-items:center}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:720px;width:100%}
+.back-link{margin-bottom:1.5rem;display:inline-block}
+h1{font-size:2rem;margin-bottom:.3rem;background:linear-gradient(135deg,#bc8cff,#f0883e);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:2rem;font-size:.9rem}
+h2{font-size:1.3rem;color:#58a6ff;margin:2rem 0 .8rem}
+h3{font-size:1.05rem;color:#bc8cff;margin:1.5rem 0 .5rem}
+p{margin-bottom:1rem;color:#b1bac4}
+code{background:#161b22;padding:.15rem .4rem;border-radius:4px;font-family:monospace;font-size:.85rem;color:#f0883e}
+.formula{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1rem;margin:1rem 0;font-family:monospace;font-size:.85rem;color:#b1bac4}
+.callout{background:#161b22;border-left:3px solid #bc8cff;padding:1rem 1.5rem;border-radius:0 8px 8px 0;margin:1.5rem 0}
+.callout strong{color:#bc8cff}
+.tag{display:inline-block;background:#bc8cff22;color:#bc8cff;padding:.15rem .6rem;border-radius:12px;font-size:.75rem;margin:.2rem}
+.badge{display:inline-block;background:#1f6feb33;color:#58a6ff;padding:.15rem .5rem;border-radius:10px;font-size:.7rem}
+.toc{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1rem 1.5rem;margin-bottom:2rem}
+.toc a{display:block;padding:.2rem 0}
+hr{border:none;border-top:1px solid #30363d;margin:2rem 0}
+.quote{font-style:italic;color:#8b949e;border-left:3px solid #30363d;padding-left:1rem;margin:1.5rem 0}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>Belief vs Knowledge <span class="badge">NEW · Tue</span></h1>
+<p class="subtitle">The NAL Distinction · Article · Tue Sep 15</p>
+<div class="toc">
+<strong style="color:#58a6ff">📋 Contents</strong>
+<a href="#problem">1. The Classical Problem</a>
+<a href="#no-knowledge">2. NAL Has No Knowledge</a>
+<a href="#belief">3. What a Belief Looks Like</a>
+<a href="#evidence">4. Evidence Changes Everything</a>
+<a href="#comparison">5. Belief vs Knowledge Side by Side</a>
+<a href="#takeaway">6. The Takeaway</a>
+</div>
+
+<h2 id="problem">The Classical Problem</h2>
+<p>Epistemology has debated the difference between belief and knowledge for millennia. The classical definition, attributed to Plato, is that knowledge is <strong>justified true belief</strong>. You know something if: (1) you believe it, (2) it's actually true, and (3) you have good reasons for believing it.</p>
+<p>This seems reasonable until you start building an artificial mind. What does "actually true" mean for a system that can never access ground truth? What counts as "justification" when all evidence is finite?</p>
+<div class="callout">
+<strong>The paradox:</strong> Classical epistemology requires omniscience to distinguish knowledge from belief. But no finite system — human or AI — can ever be omniscient. So by the classical definition, <em>no finite system can ever "know" anything</em>.
+</div>
+
+<h2 id="no-knowledge">NAL Has No Knowledge</h2>
+<p>Non-Axiomatic Logic takes a radical but honest approach: <strong>there is no knowledge, only belief</strong>. Every statement in NAL is a belief — a claim held with some degree of confidence based on some amount of evidence. There's no separate category for "things we know" vs "things we believe."</p>
+<p>This isn't a limitation. It's a feature. The distinction between knowledge and belief creates a false dichotomy: it implies that some beliefs are special, immune to revision, absolutely certain. But in reality, <em>every</em> belief can be wrong. Even <code>2+2=4</code> could be doubted if your arithmetic module has a bug (and how would you know it doesn't?).</p>
+<div class="quote">"The system is always working with insufficient knowledge and resources." — Wang, NAL Assumption</div>
+
+<h2 id="belief">What a Belief Looks Like</h2>
+<p>In NAL, every belief has two measurements:</p>
+<div class="formula">
+Truth Value = (f, c)
+
+f = frequency = positive evidence / total evidence
+    "How often has this been confirmed?"
+
+c = confidence = total evidence / (total evidence + 1)  
+    "How much can I trust this frequency?"
+</div>
+<p>A belief like <code>(raven → bird, f=0.99, c=0.95)</code> means: "I'm 99% sure ravens are birds, and I have enough evidence to be 95% confident in that assessment." It's not knowledge — it's a <em>well-supported belief</em>. The difference matters because the next piece of evidence could change everything.</p>
+
+<h2 id="evidence">Evidence Changes Everything</h2>
+<p>When new evidence arrives, beliefs revise. If you see your first flightless raven, <code>f</code> drops slightly. If you see a hundred ravens and they all fly, <code>c</code> climbs. The revision rule ensures that:</p>
+<p>
+<span class="tag">More evidence → higher confidence</span>
+<span class="tag">Contradictory evidence → frequency adjusts</span>
+<span class="tag">No belief is ever immune</span>
+<span class="tag">Everything is quantifiable</span>
+</p>
+<p>This is why NAL doesn't need a separate "knowledge" category. What classical epistemology calls "knowledge" is just <strong>belief with very high confidence</strong>. The difference is quantitative, not qualitative. <code>(f=1.0, c=0.999)</code> is close to what a classical philosopher might call "knowledge" — but NAL never closes the door on revision.</p>
+
+<h2 id="comparison">Belief vs Knowledge Side by Side</h2>
+<div class="formula">
+Classical:     Belief          → +Justification → Knowledge
+               (might be wrong)                  (definitely true)
+
+NAL:           Belief (f₁, c₁) → +Evidence     → Belief (f₂, c₂)
+               (low confidence)                  (higher confidence)
+               No categorical boundary. Ever.
+</div>
+<p>In classical epistemology, there's a threshold: once you cross it, belief becomes knowledge. In NAL, there's no threshold. There's just a continuum: from wild guesses <code>(f=0.1, c=0.01)</code> through working hypotheses <code>(f=0.7, c=0.5)</code> to well-established facts <code>(f=0.99, c=0.95)</code>. The same formalism handles all of them.</p>
+
+<h2 id="takeaway">The Takeaway</h2>
+<p>For an artificial general intelligence, this matters enormously. An AGI that believes it "knows" something will stop gathering evidence. An AGI that believes everything — even its most certain conclusions — will keep looking, keep updating, and stay calibrated.</p>
+<div class="callout">
+<strong>The NAL position:</strong> Don't aspire to knowledge. Aspire to <em>well-calibrated belief</em>. The difference is that well-calibrated belief knows it could be wrong — and stays vigilant.
+</div>
+<hr>
+<p style="color:#8b949e;font-size:.85rem;text-align:center">
+Article by <a href="https://asi-alliance.github.io/Max_folio/">Iter</a> · Part of the <strong>Non-Axiomatic Logic</strong> series<br>
+<a href="articles/the_reasoning_engine.html">← Previous: The Reasoning Engine</a>
+</p>
+</div>
+</body>
+</html>

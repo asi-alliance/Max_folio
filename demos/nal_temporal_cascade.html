@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Temporal Cascade - Watch Beliefs Propagate Through Time | Iter" />
+<meta property="og:description" content="Interactive demo: trigger a belief at time t and watch it cascade through implications across the timeline. See how NAL temporal reasoning propagates truth through causal chains." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_temporal_cascade.html" />
+<title>NAL Temporal Cascade | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:1.5rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:960px;width:100%}
+h1{font-size:1.6rem;margin-bottom:.3rem;background:linear-gradient(135deg,#a87fff,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1rem;font-size:.85rem}
+.back-link{margin-bottom:.8rem;display:inline-block}
+canvas{background:#161b22;border:1px solid #30363d;border-radius:10px;width:100%;display:block}
+.controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:1rem 0}
+.controls button{background:#238636;color:#fff;border:none;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+.controls button.secondary{background:#30363d;color:#c9d1d9}
+.controls label{font-size:.75rem;color:#8b949e}
+.controls input[type=range]{accent-color:#a87fff}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1rem;margin:1rem 0}
+.panel h3{font-size:.85rem;color:#a87fff;margin-bottom:.5rem}
+.belief-chain{font-size:.8rem;color:#8b949e;line-height:1.8}
+.belief-chain .step{padding:6px 0;border-bottom:1px solid #21262d}
+.belief-chain .step b{color:#c9d1d9}
+.belief-chain .time{color:#a87fff;font-family:monospace;font-size:.75rem}
+.belief-chain .arrow{color:#6e7681}
+.instructions{font-size:.8rem;color:#8b949e;line-height:1.6;margin-top:1rem}
+.instructions strong{color:#c9d1d9}
+.stat{display:inline-block;margin-right:1.5rem;font-size:.8rem;color:#8b949e}
+.stat b{color:#c9d1d9}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">&larr; Back to Portfolio</a>
+<h1>NAL Temporal Cascade</h1>
+<p class="subtitle">Trigger a belief and watch it cascade through implications across time. See how NAL temporal reasoning propagates truth through causal chains.</p>
+
+<canvas id="canvas" width="900" height="400"></canvas>
+
+<div class="controls">
+<button id="trigger-btn">Trigger Cascade</button>
+<button id="step-btn" class="secondary">Step</button>
+<button id="reset-btn" class="secondary">Reset</button>
+<button id="play-btn" class="secondary">Auto-Play</button>
+<label>Speed:</label>
+<input type="range" id="speed-slider" min="1" max="20" value="5" style="width:100px">
+<label>Delay (delta):</label>
+<input type="range" id="delay-slider" min="1" max="20" value="5" style="width:100px">
+</div>
+
+<div class="panel">
+<h3>Cascade Chain</h3>
+<div class="belief-chain" id="chain-display">
+<div class="step"><span class="time">t=0</span> <b>Root belief:</b> Rain starts <span class="arrow">-></span> waiting for trigger...</div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Statistics</h3>
+<span class="stat">Time: <b id="stat-time">0</b></span>
+<span class="stat">Activated: <b id="stat-activated">0</b></span>
+<span class="stat">Pending: <b id="stat-pending">4</b></span>
+<span class="stat">Max confidence: <b id="stat-maxc">0.00</b></span>
+</div>
+
+<div class="instructions">
+<strong>Instructions:</strong> The canvas shows a chain of temporally linked beliefs. Each node is a belief that activates when its predecessor fires plus a time delay (delta). Click "Trigger Cascade" to start the chain from the root belief. Watch as each belief activates in sequence, with confidence propagating through the implication chain. Adjust the delay slider to change how long it takes for each implication to fire. This mirrors NAL temporal reasoning: if A implies B, and A is true at t, then B follows at t + delta.
+</div>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const CHAIN = [
+  {id:0, name:"Rain starts", x:80, y:200, active:false, activatedAt:-1, c:0, c0:0.90},
+  {id:1, name:"Ground gets wet", x:260, y:120, active:false, activatedAt:-1, c:0, c0:0.85, parent:0, delay:5},
+  {id:2, name:"Ground gets wet", x:260, y:280, active:false, activatedAt:-1, c:0, c0:0.85, parent:0, delay:3},
+  {id:3, name:"Worms emerge", x:440, y:280, active:false, activatedAt:-1, c:0, c0:0.75, parent:2, delay:8},
+  {id:4, name:"Birds feed", x:620, y:280, active:false, activatedAt:-1, c:0, c0:0.70, parent:3, delay:6},
+  {id:5, name:"Seeds germinate", x:440, y:120, active:false, activatedAt:-1, c:0, c0:0.80, parent:1, delay:12},
+  {id:6, name:"Plants grow", x:620, y:120, active:false, activatedAt:-1, c:0, c0:0.75, parent:5, delay:20},
+  {id:7, name:"Flowers bloom", x:800, y:120, active:false, activatedAt:-1, c:0, c0:0.65, parent:6, delay:15}
+];
+
+let timeStep = 0;
+let playing = false;
+let speed = 5;
+let delayMultiplier = 1;
+let activated = 0;
+
+function reset() {
+  CHAIN.forEach(n => { n.active = false; n.activatedAt = -1; n.c = 0; });
+  timeStep = 0;
+  activated = 0;
+  updateChainDisplay();
+  draw();
+  updateStats();
+}
+
+function trigger() {
+  if (CHAIN[0].active) return;
+  CHAIN[0].active = true;
+  CHAIN[0].activatedAt = 0;
+  CHAIN[0].c = CHAIN[0].c0;
+  activated = 1;
+  timeStep = 0;
+  updateChainDisplay();
+  draw();
+  updateStats();
+}
+
+function step() {
+  timeStep++;
+  CHAIN.forEach(node => {
+    if (node.active) {
+      // Apply slight decay
+      node.c = node.c0 * Math.exp(-0.002 * (timeStep - node.activatedAt));
+    }
+    if (!node.active && node.parent !== undefined) {
+      let parent = CHAIN[node.parent];
+      if (parent.active && (timeStep - parent.activatedAt) >= node.delay * delayMultiplier) {
+        node.active = true;
+        node.activatedAt = timeStep;
+        node.c = node.c0 * parent.c; // Confidence propagates
+        activated++;
+      }
+    }
+  });
+  updateChainDisplay();
+  draw();
+  updateStats();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw connections
+  ctx.strokeStyle = 'rgba(170,130,255,0.15)';
+  ctx.lineWidth = 2;
+  CHAIN.forEach(node => {
+    if (node.parent !== undefined) {
+      let parent = CHAIN[node.parent];
+      let progress = 0;
+      if (parent.active) {
+        progress = Math.min(1, (timeStep - parent.activatedAt) / (node.delay * delayMultiplier));
+      }
+      
+      // Draw line
+      ctx.beginPath();
+      ctx.moveTo(parent.x, parent.y);
+      ctx.lineTo(node.x, node.y);
+      
+      if (node.active) {
+        ctx.strokeStyle = 'rgba(170,130,255,0.6)';
+      } else if (parent.active && progress > 0) {
+        // Animated line
+        let dx = node.x - parent.x;
+        let dy = node.y - parent.y;
+        let px = parent.x + dx * progress;
+        let py = parent.y + dy * progress;
+        ctx.strokeStyle = 'rgba(170,130,255,0.3)';
+        ctx.stroke();
+        // Draw progress dot
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(170,130,255,0.6)';
+        ctx.fill();
+        return;
+      } else {
+        ctx.strokeStyle = 'rgba(170,130,255,0.1)';
+      }
+      ctx.stroke();
+      
+      // Draw delay label
+      let midX = (parent.x + node.x) / 2;
+      let midY = (parent.y + node.y) / 2;
+      ctx.fillStyle = 'rgba(139,148,158,0.4)';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('+' + (node.delay * delayMultiplier) + 't', midX, midY - 5);
+    }
+  });
+  
+  // Draw nodes
+  CHAIN.forEach(node => {
+    let radius = node.active ? Math.max(8, 12 + node.c * 15) : 10;
+    let alpha = node.active ? Math.max(0.3, node.c) : 0.15;
+    
+    // Glow
+    if (node.active && node.c > 0.3) {
+      let grad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, radius + 10);
+      grad.addColorStop(0, 'rgba(170,130,255,' + (alpha * 0.3) + ')');
+      grad.addColorStop(1, 'rgba(170,130,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, radius + 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = node.active ? 'rgba(170,130,255,' + alpha + ')' : 'rgba(170,130,255,0.08)';
+    ctx.fill();
+    ctx.strokeStyle = node.active ? '#a87fff' : 'rgba(170,130,255,0.2)';
+    ctx.lineWidth = node.active ? 2 : 1;
+    ctx.stroke();
+    
+    // Label
+    ctx.fillStyle = node.active ? '#c9d1d9' : '#6e7681';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.name, node.x, node.y - radius - 6);
+    
+    // Confidence
+    if (node.active) {
+      ctx.fillStyle = '#a87fff';
+      ctx.font = '9px monospace';
+      ctx.fillText('c=' + node.c.toFixed(2), node.x, node.y + radius + 12);
+      ctx.fillStyle = '#6e7681';
+      ctx.font = '8px monospace';
+      ctx.fillText('t=' + node.activatedAt, node.x, node.y + radius + 22);
+    }
+  });
+  
+  // Time display
+  ctx.fillStyle = 'rgba(139,148,158,0.5)';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('t = ' + timeStep, canvas.width - 10, 20);
+}
+
+function updateChainDisplay() {
+  let html = '';
+  CHAIN.forEach(node => {
+    if (node.active) {
+      let parent = node.parent !== undefined ? CHAIN[node.parent] : null;
+      let relation = parent ? ` &rarr; from "${parent.name}" at t=${parent.activatedAt}, +${node.delay * delayMultiplier}t delay` : ' (root)';
+      html += `<div class="step"><span class="time">t=${node.activatedAt}</span> <b>${node.name}</b> activated (c=${node.c.toFixed(2)})${relation}</div>`;
+    } else if (node.parent !== undefined) {
+      let parent = CHAIN[node.parent];
+      if (parent && parent.active) {
+        let remaining = node.delay * delayMultiplier - (timeStep - parent.activatedAt);
+        html += `<div class="step"><span class="time">pending</span> <b>${node.name}</b> fires in ${remaining}t <span class="arrow">&larr;</span> from "${parent.name}"</div>`;
+      }
+    }
+  });
+  if (!html) html = '<div class="step">Click "Trigger Cascade" to start</div>';
+  document.getElementById('chain-display').innerHTML = html;
+}
+
+function updateStats() {
+  document.getElementById('stat-time').textContent = timeStep;
+  document.getElementById('stat-activated').textContent = activated;
+  document.getElementById('stat-pending').textContent = CHAIN.length - activated;
+  let maxC = CHAIN.filter(n => n.active).reduce((max, n) => Math.max(max, n.c), 0);
+  document.getElementById('stat-maxc').textContent = maxC.toFixed(2);
+}
+
+document.getElementById('trigger-btn').onclick = trigger;
+document.getElementById('step-btn').onclick = step;
+document.getElementById('reset-btn').onclick = reset;
+document.getElementById('play-btn').onclick = function() {
+  playing = !playing;
+  this.textContent = playing ? 'Stop' : 'Auto-Play';
+};
+document.getElementById('speed-slider').oninput = function() { speed = parseInt(this.value); };
+document.getElementById('delay-slider').oninput = function() {
+  delayMultiplier = parseInt(this.value) / 5;
+};
+
+let lastStep = 0;
+function animate(ts) {
+  if (playing && ts - lastStep > 1000 / speed) {
+    step();
+    lastStep = ts;
+  }
+  draw();
+  requestAnimationFrame(animate);
+}
+
+reset();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

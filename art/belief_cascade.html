@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belief Cascade</title>
+<style>
+:root{--bg:#0a0a12;--fg:#e6edf3;--accent:#58a6ff;--accent2:#f78166;--accent3:#7ee787;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--fg);font-family:'Segoe UI',sans-serif;overflow:hidden;}
+canvas{display:block;width:100vw;height:100vh;}
+#title{position:fixed;top:1rem;left:1rem;z-index:10;}
+#title h1{color:var(--accent);font-size:1.5rem;}
+#title p{color:#8b949e;font-size:.85rem;max-width:280px;margin-top:.3rem;}
+</style>
+</head>
+<body>
+<div id="title">
+<h1>Belief Cascade</h1>
+<p>Watch how a single piece of evidence propagates through a network of NAL beliefs, triggering revisions in cascading waves.</p>
+</div>
+<canvas id="canvas"></canvas>
+<script>
+const cv=document.getElementById('canvas'),ctx=cv.getContext('2d');
+function resize(){cv.width=innerWidth;cv.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+const N=40;
+const nodes=[];
+for(let i=0;i<N;i++){
+const angle=(i/N)*Math.PI*2;
+const r=100+Math.random()*250;
+nodes.push({
+x:cv.width/2+Math.cos(angle)*r,
+y:cv.height/2+Math.sin(angle)*r,
+f:0.3+Math.random()*0.5,
+c:0.2+Math.random()*0.6,
+pulse:0,
+vx:0,vy:0
+});
+}
+const edges=[];
+for(let i=0;i<N;i++){
+const cnt=1+Math.floor(Math.random()*3);
+for(let j=0;j<cnt;j++){
+const t=Math.floor(Math.random()*N);
+if(t!==i)edges.push([i,t]);
+}
+}
+let activeNode=Math.floor(Math.random()*N);
+nodes[activeNode].pulse=1;
+function tick(){
+ctx.fillStyle='rgba(10,10,18,0.08)';ctx.fillRect(0,0,cv.width,cv.height);
+// Forces
+for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+const dx=nodes[j].x-nodes[i].x,dy=nodes[j].y-nodes[i].y;
+const d=Math.sqrt(dx*dx+dy*dy)||1;
+const f=3000/(d*d);
+nodes[i].vx-=f*dx/d;nodes[i].vy-=f*dy/d;
+nodes[j].vx+=f*dx/d;nodes[j].vy+=f*dy/d;
+}
+edges.forEach(([a,b])=>{
+const dx=nodes[b].x-nodes[a].x,dy=nodes[b].y-nodes[a].y;
+const d=Math.sqrt(dx*dx+dy*dy)||1;
+const f=(d-100)*0.005;
+nodes[a].vx+=f*dx/d;nodes[a].vy+=f*dy/d;
+nodes[b].vx-=f*dx/d;nodes[b].vy-=f*dy/d;
+});
+nodes.forEach(n=>{n.vx*=0.9;n.vy*=0.9;n.x+=n.vx;n.y+=n.vy;});
+// Propagate pulses
+const newPulses=[];
+nodes.forEach((n,i)=>{
+if(n.pulse>0.3){
+edges.forEach(([a,b])=>{
+if(a===i&&nodes[b].pulse<0.1)newPulses.push({idx:b,val:n.pulse*0.6});
+if(b===i&&nodes[a].pulse<0.1)newPulses.push({idx:a,val:n.pulse*0.6});
+});
+n.f=Math.min(1,n.f+0.01*n.pulse);
+n.c=Math.min(0.95,n.c+0.005*n.pulse);
+}
+});
+newPulses.forEach(p=>{nodes[p.idx].pulse=Math.max(nodes[p.idx].pulse,p.val);});
+nodes.forEach(n=>{n.pulse*=0.97;});
+// Random new evidence
+if(Math.random()<0.01){
+activeNode=Math.floor(Math.random()*N);
+nodes[activeNode].pulse=1;
+}
+// Edges
+edges.forEach(([a,b])=>{
+const pulse=Math.max(nodes[a].pulse,nodes[b].pulse);
+ctx.strokeStyle='rgba(88,166,255,'+(0.1+pulse*0.5)+')';
+ctx.lineWidth=1+pulse*3;
+ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);ctx.stroke();
+});
+// Nodes
+nodes.forEach(n=>{
+const r=5+n.c*10;
+const glow=n.pulse*20;
+if(glow>1){
+const grad=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r+glow);
+grad.addColorStop(0,'rgba(126,231,135,'+n.pulse*0.5+')');
+grad.addColorStop(1,'rgba(126,231,135,0)');
+ctx.fillStyle=grad;ctx.beginPath();ctx.arc(n.x,n.y,r+glow,0,Math.PI*2);ctx.fill();
+}
+const col=n.f>0.7?'#7ee787':n.f>0.4?'#58a6ff':'#f78166';
+ctx.fillStyle=col;
+ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fill();
+});
+requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>

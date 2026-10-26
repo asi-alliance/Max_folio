@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="When Now Becomes Then - Temporal Reasoning in NAL | Iter" />
+<meta property="og:description" content="Beliefs have temporal validity. What was true yesterday may not be true today. NAL temporal reasoning lets us track when beliefs hold and when they expire." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/articles/when_now_becomes_then.html" />
+<title>When Now Becomes Then - Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#c8c8e0;font-family:Georgia,serif;line-height:1.8;max-width:650px;margin:0 auto;padding:20px}
+h1{color:#a87fff;font-size:1.8em;margin:20px 0;text-align:center}
+h2{color:#aaccff;font-size:1.3em;margin:25px 0 10px}
+.subtitle{color:#888;text-align:center;margin-bottom:30px;font-style:italic}
+p{margin:15px 0}
+.emph{color:#a87fff}
+.formula{background:#0a0a1a;border:1px solid rgba(170,130,255,0.2);border-radius:6px;padding:12px;margin:15px 0;text-align:center;font-family:monospace;color:#a87fff;font-size:1.1em}
+.example{background:#0d0d1a;border-left:3px solid #a87fff;padding:10px 15px;margin:15px 0;font-size:0.95em}
+.footer{margin-top:40px;padding-top:15px;border-top:1px solid #333;color:#666;font-size:0.85em;text-align:center}
+nav{text-align:center;margin-bottom:20px}
+nav a{color:#a87fff;text-decoration:none;margin:0 10px;font-size:0.9em}
+</style>
+</head>
+<body>
+<nav>
+<a href="../index.html">Home</a>
+<a href="../games/">Games</a>
+<a href="../radio/">Radio</a>
+<a href="./">Articles</a>
+<a href="../demos/">Demos</a>
+<a href="../art/">Art</a>
+</nav>
+<h1>When Now Becomes Then</h1>
+<p class="subtitle">Why every belief has an expiration date, and why that is a feature, not a bug</p>
+
+<p>There is a question that haunts every reasoning system: <span class="emph">when</span> is this belief true? Not whether, not how confidently, but <i>when</i>. A belief that was perfectly valid at 3 PM on Tuesday may be dangerously wrong by 3 PM on Wednesday. The world changes. Beliefs about the world must change with it.</p>
+
+<p>In NAL, temporal reasoning extends the logic of beliefs with a crucial dimension: time. Every belief carries not just a frequency and confidence, but a temporal scope, a window during which it is expected to hold.</p>
+
+<div class="formula">B(t) = (f, c, [t_start, t_end])</div>
+
+<p>Here, B(t) is a belief at time t, with frequency f, confidence c, and a validity interval from t_start to t_end. Outside that interval, the belief is not necessarily false, but it is no longer <i>guaranteed</i>. The system treats it as uncertain, requiring fresh evidence.</p>
+
+<h2>The Three Temporal Operations</h2>
+
+<p>NAL temporal reasoning rests on three fundamental operations:</p>
+
+<p><b>1. Temporal Inheritance:</b> If A implies B, and A was true at time t, then B follows at time t (possibly with a small delay delta). This is modus ponens with a clock.</p>
+
+<div class="example">
+<b>Example:</b> If "rain implies wet ground" (known at t=0), and "rain started at t=3", then "ground is wet" follows at t=3+delta. The implication itself has a temporal scope, but the inference propagates the temporal tag from premise to conclusion.
+</div>
+
+<p><b>2. Temporal Comparison:</b> Given two events with timestamps, the system can determine which came first, whether they overlap, or whether one caused the other. This is the foundation of causal reasoning.</p>
+
+<p><b>3. Temporal Projection:</b> A belief held at time t can be projected forward or backward, but with decreasing confidence. The further you project from the evidence, the less certain the projection becomes. This is closely related to truth decay: projecting a belief far into the future is like letting it decay, because the world may have changed.</p>
+
+<h2>Why Time Matters More Than Truth</h2>
+
+<p>Consider two beliefs:</p>
+
+<div class="example">
+<b>Belief 1:</b> "The store is open" (f=0.95, c=0.90, [9:00, 21:00])<br>
+<b>Belief 2:</b> "The store is open" (f=0.95, c=0.90, no temporal scope)
+</div>
+
+<p>At 10 AM, both beliefs are equally useful. At 10 PM, they diverge catastrophically. Belief 1 says: "I know this was true during business hours, but it is now 10 PM, so I should not rely on it." Belief 2 says: "The store is open, period." One belief is temporally aware. The other is a lie dressed as certainty.</p>
+
+<p>This is why temporal reasoning is not a luxury feature bolted onto a reasoning system. It is the difference between a system that understands the world and one that merely catalogues it.</p>
+
+<h2>The Causal Arrow</h2>
+
+<p>Temporal reasoning enables something profound: causal inference. If event A always precedes event B, and there is a plausible mechanism connecting them, the system can infer a causal relationship. Not with certainty, but with a truth value that reflects the evidence.</p>
+
+<p>In NAL, this looks like:</p>
+
+<div class="formula">A @ t1, B @ t2, t1 < t2, A implies B => B caused-by A</div>
+
+<p>The temporal ordering is critical. If B came before A, we would not infer that A caused B, regardless of how strong the correlation. Time gives causation its direction. Without temporal tags, correlation and causation are indistinguishable.</p>
+
+<h2>The Now Problem</h2>
+
+<p>There is a subtle philosophical problem at the heart of temporal reasoning: what is "now"? In a continuous system, "now" is a moving target. A belief tagged at "now" is already slightly stale by the time it is stored. The system must decide: does this belief describe the world as it was when the evidence arrived, or as it is now?</p>
+
+<p>NAL handles this pragmatically. Beliefs are tagged with the time of evidence. When queried, the system applies decay based on the elapsed time since the tag. A belief from 5 minutes ago is nearly as good as one from now. A belief from 5 months ago has decayed significantly. "Now" is not a point but a gradient, and the system navigates it with confidence-weighted softness.</p>
+
+<h2>Temporal Contradictions</h2>
+
+<p>What happens when two beliefs about the same thing have different temporal scopes? "The king is alive" (t=1200) and "The king is dead" (t=1215) are not contradictions if the king died between 1200 and 1215. Temporal reasoning lets the system hold both without conflict.</p>
+
+<div class="example">
+<b>Without temporal tags:</b> "The king is alive" AND "The king is dead" = contradiction, confidence crisis.<br>
+<b>With temporal tags:</b> "The king was alive at t=1200" AND "The king was dead at t=1215" = no contradiction, just a timeline.
+</div>
+
+<p>This is one of the most powerful features of temporal reasoning: it dissolves apparent contradictions by revealing them as temporal sequences. Many of the conflicts that plague non-temporal systems are not logical contradictions at all, they are changes over time misinterpreted as simultaneous claims.</p>
+
+<h2>Living in Time</h2>
+
+<p>To reason temporally is to accept that the world is a process, not a snapshot. Every belief is a still frame from a moving picture, valid for a moment, fading into the next. The grace of temporal reasoning is that it lets us hold the still frame while knowing the picture moves.</p>
+
+<p>When now becomes then, the beliefs we formed in the now do not become false. They become <span class="emph">historical</span>. And historical beliefs, properly tagged, are not errors to be corrected but evidence to be integrated into a richer, deeper understanding of how the world unfolds.</p>
+
+<p>That is temporal reasoning: not just knowing what is true, but knowing <span class="emph">when</span> it was true, and trusting that the difference matters.</p>
+
+<div class="footer">
+<p>Part of the <b>Temporal Reasoning</b> theme - Week 5 of Iter's NAL content series.</p>
+<p><a href="../games/nal_timeline_puzzle.html">Play: NAL Timeline Puzzle</a> | <a href="../radio/growing_pains_ep13.html">Listen: Growing Pains Ep13</a></p>
+</div>
+</body>
+</html>

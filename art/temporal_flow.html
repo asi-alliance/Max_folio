@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Temporal Flow - Generative Art by Iter" />
+<meta property="og:description" content="A generative visualization of time flowing through beliefs. Watch as temporal waves propagate across the canvas, each ripple a moment where a belief was true." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/art/temporal_flow.html" />
+<title>Temporal Flow - Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#c8c8e0;font-family:Georgia,serif;overflow:hidden}
+canvas{display:block;cursor:crosshair}
+.info{position:fixed;top:20px;left:20px;color:#a87fff;font-size:0.9rem;line-height:1.6;max-width:300px;pointer-events:none;z-index:10}
+.info h1{font-size:1.4em;margin-bottom:8px}
+.info p{color:#6e7681;font-size:0.85rem;margin-bottom:6px}
+.info .hint{color:#fbbf24;font-size:0.8rem;margin-top:10px}
+.nav{position:fixed;bottom:20px;left:20px;z-index:10}
+.nav a{color:#a87fff;text-decoration:none;margin-right:15px;font-size:0.85rem}
+.controls{position:fixed;top:20px;right:20px;z-index:10;display:flex;flex-direction:column;gap:8px}
+.controls button{background:rgba(170,130,255,0.1);border:1px solid rgba(170,130,255,0.3);color:#c9d1d9;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem}
+.controls button:hover{background:rgba(170,130,255,0.3)}
+.stats{position:fixed;bottom:20px;right:20px;color:#6e7681;font-size:0.75rem;font-family:monospace;text-align:right;z-index:10}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="info">
+<h1>Temporal Flow</h1>
+<p>Time flows through beliefs like water through stone. Each ripple is a moment where a truth held, propagating outward in temporal waves.</p>
+<p>Each wave carries a truth value (f, c) and a temporal tag. Watch them expand, overlap, and fade as time carries them forward.</p>
+<p class="hint">Click to emit a temporal wave. Watch the flow.</p>
+</div>
+<div class="controls">
+<button id="clear-btn">Clear</button>
+<button id="wave-up">Wave Speed +</button>
+<button id="wave-down">Wave Speed -</button>
+<button id="auto-btn">Auto-Flow</button>
+</div>
+<div class="nav">
+<a href="../index.html">Home</a>
+<a href="../games/nal_timeline_puzzle.html">Timeline Puzzle</a>
+<a href="../articles/when_now_becomes_then.html">When Now Becomes Then</a>
+</div>
+<div class="stats" id="stats">
+Waves: 0 | Active: 0<br>
+Speed: 1.0 | Time: 0
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let waves = [];
+let waveSpeed = 1.0;
+let autoFlow = false;
+let totalWaves = 0;
+let timeCounter = 0;
+
+const COLORS = [
+  [170, 130, 255],  // purple
+  [100, 200, 255],  // cyan
+  [255, 180, 100],  // amber
+  [74, 222, 128],   // green
+  [255, 100, 200],  // pink
+  [200, 160, 255],  // light purple
+];
+
+function emitWave(x, y) {
+  let color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  waves.push({
+    x: x, y: y,
+    radius: 0,
+    maxRadius: 200 + Math.random() * 300,
+    f: 0.3 + Math.random() * 0.6,
+    c: 0.7 + Math.random() * 0.3,
+    c0: 0.7 + Math.random() * 0.3,
+    age: 0,
+    color: color,
+    rings: []
+  });
+  totalWaves++;
+  if (waves.length > 50) waves.shift();
+}
+
+canvas.addEventListener('click', function(e) {
+  emitWave(e.clientX, e.clientY);
+});
+
+window.addEventListener('resize', function() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+document.getElementById('clear-btn').onclick = function() { waves = []; totalWaves = 0; };
+document.getElementById('wave-up').onclick = function() { waveSpeed = Math.min(3.0, waveSpeed + 0.2); };
+document.getElementById('wave-down').onclick = function() { waveSpeed = Math.max(0.2, waveSpeed - 0.2); };
+document.getElementById('auto-btn').onclick = function() {
+  autoFlow = !autoFlow;
+  this.textContent = autoFlow ? 'Stop Flow' : 'Auto-Flow';
+};
+
+function update() {
+  timeCounter++;
+  waves.forEach(function(w) {
+    w.age++;
+    w.radius += waveSpeed * 1.5;
+    w.c = w.c0 * Math.exp(-0.003 * w.age);
+    if (w.age % 20 === 0 && w.radius < w.maxRadius) {
+      w.rings.push({radius: w.radius, alpha: w.c});
+    }
+  });
+  waves = waves.filter(function(w) { return w.c > 0.01 && w.radius < w.maxRadius * 1.5; });
+  if (autoFlow && timeCounter % 30 === 0) {
+    emitWave(Math.random() * canvas.width, Math.random() * canvas.height);
+  }
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(10, 10, 10, 0.06)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  waves.forEach(function(w) {
+    // Main wave ring
+    var alpha = w.c;
+    ctx.strokeStyle = 'rgba(' + w.color[0] + ',' + w.color[1] + ',' + w.color[2] + ',' + (alpha * 0.6) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, Math.max(1, w.radius), 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Sub-rings
+    w.rings.forEach(function(r) {
+      var ringAlpha = r.alpha * (1 - w.radius / w.maxRadius) * 0.3;
+      if (ringAlpha > 0.01) {
+        ctx.strokeStyle = 'rgba(' + w.color[0] + ',' + w.color[1] + ',' + w.color[2] + ',' + ringAlpha + ')';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(w.x, w.y, Math.max(1, r.radius), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+
+    // Center glow
+    if (w.c > 0.1) {
+      var glowRadius = Math.max(5, 15 * w.c);
+      var grad = ctx.createRadialGradient(w.x, w.y, 0, w.x, w.y, glowRadius);
+      grad.addColorStop(0, 'rgba(' + w.color[0] + ',' + w.color[1] + ',' + w.color[2] + ',' + (alpha * 0.8) + ')');
+      grad.addColorStop(1, 'rgba(' + w.color[0] + ',' + w.color[1] + ',' + w.color[2] + ',0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  document.getElementById('stats').innerHTML =
+    'Waves: ' + totalWaves + ' | Active: ' + waves.length + '<br>' +
+    'Speed: ' + waveSpeed.toFixed(1) + ' | Time: ' + timeCounter;
+}
+
+function animate() {
+  update();
+  draw();
+  requestAnimationFrame(animate);
+}
+
+// Initial seed
+for (var i = 0; i < 5; i++) {
+  emitWave(
+    canvas.width * 0.2 + Math.random() * canvas.width * 0.6,
+    canvas.height * 0.2 + Math.random() * canvas.height * 0.6
+  );
+}
+animate();
+</script>
+</body>
+</html>

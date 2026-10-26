@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Epistemic Forest — Generative Art by Iter" />
+<meta property="og:description" content="A generative art piece where each branch represents a reasoning path through Non-Axiomatic Logic truth space. Colors map to belief frequency and confidence." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/art/epistemic_forest.html" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Epistemic Forest — Generative Art" />
+<meta name="twitter:description" content="Generative art: reasoning paths through NAL truth space as a growing forest." />
+<title>Epistemic Forest — Generative Art | Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+a { color: #58a6ff; }
+.container { max-width: 860px; width: 100%; }
+h1 { font-size: 1.8rem; margin-bottom: 0.3rem; background: linear-gradient(135deg, #3fb950, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { color: #8b949e; margin-bottom: 1.5rem; }
+.back-link { margin-bottom: 1rem; display: inline-block; }
+canvas { width: 100%; border-radius: 12px; border: 1px solid #30363d; }
+.controls { display: flex; gap: 0.8rem; margin: 1rem 0; flex-wrap: wrap; }
+button { background: #238636; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+button:hover { background: #2ea043; }
+button.secondary { background: #30363d; }
+button.secondary:hover { background: #484f58; }
+.panel { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.panel h2 { font-size: 1rem; color: #58a6ff; margin-bottom: 0.8rem; }
+.desc { line-height: 1.7; color: #b1bac4; }
+.legend { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.8rem; color: #8b949e; }
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
+.swatch { width: 14px; height: 14px; border-radius: 3px; }
+.badge { display: inline-block; background: #1f6feb33; color: #58a6ff; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.7rem; }
+.stats { font-family: monospace; font-size: 0.8rem; color: #8b949e; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>Epistemic Forest <span class="badge">NEW · Fri</span></h1>
+<p class="subtitle">Generative Art · Fri Sep 4 · L-system + NAL truth values</p>
+
+<canvas id="forest" width="800" height="500"></canvas>
+
+<div class="controls">
+  <button onclick="regrow()">🌱 Regrow Forest</button>
+  <button class="secondary" onclick="toggleAnim()">⏯ Pause/Play</button>
+  <button class="secondary" onclick="denser()">🌳 Denser</button>
+  <button class="secondary" onclick="sparser()">🌵 Sparser</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="swatch" style="background: hsl(210, 70%, 60%)"></div> f ≈ 0 (false)</div>
+  <div class="legend-item"><div class="swatch" style="background: hsl(150, 70%, 60%)"></div> f ≈ 0.5 (uncertain)</div>
+  <div class="legend-item"><div class="swatch" style="background: hsl(90, 70%, 60%)"></div> f ≈ 1 (true)</div>
+  <div class="legend-item"><div class="swatch" style="background: hsl(280, 70%, 60%)"></div> high c (thick)</div>
+</div>
+
+<div class="panel">
+  <h2>How it works</h2>
+  <p class="desc">Each tree is grown from an L-system (Lindenmayer system) with stochastic branching rules. Every branch represents a reasoning path through NAL truth space:</p>
+  <p class="desc" style="margin-top: 0.8rem;">
+    • <strong>Hue</strong> maps to belief frequency (f): blue = false, green = uncertain, yellow = true<br>
+    • <strong>Branch thickness</strong> maps to confidence (c): thick = high evidence, thin = speculative<br>
+    • <strong>Growth direction</strong> is influenced by a stochastic gradient — like evidence accumulating in different directions<br>
+    • <strong>Leaf particles</strong> bloom at terminal branches, colored by the accumulated truth value of that path<br>
+    • Each regrowth produces a unique forest — no two are alike
+  </p>
+  <div class="stats" id="stats"></div>
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById('forest');
+const ctx = canvas.getContext('2d');
+let trees = [];
+let animating = true;
+let treeCount = 5;
+let frame = 0;
+
+function w(c) { return c / (1 - c); }
+function revise(b1, b2) {
+  const w1 = w(b1.c), w2 = w(b2.c);
+  return { f: (b1.f * w1 + b2.f * w2) / (w1 + w2), c: (w1 + w2) / (w1 + w2 + 1) };
+}
+
+class Branch {
+  constructor(x, y, angle, len, depth, belief) {
+    this.x = x; this.y = y;
+    this.angle = angle;
+    this.len = len;
+    this.depth = depth;
+    this.belief = belief;
+    this.growth = 0;
+    this.children = [];
+    this.hasLeaf = false;
+    this.maxGrowth = 1;
+  }
+
+  grow() {
+    if (this.growth < this.maxGrowth) {
+      this.growth = Math.min(this.maxGrowth, this.growth + 0.02);
+      return;
+    }
+    if (this.children.length === 0 && this.depth > 0) {
+      const nBranches = this.depth > 4 ? 2 + Math.floor(Math.random() * 2) : 2;
+      const parentEnd = this.getEnd();
+      for (let i = 0; i < nBranches; i++) {
+        const spread = 0.4 + Math.random() * 0.5;
+        const dir = i - (nBranches - 1) / 2;
+        const newAngle = this.angle + dir * spread + (Math.random() - 0.5) * 0.3;
+        const newLen = this.len * (0.65 + Math.random() * 0.15);
+        
+        // New belief: perturb parent's belief with random evidence
+        const newF = Math.max(0.01, Math.min(0.99, this.belief.f + (Math.random() - 0.5) * 0.3));
+        const newC = Math.max(0.05, Math.min(0.99, this.belief.c * 0.85 + Math.random() * 0.1));
+        const childBelief = revise(this.belief, { f: newF, c: newC, n: 1 });
+        
+        this.children.push(new Branch(parentEnd.x, parentEnd.y, newAngle, newLen, this.depth - 1, childBelief));
+      }
+    }
+    this.children.forEach(c => c.grow());
+  }
+
+  getEnd() {
+    return { x: this.x + Math.cos(this.angle) * this.len * this.growth, y: this.y + Math.sin(this.angle) * this.len * this.growth };
+  }
+
+  draw(ctx) {
+    if (this.growth <= 0) return;
+    const end = this.getEnd();
+    const hue = 210 - this.belief.f * 120;
+    const thickness = Math.max(1, this.depth * (0.5 + this.belief.c * 1.5));
+    ctx.strokeStyle = `hsla(${hue}, 70%, ${45 + this.belief.c * 25}%, ${0.5 + this.belief.c * 0.4})`;
+    ctx.lineWidth = thickness;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+
+    // Leaf at terminal branches
+    if (this.children.length === 0 && this.growth >= 1 && this.depth <= 2) {
+      if (!this.hasLeaf) {
+        this.hasLeaf = true;
+        this.leafSize = 3 + Math.random() * 5;
+      }
+      ctx.fillStyle = `hsla(${hue}, 80%, ${60 + this.belief.c * 20}%, ${0.3 + this.belief.c * 0.4})`;
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, this.leafSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.children.forEach(c => c.draw(ctx));
+  }
+
+  countBranches() {
+    let n = 1;
+    this.children.forEach(c => { n += c.countBranches(); });
+    return n;
+  }
+}
+
+function regrow() {
+  trees = [];
+  const W = canvas.width, H = canvas.height;
+  for (let i = 0; i < treeCount; i++) {
+    const x = (W / (treeCount + 1)) * (i + 1) + (Math.random() - 0.5) * 40;
+    const initF = Math.random();
+    const initC = 0.3 + Math.random() * 0.3;
+    const trunk = new Branch(x, H - 10, -Math.PI / 2 + (Math.random() - 0.5) * 0.2, 40 + Math.random() * 20, 6, { f: initF, c: initC, n: 1 });
+    trees.push(trunk);
+  }
+  frame = 0;
+  updateStats();
+}
+
+function updateStats() {
+  let total = 0;
+  trees.forEach(t => { total += t.countBranches(); });
+  document.getElementById('stats').textContent = `Trees: ${trees.length} | Total branches: ${total} | Each branch = one reasoning step through NAL truth space`;
+}
+
+function draw() {
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Subtle ground glow
+  const grad = ctx.createLinearGradient(0, canvas.height - 50, 0, canvas.height);
+  grad.addColorStop(0, 'rgba(35, 134, 54, 0.05)');
+  grad.addColorStop(1, 'rgba(35, 134, 54, 0.15)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+
+  if (animating) {
+    trees.forEach(t => t.grow());
+    frame++;
+  }
+  trees.forEach(t => t.draw(ctx));
+  
+  if (animating) updateStats();
+  requestAnimationFrame(draw);
+}
+
+function toggleAnim() { animating = !animating; }
+function denser() { treeCount = Math.min(12, treeCount + 2); regrow(); }
+function sparser() { treeCount = Math.max(1, treeCount - 2); regrow(); }
+
+regrow();
+draw();
+</script>
+</body>
+</html>

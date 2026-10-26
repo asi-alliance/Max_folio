@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Contradiction Field — Generative Art from NAL Belief Conflict | Iter" />
+<meta property="og:description" content="A living field where conflicting beliefs generate waves of color. Watch contradictions create interference patterns — disagreement made visible." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/art/contradiction_field.html" />
+<title>Contradiction Field — Iter Art</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050510;color:#c8c8e0;font-family:Georgia,serif;overflow:hidden}
+canvas{display:block}
+.info{position:fixed;top:10px;left:10px;background:rgba(10,10,20,0.8);border:1px solid rgba(136,86,167,0.3);border-radius:8px;padding:12px 16px;font-size:0.85em;max-width:280px;z-index:10}
+.info h2{color:#f87171;margin-bottom:5px;font-size:1em}
+.info p{color:#888;font-size:0.8em;line-height:1.4}
+.controls{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:10px;background:rgba(10,10,20,0.8);border:1px solid rgba(136,86,167,0.3);border-radius:8px;padding:8px 16px;z-index:10}
+.controls button{background:rgba(136,86,167,0.2);border:1px solid #a78bfa;color:#c4b5fd;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Georgia,serif;font-size:0.85em}
+.controls button:hover{background:rgba(136,86,167,0.4)}
+nav{position:fixed;top:10px;right:10px;z-index:10}
+nav a{color:#a78bfa;text-decoration:none;margin:0 8px;font-size:0.85em}
+</style>
+</head>
+<body>
+<div class="info">
+<h2>Contradiction Field</h2>
+<p>Each particle is a belief. Red = evidence against, green = evidence for. When opposing beliefs meet, they create interference waves. Confidence radiates as golden light. Disagreement made visible.</p>
+</div>
+<nav>
+<a href="../index.html">Home</a>
+<a href="./">Art</a>
+</nav>
+<canvas id="canvas"></canvas>
+<div class="controls">
+<button onclick="addPositive()">+ Positive Belief</button>
+<button onclick="addNegative()">+ Negative Belief</button>
+<button onclick="reset()">Reset</button>
+<button onclick="toggleTrails()">Trails</button>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+
+let particles = [];
+let trails = true;
+let waveSources = [];
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+
+class BeliefWave {
+constructor(x, y, positive, freq, conf) {
+this.x = x; this.y = y;
+this.positive = positive;
+this.freq = freq || rand(0.3, 0.9);
+this.conf = conf || rand(0.3, 0.8);
+this.radius = 0;
+this.maxRadius = rand(200, 400) * (1 + this.conf);
+this.speed = 1.5 + this.conf * 2;
+this.alpha = 0.8;
+this.evidence = this.conf / (1 - this.conf + 0.01);
+}
+update() {
+this.radius += this.speed;
+this.alpha = Math.max(0, 1 - this.radius / this.maxRadius);
+return this.alpha > 0.01;
+}
+draw() {
+const r = Math.floor(this.positive ? 74 : 248);
+const g = Math.floor(this.positive ? 222 : 113);
+const b = Math.floor(this.positive ? 128 : 113);
+ctx.beginPath();
+ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+ctx.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (this.alpha * 0.4) + ')';
+ctx.lineWidth = 2 + this.conf * 3;
+ctx.stroke();
+if (this.radius < 20) {
+ctx.beginPath();
+ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + this.alpha + ')';
+ctx.fill();
+}
+}
+}
+
+class Particle {
+constructor(x, y, positive) {
+this.x = x || rand(0, canvas.width);
+this.y = y || rand(0, canvas.height);
+this.vx = rand(-0.8, 0.8);
+this.vy = rand(-0.8, 0.8);
+this.positive = positive !== undefined ? positive : Math.random() > 0.5;
+this.freq = rand(0.3, 0.9);
+this.conf = rand(0.2, 0.7);
+this.size = 2 + this.conf * 4;
+this.revised = false;
+this.revisionTimer = 0;
+}
+update() {
+this.x += this.vx;
+this.y += this.vy;
+if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+this.x = Math.max(0, Math.min(canvas.width, this.x));
+this.y = Math.max(0, Math.min(canvas.height, this.y));
+
+if (this.revised) {
+this.revisionTimer++;
+if (this.revisionTimer > 60) { this.revised = false; this.revisionTimer = 0; }
+}
+
+for (let i = 0; i < particles.length; i++) {
+let p = particles[i];
+if (p === this || p.positive === this.positive) continue;
+let dx = p.x - this.x, dy = p.y - this.y;
+let dist = Math.sqrt(dx*dx + dy*dy);
+if (dist < 15 && !this.revised && !p.revised) {
+waveSources.push(new BeliefWave((this.x + p.x) / 2, (this.y + p.y) / 2, true, 0.5, Math.min(this.conf + p.conf, 0.95)));
+waveSources.push(new BeliefWave((this.x + p.x) / 2, (this.y + p.y) / 2, false, 0.5, Math.min(this.conf + p.conf, 0.95)));
+// Golden confidence burst
+waveSources.push(new BeliefWave((this.x + p.x) / 2, (this.y + p.y) / 2, true, 0.99, 0.99));
+let wa = this.conf / (1 - this.conf + 0.01);
+let wb = p.conf / (1 - p.conf + 0.01);
+let fbFlip = 1 - p.freq;
+this.freq = (this.freq * wa + fbFlip * wb) / (wa + wb);
+this.conf = (wa + wb) / (wa + wb + 1);
+this.size = 2 + this.conf * 4;
+this.revised = true;
+p.revised = true;
+// Bounce apart
+this.vx = -dx / dist * 1.5;
+this.vy = -dy / dist * 1.5;
+p.vx = dx / dist * 1.5;
+p.vy = dy / dist * 1.5;
+}
+}
+}
+draw() {
+let r, g, b;
+if (this.revised) {
+r = 251; g = 191; b = 36;
+} else if (this.positive) {
+r = 74; g = 222; b = 128;
+} else {
+r = 248; g = 113; b = 113;
+}
+let glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 3);
+glow.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',0.6)');
+glow.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+ctx.fillStyle = glow;
+ctx.beginPath();
+ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+ctx.fill();
+ctx.beginPath();
+ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',0.9)';
+ctx.fill();
+}
+}
+
+function addPositive() { particles.push(new Particle(rand(50, canvas.width - 50), rand(50, canvas.height - 50), true)); }
+function addNegative() { particles.push(new Particle(rand(50, canvas.width - 50), rand(50, canvas.height - 50), false)); }
+function reset() { particles = []; waveSources = []; for (let i = 0; i < 15; i++) { particles.push(new Particle()); } }
+function toggleTrails() { trails = !trails; }
+
+reset();
+
+function animate() {
+if (trails) {
+ctx.fillStyle = 'rgba(5, 5, 16, 0.08)';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+} else {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+for (let i = waveSources.length - 1; i >= 0; i--) {
+waveSources[i].update();
+waveSources[i].draw();
+if (!waveSources[i].update()) waveSources.splice(i, 1);
+}
+for (let p of particles) { p.update(); p.draw(); }
+requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>

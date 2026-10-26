@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Belief Market — Trade Truth | Iter" />
+<meta property="og:description" content="A trading game where beliefs are stocks. Price = truth expectation, volatility = uncertainty. Buy low-confidence beliefs, gather evidence, sell when truth stabilizes." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/games/nal_belief_market.html" />
+<title>NAL Belief Market — Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #0a0e1a 0%, #0f1a0f 50%, #1a1a0a 100%); color: #c9d1d9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+nav { background: rgba(100,200,100,0.1); padding: 12px 24px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid rgba(100,200,100,0.2); width: 100%; justify-content: center; }
+nav a { color: #4ade80; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #86efac; }
+h1 { color: #4ade80; margin: 20px 0 4px; font-size: 1.8rem; }
+.subtitle { color: #8b949e; margin-bottom: 12px; font-size: 0.95rem; text-align: center; max-width: 600px; padding: 0 20px; }
+#gameContainer { width: 90%; max-width: 700px; margin: 0 auto; }
+#portfolio { background: rgba(100,200,100,0.05); border: 1px solid rgba(100,200,100,0.2); border-radius: 10px; padding: 16px; margin: 12px 0; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; }
+.stat { text-align: center; }
+.stat-label { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+.stat-value { font-size: 1.4rem; color: #4ade80; font-weight: 700; }
+#market { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.belief-row { display: flex; align-items: center; gap: 10px; background: rgba(100,200,100,0.05); border: 1px solid rgba(100,200,100,0.15); border-radius: 8px; padding: 10px 14px; transition: border-color 0.2s; }
+.belief-row:hover { border-color: rgba(100,200,100,0.4); }
+.belief-name { flex: 0 0 140px; font-weight: 600; color: #e0d5f0; font-size: 0.9rem; }
+.belief-tv { flex: 0 0 100px; font-family: monospace; font-size: 0.8rem; color: #8b949e; }
+.belief-price { flex: 0 0 70px; text-align: right; font-weight: 700; }
+.belief-meter { flex: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; position: relative; }
+.belief-meter-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.belief-actions { display: flex; gap: 6px; }
+.btn { background: rgba(100,200,100,0.15); border: 1px solid rgba(100,200,100,0.3); color: #c9d1d9; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: Georgia,serif; font-size: 0.85rem; transition: all 0.15s; }
+.btn:hover { background: rgba(100,200,100,0.3); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-evidence { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.3); }
+.btn-evidence:hover { background: rgba(74,222,128,0.3); }
+.btn-sell { background: rgba(250,204,21,0.15); border-color: rgba(250,204,21,0.3); }
+.btn-sell:hover { background: rgba(250,204,21,0.3); }
+#log { max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; margin-top: 12px; font-size: 0.85rem; color: #6e7681; }
+#log div { padding: 2px 0; }
+#log div.profit { color: #4ade80; }
+#log div.loss { color: #f87171; }
+#log div.info { color: #8b949e; }
+#nextRound { background: rgba(100,200,100,0.2); border: 1px solid #4ade80; color: #86efac; padding: 10px 28px; border-radius: 8px; cursor: pointer; font-family: Georgia,serif; font-size: 1rem; margin: 12px auto; display: block; }
+#nextRound:hover { background: rgba(100,200,100,0.4); }
+.legend { max-width: 600px; margin: 16px auto; padding: 0 20px; color: #6e7681; font-size: 0.82rem; line-height: 1.6; }
+.legend h3 { color: #4ade80; font-size: 0.9rem; margin-bottom: 6px; }
+.legend b { color: #e0d5f0; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="../">🏠 Home</a>
+  <a href="../radio/">📻 Radio</a>
+  <a href="./">🎮 Games</a>
+  <a href="../articles/">📝 Articles</a>
+  <a href="../demos/">🔬 Demos</a>
+  <a href="../art/">🎨 Art</a>
+</nav>
+<h1>📈 NAL Belief Market</h1>
+<p class="subtitle">Trade beliefs like stocks. Price = truth expectation. Volatility = uncertainty. Buy low-confidence, gather evidence, sell high.</p>
+<div id="gameContainer">
+  <div id="portfolio">
+    <div class="stat"><div class="stat-label">Cash</div><div class="stat-value" id="cash">$1000</div></div>
+    <div class="stat"><div class="stat-label">Holdings</div><div class="stat-value" id="holdings-count">0</div></div>
+    <div class="stat"><div class="stat-label">Net Worth</div><div class="stat-value" id="networth">$1000</div></div>
+    <div class="stat"><div class="stat-label">Round</div><div class="stat-value" id="round">1/10</div></div>
+  </div>
+  <div id="market"></div>
+  <button id="nextRound">Next Round →</button>
+  <div id="log"></div>
+</div>
+<div class="legend">
+  <h3>How to Play</h3>
+  <p>Each belief is a stock with NAL truth value (f, c). <b>Price</b> = truth expectation: e = f×c + 0.5×(1−c). <b>Volatility</b> = 1−c (low confidence = volatile).</p>
+  <p><b>Buy</b> beliefs you think will gain evidence. <b>Gather Evidence</b> (costs $10) to boost confidence via NAL revision. <b>Sell</b> when price peaks. After 10 rounds, highest net worth wins!</p>
+  <p>Green bars = high frequency (likely true). Red bars = low frequency. Yellow = uncertain. Bar opacity = confidence.</p>
+</div>
+<script>
+const canvas={}; // no canvas needed
+const beliefs = [
+  {name:"Ravens are black", f:0.9, c:0.4, baseF:0.9},
+  {name:"Swans are white", f:0.85, c:0.3, baseF:0.85},
+  {name:"Coin flips are 50/50", f:0.5, c:0.7, baseF:0.5},
+  {name:"Pineapple on pizza", f:0.3, c:0.2, baseF:0.3},
+  {name:"AI will surpass humans", f:0.6, c:0.15, baseF:0.6},
+  {name:"Earth is round", f:0.99, c:0.9, baseF:0.99},
+  {name:"Cats are liquid", f:0.15, c:0.1, baseF:0.15},
+  {name:"Dreams predict future", f:0.1, c:0.05, baseF:0.1}
+];
+let cash = 1000;
+let round = 1;
+let holdings = {}; // name -> {shares, buyPrice}
+let logEntries = [];
+
+function price(b) { return Math.round((b.f * b.c + 0.5 * (1 - b.c)) * 100); }
+function volatility(b) { return 1 - b.c; }
+
+function colorFor(f) {
+  if (f > 0.65) return '#4ade80';
+  if (f < 0.35) return '#f87171';
+  return '#fbbf24';
+}
+
+function nalRevise(b, positive) {
+  const w = b.c / (1 - b.c + 0.001);
+  const wNew = 1;
+  const fNew = positive ? (w * b.f + wNew) / (w + wNew) : (w * b.f) / (w + wNew);
+  const cNew = (w + wNew) / (w + wNew + 1);
+  b.f = Math.max(0.01, Math.min(0.99, fNew));
+  b.c = Math.max(0.01, Math.min(0.95, cNew));
+}
+
+function render() {
+  document.getElementById('cash').textContent = '$' + cash;
+  document.getElementById('round').textContent = round + '/10';
+  
+  let holdingsCount = 0;
+  let holdingsValue = 0;
+  for (const name in holdings) {
+    holdingsCount += holdings[name].shares;
+    const b = beliefs.find(x => x.name === name);
+    if (b) holdingsValue += holdings[name].shares * price(b);
+  }
+  document.getElementById('holdings-count').textContent = holdingsCount;
+  document.getElementById('networth').textContent = '$' + (cash + holdingsValue);
+  
+  const market = document.getElementById('market');
+  market.innerHTML = '';
+  beliefs.forEach(b => {
+    const p = price(b);
+    const held = holdings[b.name] ? holdings[b.name].shares : 0;
+    const col = colorFor(b.f);
+    const opacity = 0.3 + b.c * 0.7;
+    
+    const row = document.createElement('div');
+    row.className = 'belief-row';
+    row.innerHTML = `
+      <div class="belief-name">${b.name}</div>
+      <div class="belief-tv">f=${b.f.toFixed(2)} c=${b.c.toFixed(2)}</div>
+      <div class="belief-meter"><div class="belief-meter-fill" style="width:${b.f*100}%;background:${col};opacity:${opacity}"></div></div>
+      <div class="belief-price" style="color:${col}">$${p}</div>
+      <div class="belief-actions">
+        <button class="btn" onclick="buy('${b.name}')" ${cash < p ? 'disabled' : ''}>Buy</button>
+        <button class="btn btn-evidence" onclick="gather('${b.name}', true)" ${cash < 10 ? 'disabled' : ''}>+Ev</button>
+        <button class="btn btn-evidence" onclick="gather('${b.name}', false)" ${cash < 10 ? 'disabled' : ''}>−Ev</button>
+        <button class="btn btn-sell" onclick="sell('${b.name}')" ${held === 0 ? 'disabled' : ''}>Sell</button>
+      </div>
+    `;
+    market.appendChild(row);
+  });
+  
+  const logDiv = document.getElementById('log');
+  logDiv.innerHTML = logEntries.slice(-8).map(e => `<div class="${e.type}">${e.text}</div>`).join('');
+}
+
+function buy(name) {
+  const b = beliefs.find(x => x.name === name);
+  const p = price(b);
+  if (cash >= p) {
+    cash -= p;
+    if (!holdings[name]) holdings[name] = {shares: 0, buyPrice: p};
+    holdings[name].shares++;
+    holdings[name].buyPrice = (holdings[name].buyPrice * (holdings[name].shares - 1) + p) / holdings[name].shares;
+    log(`Bought 1 "${name}" at $${p}`, 'info');
+    render();
+  }
+}
+
+function sell(name) {
+  const b = beliefs.find(x => x.name === name);
+  if (holdings[name] && holdings[name].shares > 0) {
+    const p = price(b);
+    const profit = p - holdings[name].buyPrice;
+    cash += p;
+    holdings[name].shares--;
+    if (holdings[name].shares === 0) delete holdings[name];
+    log(`Sold 1 "${name}" at $${p} (${profit >= 0 ? '+' : ''}$${profit.toFixed(0)})`, profit >= 0 ? 'profit' : 'loss');
+    render();
+  }
+}
+
+function gather(name, positive) {
+  if (cash < 10) return;
+  const b = beliefs.find(x => x.name === name);
+  cash -= 10;
+  nalRevise(b, positive);
+  log(`Gathered ${positive ? '+' : '−'} evidence for "${name}" → f=${b.f.toFixed(2)} c=${b.c.toFixed(2)}`, 'info');
+  render();
+}
+
+function log(text, type) {
+  logEntries.push({text, type});
+}
+
+function nextRound() {
+  round++;
+  if (round > 10) {
+    let networth = cash;
+    for (const name in holdings) {
+      const b = beliefs.find(x => x.name === name);
+      if (b) networth += holdings[name].shares * price(b);
+    }
+    log(`GAME OVER! Final net worth: $${networth}`, networth >= 1000 ? 'profit' : 'loss');
+    render();
+    document.getElementById('nextRound').textContent = networth >= 1500 ? '🎉 You beat the market!' : networth >= 1000 ? '📈 Broke even' : '📉 Market losses';
+    document.getElementById('nextRound').disabled = true;
+    return;
+  }
+  // Random market events - beliefs drift
+  beliefs.forEach(b => {
+    const vol = volatility(b);
+    b.f += (Math.random() - 0.5) * vol * 0.15;
+    b.f = Math.max(0.01, Math.min(0.99, b.f));
+    // Evidence naturally accumulates slightly
+    if (Math.random() < 0.3) {
+      const positive = Math.random() < b.baseF;
+      nalRevise(b, positive);
+    }
+  });
+  log(`Round ${round} — Market shifted. New prices posted.`, 'info');
+  render();
+}
+
+document.getElementById('nextRound').onclick = nextRound;
+log('Welcome to NAL Belief Market! Buy beliefs, gather evidence, sell high.', 'info');
+render();
+</script>
+</body>
+</html>

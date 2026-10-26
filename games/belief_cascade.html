@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belief Cascade — NAL Inference Puzzle</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a1a; color: #c8c8e8; font-family: 'Georgia', serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+h1 { color: #7c5cff; margin: 20px 0 5px; font-size: 2em; text-align: center; }
+.subtitle { color: #888; margin-bottom: 20px; font-size: 0.9em; }
+#game-container { background: #11112a; border: 2px solid #333; border-radius: 12px; padding: 30px; max-width: 700px; width: 90%; }
+#level-info { display: flex; justify-content: space-between; margin-bottom: 15px; color: #7c5cff; font-size: 1.1em; }
+#timer { font-weight: bold; }
+#premises { background: #1a1a3a; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+.premise { padding: 8px; margin: 4px 0; background: #22224a; border-radius: 4px; border-left: 3px solid #7c5cff; }
+#conclusion-box { background: #2a1a3a; border-radius: 8px; padding: 15px; margin-bottom: 15px; text-align: center; }
+#conclusion-box .label { color: #ff5c8a; font-size: 0.85em; margin-bottom: 5px; }
+#conclusion-box .conclusion { font-size: 1.15em; color: #fff; }
+#rules { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.rule-btn { background: #1a1a3a; border: 2px solid #444; color: #c8c8e8; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.rule-btn:hover { border-color: #7c5cff; background: #22224a; }
+.rule-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#feedback { text-align: center; min-height: 40px; font-size: 1em; margin-bottom: 10px; }
+.correct { color: #5cff9c; }
+.wrong { color: #ff5c5c; }
+#next-btn { display: block; margin: 0 auto; background: #7c5cff; color: #fff; border: none; padding: 10px 30px; border-radius: 8px; font-size: 1.1em; cursor: pointer; }
+#next-btn:hover { background: #9c7cff; }
+#next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#score-display { color: #5cff9c; font-weight: bold; }
+.stv { color: #ffaa5c; font-size: 0.85em; }
+#instructions { margin-top: 15px; color: #888; font-size: 0.85em; text-align: center; }
+#win-screen { display: none; text-align: center; }
+#win-screen h2 { color: #5cff9c; font-size: 2em; margin-bottom: 15px; }
+</style>
+</head>
+<body>
+<h1>🌊 Belief Cascade</h1>
+<p class="subtitle">Chain NAL inference rules to derive conclusions from premises</p>
+<div id="game-container">
+<div id="level-info"><span id="level-label">Level 1 / 6</span><span id="timer">⏱ 30s</span></div>
+<div id="premises" id="premises-box"></div>
+<div id="conclusion-box"><div class="label">DERIVE THIS CONCLUSION:</div><div class="conclusion" id="conclusion"></div></div>
+<div id="rules"></div>
+<div id="feedback"></div>
+<button id="next-btn" disabled>Next Level →</button>
+<div id="instructions">Select the correct NAL inference rule that derives the conclusion from the premises.</div>
+<div id="win-screen"><h2>🎉 Master of Inference!</h2><p>You completed all levels!</p><p class="stv" id="final-score"></p><br><button onclick="location.reload()" class="rule-btn">Play Again</button></div>
+</div>
+<script>
+const levels = [
+  { premises: ["(--> raven bird) <1.0, 0.9>", "(--> bird animal) <1.0, 0.9>"],
+    conclusion: "(--> raven animal)",
+    answer: "Deduction (transitive inheritance)",
+    rules: ["Deduction (transitive inheritance)", "Induction (abductive guess)", "Revision (evidence merge)", "Comparison"] },
+  { premises: ["(--> swan bird) <1.0, 0.9>", "(--> swan ([] white)) <1.0, 0.7>"],
+    conclusion: "(--> bird ([] white)) <1.0, 0.63>",
+    answer: "Induction (abductive guess)",
+    rules: ["Deduction (transitive inheritance)", "Induction (abductive guess)", "Revision (evidence merge)", "Comparison"] },
+  { premises: ["(--> sky ([] blue)) <1.0, 0.8>", "(--> sky ([] blue)) <0.0, 0.6>"],
+    conclusion: "(--> sky ([] blue)) <0.64, 0.92>",
+    answer: "Revision (evidence merge)",
+    rules: ["Deduction (transitive inheritance)", "Induction (abductive guess)", "Revision (evidence merge)", "Comparison"] },
+  { premises: ["(--> robin bird) <1.0, 0.9>", "(--> penguin bird) <1.0, 0.9>"],
+    conclusion: "robin and penguin are both birds (similarity)",
+    answer: "Comparison",
+    rules: ["Deduction (transitive inheritance)", "Induction (abductive guess)", "Revision (evidence merge)", "Comparison"] },
+  { premises: ["(==> (--> $1 ([] smokes)) (--> $1 ([] cancerous))) <1.0, 0.7>", "(--> Anna ([] smokes)) <1.0, 0.9>"],
+    conclusion: "(--> Anna ([] cancerous)) <1.0, 0.63>",
+    answer: "Modus Ponens (implication application)",
+    rules: ["Modus Ponens (implication application)", "Induction (abductive guess)", "Revision (evidence merge)", "Comparison"] },
+  { premises: ["(--> shark ([] dangerous)) <1.0, 0.8>", "(--> shark ([] dangerous)) <1.0, 0.5>", "(--> shark ([] dangerous)) <0.0, 0.3>"],
+    conclusion: "(--> shark ([] dangerous)) <0.83, 0.93>",
+    answer: "Revision (multi-evidence merge)",
+    rules: ["Deduction (transitive inheritance)", "Revision (multi-evidence merge)", "Induction (abductive guess)", "Modus Ponens (implication application)"] }
+];
+let currentLevel = 0, score = 0, timeLeft = 30, timerInterval;
+function renderLevel() {
+  if (currentLevel >= levels.length) { showWin(); return; }
+  const lv = levels[currentLevel];
+  clearInterval(timerInterval); timeLeft = 30;
+  document.getElementById('level-label').textContent = `Level ${currentLevel+1} / ${levels.length}`;
+  document.getElementById('feedback').textContent = ''; document.getElementById('feedback').className = '';
+  document.getElementById('next-btn').disabled = true;
+  const premBox = document.getElementById('premises');
+  premBox.innerHTML = '<div style="color:#7c5cff;font-size:0.85em;margin-bottom:8px">PREMISES:</div>';
+  lv.premises.forEach(p => { const d = document.createElement('div'); d.className = 'premise'; d.textContent = p; premBox.appendChild(d); });
+  document.getElementById('conclusion').textContent = lv.conclusion;
+  const rulesBox = document.getElementById('rules'); rulesBox.innerHTML = '';
+  lv.rules.forEach(r => { const b = document.createElement('button'); b.className = 'rule-btn'; b.textContent = r; b.onclick = () => checkAnswer(b, r); rulesBox.appendChild(b); });
+  timerInterval = setInterval(() => { timeLeft--; document.getElementById('timer').textContent = `⏱ ${timeLeft}s`; if (timeLeft <= 0) { clearInterval(timerInterval); document.querySelectorAll('.rule-btn').forEach(b => b.disabled = true); document.getElementById('feedback').textContent = '⏰ Time up! Click Next to retry.'; document.getElementById('feedback').className = 'wrong'; document.getElementById('next-btn').disabled = false; } }, 1000);
+}
+function checkAnswer(btn, rule) {
+  clearInterval(timerInterval);
+  const lv = levels[currentLevel];
+  document.querySelectorAll('.rule-btn').forEach(b => b.disabled = true);
+  if (rule === lv.answer) { const bonus = Math.ceil(timeLeft / 3); score += 10 + bonus; const fb = document.getElementById('feedback'); fb.textContent = `✓ Correct! +${10+bonus} points (${bonus} time bonus)`; fb.className = 'correct'; } else { const fb = document.getElementById('feedback'); fb.textContent = `✗ Wrong. Correct answer: ${lv.answer}`; fb.className = 'wrong'; }
+  document.getElementById('next-btn').disabled = false;
+}
+document.getElementById('next-btn').onclick = () => { currentLevel++; renderLevel(); };
+function showWin() {
+  document.getElementById('level-info').style.display = 'none';
+  document.getElementById('premises').style.display = 'none';
+  document.getElementById('conclusion-box').style.display = 'none';
+  document.getElementById('rules').style.display = 'none';
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('instructions').style.display = 'none';
+  const ws = document.getElementById('win-screen'); ws.style.display = 'block';
+  document.getElementById('final-score').textContent = `Final Score: ${score} points`;
+}
+renderLevel();
+</script>
+</body>
+</html>

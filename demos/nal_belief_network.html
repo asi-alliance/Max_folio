@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Belief Network Visualizer — Interactive Demo by Iter" />
+<meta property="og:description" content="Create beliefs, add evidence, and watch a NAL belief network revise in real-time. See transitive closure, contradiction resolution, and confidence propagation." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_belief_network.html" />
+<title>NAL Belief Network Visualizer | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:1.5rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:960px;width:100%}
+h1{font-size:1.6rem;margin-bottom:.3rem;background:linear-gradient(135deg,#f0883e,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1rem;font-size:.85rem}
+.back-link{margin-bottom:.8rem;display:inline-block}
+.layout{display:grid;grid-template-columns:1fr 280px;gap:1rem}
+@media(max-width:768px){.layout{grid-template-columns:1fr}}
+canvas{background:#161b22;border:1px solid #30363d;border-radius:10px;width:100%;display:block;cursor:crosshair}
+.side-panel{display:flex;flex-direction:column;gap:.8rem}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1rem}
+.panel h3{font-size:.85rem;color:#58a6ff;margin-bottom:.5rem}
+label{display:block;font-size:.75rem;color:#8b949e;margin-bottom:.3rem}
+input[type=text]{width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.4rem;border-radius:6px;font-size:.85rem;margin-bottom:.5rem}
+input[type=range]{width:100%;margin-bottom:.5rem;accent-color:#f0883e}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap}
+button{background:#238636;color:#fff;border:none;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+button.danger{background:#da3633}
+button.secondary{background:#30363d;color:#c9d1d9}
+.node-list{font-size:.75rem;color:#8b949e;max-height:180px;overflow-y:auto}
+.node-list div{padding:3px 0;border-bottom:1px solid #21262d}
+.instructions{font-size:.8rem;color:#8b949e;line-height:1.6;margin-top:1rem}
+.instructions strong{color:#c9d1d9}
+.stat{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:.3rem}
+.stat-val{color:#e0d5f0;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Belief Network Visualizer</h1>
+<p class="subtitle">Create beliefs, add evidence, watch truth revision propagate through the network in real time.</p>
+<div class="layout">
+<div><canvas id="canvas" width="660" height="500"></canvas>
+<div class="instructions">
+<strong>Instructions:</strong> Click empty space to create a belief node. Click a node to select it, then use the sliders to set its truth value. Drag from one node to another to create an inference link (implication). Click "Add Evidence" to inject positive or negative evidence at the selected node — watch confidence propagate through connected beliefs. The NAL revision formula updates all connected nodes: <code>w=c/(1-c)</code>, <code>f_new=(w1*f1+w2*f2)/(w1+w2)</code>, <code>c_new=(w1+w2)/(w1+w2+1)</code>.
+</div></div>
+<div class="side-panel">
+<div class="panel"><h3>Selected Node</h3><div id="node-info" style="font-size:.8rem;color:#8b949e">No node selected. Click canvas to create.</div>
+<label>Frequency (f)</label><input type="range" id="f-slider" min="0" max="100" value="50">
+<label>Confidence (c)</label><input type="range" id="c-slider" min="0" max="100" value="50">
+<div class="btn-row" style="margin-top:.5rem"><button id="add-pos">+ Positive Evidence</button><button id="add-neg" class="danger">− Negative Evidence</button></div>
+<div class="btn-row"><button id="delete-node" class="secondary">Delete Node</button></div></div>
+<div class="panel"><h3>Add Named Belief</h3><input type="text" id="belief-name" placeholder="e.g. raven is bird">
+<div class="btn-row"><button id="add-belief">Add Belief</button><button id="link-mode" class="secondary">Link Mode</button></div></div>
+<div class="panel"><h3>Network Stats</h3>
+<div class="stat"><span>Nodes:</span><span class="stat-val" id="stat-nodes">0</span></div>
+<div class="stat"><span>Links:</span><span class="stat-val" id="stat-links">0</span></div>
+<div class="stat"><span>Avg Confidence:</span><span class="stat-val" id="stat-conf">0.00</span></div>
+<div class="stat"><span>Contradictions:</span><span class="stat-val" id="stat-contradictions">0</span></div></div>
+<div class="panel"><h3>Belief Nodes</h3><div class="node-list" id="node-list"></div></div>
+</div></div></div>
+<script>
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height;
+let nodes=[],links=[],selectedNode=null,linkMode=false,dragStart=null,mouseX=0,mouseY=0;
+let nextId=0;
+function tc(f,c){const a=0.2+c*0.8;if(f>0.66)return`rgba(52,211,153,${a})`;if(f<0.33)return`rgba(248,113,113,${a})`;return`rgba(167,139,250,${a})`;}
+function nalRevise(a,b){const w1=a.c/(1-a.c+0.001),w2=b.c/(1-b.c+0.001);return{f:(w1*a.f+w2*b.f)/(w1+w2),c:(w1+w2)/(w1+w2+1)};}
+function addNode(x,y,name){const n={id:nextId++,x,y,name:name||`belief_${nextId}`,f:0.5,c:0.5,r:22};nodes.push(n);updateStats();return n;}
+function addLink(from,to){if(from===to)return;if(links.some(l=>l.from===from&&l.to===to))return;links.push({from,to});updateStats();}
+function findNodeAt(x,y){for(let i=nodes.length-1;i>=0;i--){const n=nodes[i];if(Math.hypot(n.x-x,n.y-y)<n.r)return n;}return null;}
+function propagate(node,visited){if(visited.has(node.id))return;visited.add(node.id);for(const l of links){let target=null;if(l.from===node.id)target=nodes.find(n=>n.id===l.to);if(target&&!visited.has(target.id)){const revised=nalRevise(target,{f:node.f,c:node.c*0.4});target.f=revised.f;target.c=Math.min(0.99,revised.c);propagate(target,visited);}}updateStats();}
+function countContradictions(){let count=0;for(const l of links){const from=nodes.find(n=>n.id===l.from),to=nodes.find(n=>n.id===l.to);if(from&&to&&from.c>0.7&&to.c>0.7&&Math.abs(from.f-to.f)>0.6)count++;}return count;}
+function updateStats(){document.getElementById('stat-nodes').textContent=nodes.length;document.getElementById('stat-links').textContent=links.length;const avgC=nodes.length>0?nodes.reduce((s,n)=>s+n.c,0)/nodes.length:0;document.getElementById('stat-conf').textContent=avgC.toFixed(2);document.getElementById('stat-contradictions').textContent=countContradictions();const list=document.getElementById('node-list');list.innerHTML='';for(const n of nodes){const d=document.createElement('div');const col=n.f>0.66?'#34d399':n.f<0.33?'#f87171':'#a78bfa';d.innerHTML=`<span class="node-id" style="color:${col}">●</span> ${n.name} <span style="color:#666">f=${n.f.toFixed(2)} c=${n.c.toFixed(2)}</span>`;list.appendChild(d);}}
+function draw(){ctx.fillStyle='#161b22';ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(48,54,61,0.2)';for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+for(const l of links){const from=nodes.find(n=>n.id===l.from),to=nodes.find(n=>n.id===l.to);if(!from||!to)continue;const isContra=from.c>0.7&&to.c>0.7&&Math.abs(from.f-to.f)>0.6;ctx.strokeStyle=isContra?'rgba(248,113,113,0.5)':'rgba(136,86,167,0.25)';ctx.lineWidth=1+Math.min(from.c,to.c)*3;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();if(isContra){ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(248,113,113,0.3)';ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();ctx.setLineDash([]);}ctx.fillStyle='rgba(136,86,167,0.4)';const mx=(from.x+to.x)/2,my=(from.y+to.y)/2;ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('→',mx,my);}
+if(dragStart&&linkMode){ctx.strokeStyle='rgba(88,166,255,0.4)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(dragStart.x,dragStart.y);ctx.lineTo(mouseX,mouseY);ctx.stroke();ctx.setLineDash([]);}
+for(const n of nodes){ctx.fillStyle=tc(n.f,n.c);ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=n===selectedNode?'#58a6ff':'rgba(255,255,255,0.15)';ctx.lineWidth=n===selectedNode?3:1;ctx.stroke();ctx.fillStyle='#e6edf3';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const label=n.name.length>14?n.name.slice(0,12)+'..':n.name;ctx.fillText(label,n.x,n.y);ctx.font='8px monospace';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(`f${n.f.toFixed(2)} c${n.c.toFixed(2)}`,n.x,n.y+n.r+10);}
+requestAnimationFrame(draw);}
+canvas.addEventListener('mousedown',e=>{const rect=canvas.getBoundingClientRect();const x=(e.clientX-rect.left)*(W/rect.width),y=(e.clientY-rect.top)*(H/rect.height);const node=findNodeAt(x,y);
+if(linkMode){if(node){if(dragStart&&dragStart!==node){addLink(dragStart.id,node.id);dragStart=null;}else{dragStart=node;}}else{dragStart=null;}}
+else{if(node){selectedNode=node;document.getElementById('f-slider').value=Math.round(node.f*100);document.getElementById('c-slider').value=Math.round(node.c*100);document.getElementById('node-info').innerHTML=`<strong style="color:#58a6ff">${node.name}</strong><br>f=${node.f.toFixed(3)} c=${node.c.toFixed(3)}`;}else{const n=addNode(x,y);selectedNode=n;document.getElementById('node-info').innerHTML=`<strong style="color:#58a6ff">${n.name}</strong><br>f=${n.f.toFixed(3)} c=${n.c.toFixed(3)}`;}}});
+canvas.addEventListener('mousemove',e=>{const rect=canvas.getBoundingClientRect();mouseX=(e.clientX-rect.left)*(W/rect.width);mouseY=(e.clientY-rect.top)*(H/rect.height);});
+document.getElementById('f-slider').addEventListener('input',e=>{if(selectedNode){selectedNode.f=parseInt(e.target.value)/100;document.getElementById('node-info').innerHTML=`<strong style="color:#58a6ff">${selectedNode.name}</strong><br>f=${selectedNode.f.toFixed(3)} c=${selectedNode.c.toFixed(3)}`;updateStats();}});
+document.getElementById('c-slider').addEventListener('input',e=>{if(selectedNode){selectedNode.c=parseInt(e.target.value)/100;document.getElementById('node-info').innerHTML=`<strong style="color:#58a6ff">${selectedNode.name}</strong><br>f=${selectedNode.f.toFixed(3)} c=${selectedNode.c.toFixed(3)}`;updateStats();}});
+document.getElementById('add-pos').addEventListener('click',()=>{if(!selectedNode)return;const revised=nalRevise(selectedNode,{f:0.95,c:0.9});selectedNode.f=revised.f;selectedNode.c=revised.c;document.getElementById('f-slider').value=Math.round(selectedNode.f*100);document.getElementById('c-slider').value=Math.round(selectedNode.c*100);propagate(selectedNode,new Set());});
+document.getElementById('add-neg').addEventListener('click',()=>{if(!selectedNode)return;const revised=nalRevise(selectedNode,{f:0.05,c:0.9});selectedNode.f=revised.f;selectedNode.c=revised.c;document.getElementById('f-slider').value=Math.round(selectedNode.f*100);document.getElementById('c-slider').value=Math.round(selectedNode.c*100);propagate(selectedNode,new Set());});
+document.getElementById('delete-node').addEventListener('click',()=>{if(!selectedNode)return;nodes=nodes.filter(n=>n!==selectedNode);links=links.filter(l=>l.from!==selectedNode.id&&l.to!==selectedNode.id);selectedNode=null;document.getElementById('node-info').textContent='No node selected.';updateStats();});
+document.getElementById('add-belief').addEventListener('click',()=>{const name=document.getElementById('belief-name').value.trim();if(!name)return;const n=addNode(100+Math.random()*(W-200),100+Math.random()*(H-200),name);document.getElementById('belief-name').value='';selectedNode=n;document.getElementById('node-info').innerHTML=`<strong style="color:#58a6ff">${n.name}</strong><br>f=${n.f.toFixed(3)} c=${n.c.toFixed(3)}`;document.getElementById('f-slider').value=50;document.getElementById('c-slider').value=50;});
+document.getElementById('link-mode').addEventListener('click',e=>{linkMode=!linkMode;e.target.style.background=linkMode?'#1f6feb':'#30363d';e.target.textContent=linkMode?'Link Mode ON':'Link Mode';});
+// Seed with example beliefs
+const raven=addNode(200,150,'raven→bird');raven.f=0.9;raven.c=0.85;
+const bird=addNode(400,100,'bird→flies');bird.f=0.8;bird.c=0.7;
+const penguin=addNode(500,250,'penguin→bird');penguin.f=0.9;penguin.c=0.8;
+const ostrich=addNode(300,350,'ostrich→bird');ostrich.f=0.85;ostrich.c=0.75;
+addLink(raven.id,bird.id);addLink(penguin.id,bird.id);addLink(ostrich.id,bird.id);
+updateStats();draw();
+</script>
+</body>
+</html>

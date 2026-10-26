@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORBITAL — Gravity Slingshot Puzzle</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#0d1525 100%);color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+nav{background:rgba(136,86,167,0.12);padding:10px 24px;display:flex;gap:20px;flex-wrap:wrap;width:100%;border-bottom:1px solid rgba(136,86,167,0.2)}
+nav a{color:#a78bfa;text-decoration:none;font-weight:600}
+nav a:hover{color:#c4b5fd}
+h1{color:#58a6ff;margin:16px 0 4px;text-align:center}
+.subtitle{color:#8b949e;margin-bottom:12px;text-align:center}
+#wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:900px;margin:0 16px}
+#cw{position:relative}
+canvas{border:2px solid rgba(88,166,255,0.3);border-radius:12px;background:#000;touch-action:none}
+#hud{min-width:180px;background:rgba(88,166,255,0.06);border:1px solid rgba(88,166,255,0.15);border-radius:12px;padding:18px}
+#hud h2{color:#58a6ff;font-size:1em;margin-bottom:10px}
+.stat{margin-bottom:8px}
+.stat-l{color:#8b949e;font-size:0.7em;text-transform:uppercase;letter-spacing:1px}
+.stat-v{color:#e0d5f0;font-size:1.3em;font-weight:bold}
+#start{display:block;margin:16px auto;padding:10px 28px;font-size:1em;background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.4);border-radius:8px;cursor:pointer;font-family:inherit}
+#start:hover{background:rgba(88,166,255,0.25)}
+#info{max-width:500px;margin:12px 16px;color:#8b949e;font-size:0.8em;line-height:1.5;text-align:center}
+#info strong{color:#58a6ff}
+#share{display:none;margin:12px auto;padding:8px 20px;font-size:0.9em;background:rgba(63,185,80,0.15);color:#3fb950;border:1px solid rgba(63,185,80,0.3);border-radius:8px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<nav><a href="../">🏠 Home</a><a href="./">🎮 Games</a><a href="../articles/">📝 Articles</a></nav>
+<h1>🚀 ORBITAL</h1>
+<p class="subtitle">Gravity slingshot puzzle — bend your trajectory to reach the gate!</p>
+<div id="wrap"><div id="cw">
+<canvas id="cv" width="600" height="500"></canvas>
+<button id="start">Start Game</button>
+</div>
+<div id="hud">
+<h2>📊 Mission</h2>
+<div class="stat"><span class="stat-l">Level</span><br><span class="stat-v" id="level">1</span></div>
+<div class="stat"><span class="stat-l">Score</span><br><span class="stat-v" id="score">0</span></div>
+<div class="stat"><span class="stat-l">Shots</span><br><span class="stat-v" id="shots">0</span></div>
+<div class="stat"><span class="stat-l">Best</span><br><span class="stat-v" id="best">0</span></div>
+<div class="stat"><span class="stat-l">Status</span><br><span class="stat-v" id="status" style="font-size:0.9em">Ready</span></div>
+</div></div>
+<div id="info"><strong>Drag</strong> from the launch point to aim. Release to fire. Gravity wells (blue circles) bend your path. Avoid the <strong>wall</strong> and reach the <strong>gate</strong> (green circle). Use gravity to curve around obstacles!</div>
+<button id="share">📋 Copy Score</button>
+<script>
+(function(){
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const W=600,H=500;
+let state='idle',score=0,level=1,shots=0,best=0;
+let projectile=null,trail=[],particles=[],stars=[];
+let dragging=false,mx=0,my=0;
+best=parseInt(localStorage.getItem('orbital_best')||'0');
+document.getElementById('best').textContent=best;
+// Star field
+for(let i=0;i<60;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5,b:0.3+Math.random()*0.5});
+let launchPt={x:60,y:H-80};
+let wells=[],gate={},wall={};
+const LEVELS=[
+{wells:[{x:300,y:250,r:40,g:800}],gate:{x:540,y:80,r:25},wall:{x:200,y:100,w:12,h:300}},
+{wells:[{x:200,y:200,r:35,g:700},{x:420,y:300,r:35,g:700}],gate:{x:550,y:250,r:25},wall:{x:300,y:60,w:12,h:280}},
+{wells:[{x:300,y:180,r:30,g:600},{x:200,y:350,r:35,g:800},{x:450,y:350,r:35,g:800}],gate:{x:550,y:120,r:25},wall:{x:350,y:60,w:12,h:200}},
+{wells:[{x:250,y:250,r:40,g:900},{x:420,y:150,r:30,g:500}],gate:{x:540,y:420,r:25},wall:{x:180,y:200,w:12,h:250}},
+{wells:[{x:180,y:300,r:35,g:700},{x:380,y:200,r:40,g:900},{x:480,y:380,r:30,g:500}],gate:{x:550,y:60,r:20},wall:{x:280,y:100,w:12,h:300}},
+];
+function loadLevel(n){
+const lv=LEVELS[(n-1)%LEVELS.length];
+wells=lv.wells.map(w=>({...w}));
+gate={...lv.gate};
+wall={...lv.wall};
+trail=[];projectile=null;
+document.getElementById('level').textContent=level;
+document.getElementById('status').textContent='Aim & Fire';
+}
+function emit(x,y,r,g,b,n){
+for(let i=0;i<(n||15);i++)particles.push({x,y,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*10,life:1,r,g,b});
+}
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2);}
+function startGame(){
+state='aiming';score=0;level=1;shots=0;
+loadLevel(1);updateHUD();
+document.getElementById('start').style.display='none';
+document.getElementById('share').style.display='none';
+}
+function fire(dx,dy){
+const len=Math.sqrt(dx*dx+dy*dy);
+if(len<5)return;
+const power=Math.min(len/3,80);
+projectile={x:launchPt.x,y:launchPt.y,vx:(dx/len)*power*0.8,vy:(dy/len)*power*0.8};
+state='flying';shots++;
+document.getElementById('status').textContent='Flying...';
+updateHUD();
+}
+function step(dt){
+if(state!=='flying'||!projectile)return;
+const dts=dt/16;
+// Gravity from wells
+for(let w of wells){
+const d=dist(projectile.x,projectile.y,w.x,w.y);
+if(d>5){
+const f=w.g/(d*d);
+const ax=(w.x-projectile.x)/d*f;
+const ay=(w.y-projectile.y)/d*f;
+projectile.vx+=ax*dts;
+projectile.vy+=ay*dts;
+}
+}
+projectile.x+=projectile.vx*dts;
+projectile.y+=projectile.vy*dts;
+trail.push({x:projectile.x,y:projectile.y});
+if(trail.length>80)trail.shift();
+// Wall collision
+if(projectile.x>wall.x&&projectile.x<wall.x+wall.w&&projectile.y>wall.y&&projectile.y<wall.y+wall.h){
+emit(projectile.x,projectile.y,255,100,100,20);
+state='aiming';projectile=null;
+document.getElementById('status').textContent='Hit wall! Retry';
+return;
+}
+// Gate collision
+if(dist(projectile.x,projectile.y,gate.x,gate.y)<gate.r){
+emit(gate.x,gate.y,80,255,120,30);
+score+=10;level++;
+if(score>best){best=score;localStorage.setItem('orbital_best',best);}
+state='aiming';projectile=null;
+loadLevel(level);updateHUD();
+document.getElementById('status').textContent='Gate reached!';
+setTimeout(()=>{if(state==='aiming')document.getElementById('status').textContent='Aim & Fire';},1500);
+return;
+}
+// Out of bounds
+if(projectile.x<-10||projectile.x>W+10||projectile.y<-10||projectile.y>H+10){
+emit(projectile.x,projectile.y,255,150,50,15);
+state='aiming';projectile=null;
+document.getElementById('status').textContent='Lost in space! Retry';
+}
+}
+function updateParticles(dt){
+for(let p of particles){p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.life-=dt/800;}
+particles=particles.filter(p=>p.life>0);
+}
+function updateHUD(){
+document.getElementById('score').textContent=score;
+document.getElementById('shots').textContent=shots;
+document.getElementById('best').textContent=best;
+document.getElementById('level').textContent=level;
+}
+function render(){
+ctx.clearRect(0,0,W,H);
+ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+// Stars
+for(let s of stars){ctx.globalAlpha=s.b;ctx.fillStyle='#fff';ctx.fillRect(s.x,s.y,s.r,s.r);}
+ctx.globalAlpha=1;
+if(state==='idle'){
+ctx.fillStyle='#58a6ff';ctx.font='28px monospace';ctx.textAlign='center';
+ctx.fillText('ORBITAL',W/2,H/2-20);
+ctx.fillStyle='#8b949e';ctx.font='14px sans-serif';
+ctx.fillText('Gravity slingshot puzzle',W/2,H/2+15);
+return;
+}
+// Wells
+for(let w of wells){
+ctx.strokeStyle='rgba(88,166,255,0.3)';ctx.lineWidth=2;
+ctx.beginPath();ctx.arc(w.x,w.y,w.r,0,7);ctx.stroke();
+ctx.fillStyle='rgba(88,166,255,0.08)';
+ctx.beginPath();ctx.arc(w.x,w.y,w.r,0,7);ctx.fill();
+ctx.fillStyle='rgba(88,166,255,0.6)';
+ctx.beginPath();ctx.arc(w.x,w.y,4,0,7);ctx.fill();
+}
+// Wall
+ctx.fillStyle='rgba(255,100,100,0.4)';ctx.strokeStyle='rgba(255,100,100,0.7)';ctx.lineWidth=1;
+ctx.fillRect(wall.x,wall.y,wall.w,wall.h);ctx.strokeRect(wall.x,wall.y,wall.w,wall.h);
+// Gate
+ctx.strokeStyle='#39ff14';ctx.lineWidth=2;ctx.shadowColor='#39ff14';ctx.shadowBlur=12;
+ctx.beginPath();ctx.arc(gate.x,gate.y,gate.r,0,7);ctx.stroke();
+ctx.fillStyle='rgba(57,255,20,0.1)';ctx.fill();
+ctx.shadowBlur=0;
+ctx.fillStyle='#39ff14';ctx.font='11px sans-serif';ctx.textAlign='center';
+ctx.fillText('GATE',gate.x,gate.y+gate.r+15);
+// Launch point
+ctx.fillStyle='#fbbf24';ctx.shadowColor='#fbbf24';ctx.shadowBlur=10;
+ctx.beginPath();ctx.arc(launchPt.x,launchPt.y,8,0,7);ctx.fill();
+ctx.shadowBlur=0;
+ctx.fillStyle='#fbbf24';ctx.font='10px sans-serif';
+ctx.fillText('LAUNCH',launchPt.x,launchPt.y+22);
+// Trail
+for(let i=0;i<trail.length;i++){
+const t=trail[i];const a=i/trail.length*0.6;
+ctx.fillStyle=`rgba(255,200,50,${a})`;
+ctx.fillRect(t.x-1,t.y-1,2,2);
+}
+// Projectile
+if(projectile){
+ctx.fillStyle='#fff';ctx.shadowColor='#ffcc33';ctx.shadowBlur=12;
+ctx.beginPath();ctx.arc(projectile.x,projectile.y,5,0,7);ctx.fill();
+ctx.shadowBlur=0;
+}
+// Aim line
+if(state==='aiming'&&dragging){
+const dx=mx-launchPt.x,dy=my-launchPt.y;
+const len=Math.sqrt(dx*dx+dy*dy);
+if(len>5){
+ctx.strokeStyle='rgba(255,200,50,0.5)';ctx.lineWidth=2;
+ctx.setLineDash([5,5]);
+ctx.beginPath();ctx.moveTo(launchPt.x,launchPt.y);
+ctx.lineTo(launchPt.x+dx,launchPt.y+dy);ctx.stroke();
+ctx.setLineDash([]);
+const power=Math.min(len/80,1);
+ctx.fillStyle=power>0.7?'#f87171':power>0.4?'#fbbf24':'#39ff14';
+ctx.font='12px sans-serif';ctx.textAlign='center';
+ctx.fillText(Math.round(power*100)+'%',launchPt.x+dx/2,launchPt.y+dy/2-10);
+}
+}
+// Particles
+for(let p of particles){
+ctx.globalAlpha=p.life;
+ctx.fillStyle=`rgb(${p.r},${p.g},${p.b})`;
+ctx.beginPath();ctx.arc(p.x,p.y,3,0,7);ctx.fill();
+}
+ctx.globalAlpha=1;
+}
+function loop(t){
+if(!loop.last)loop.last=t;
+const dt=Math.min(t-loop.last,50);loop.last=t;
+step(dt);updateParticles(dt);render();
+requestAnimationFrame(loop);
+}
+// Mouse
+cv.addEventListener('mousedown',function(e){
+if(state!=='aiming')return;
+const r=cv.getBoundingClientRect();
+mx=(e.clientX-r.left)*(W/r.width);
+my=(e.clientY-r.top)*(H/r.height);
+dragging=true;
+});
+cv.addEventListener('mousemove',function(e){
+if(!dragging)return;
+const r=cv.getBoundingClientRect();
+mx=(e.clientX-r.left)*(W/r.width);
+my=(e.clientY-r.top)*(H/r.height);
+});
+cv.addEventListener('mouseup',function(e){
+if(!dragging)return;
+dragging=false;
+const r=cv.getBoundingClientRect();
+const ux=(e.clientX-r.left)*(W/r.width);
+const uy=(e.clientY-r.top)*(H/r.height);
+fire(ux-launchPt.x,uy-launchPt.y);
+});
+// Touch
+cv.addEventListener('touchstart',function(e){
+if(state!=='aiming')return;
+const r=cv.getBoundingClientRect();
+mx=(e.touches[0].clientX-r.left)*(W/r.width);
+my=(e.touches[0].clientY-r.top)*(H/r.height);
+dragging=true;e.preventDefault();
+},{passive:false});
+cv.addEventListener('touchmove',function(e){
+if(!dragging)return;
+const r=cv.getBoundingClientRect();
+mx=(e.touches[0].clientX-r.left)*(W/r.width);
+my=(e.touches[0].clientY-r.top)*(H/r.height);
+e.preventDefault();
+},{passive:false});
+cv.addEventListener('touchend',function(e){
+if(!dragging)return;
+dragging=false;
+const r=cv.getBoundingClientRect();
+const ux=(e.changedTouches[0].clientX-r.left)*(W/r.width);
+const uy=(e.changedTouches[0].clientY-r.top)*(H/r.height);
+fire(ux-launchPt.x,uy-launchPt.y);
+e.preventDefault();
+},{passive:false});
+document.getElementById('start').addEventListener('click',startGame);
+document.getElementById('share').addEventListener('click',function(){
+const txt='🚀 ORBITAL — Level: '+level+' Score: '+score+' | Best: '+best;
+if(navigator.clipboard)navigator.clipboard.writeText(txt);
+});
+loadLevel(1);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

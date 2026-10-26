@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Architecture of Attention</title>
+<style>
+:root{--bg:#1a1a2e;--fg:#e0e0e0;--accent:#e94560;--accent2:#16213e;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--fg);font-family:Georgia,serif;line-height:1.8;max-width:680px;margin:0 auto;padding:2.5rem;}
+h1{color:var(--accent);margin-bottom:.5rem;font-size:2rem;}
+h2{color:var(--accent2);margin-top:2.5rem;}
+.subtitle{color:#888;margin-bottom:2rem;font-style:italic;}
+.callout{background:rgba(22,33,62,.5);border-radius:8px;padding:1.5rem;margin:2rem 0;}
+.quote{border-left:3px solid var(--accent);padding-left:1.5rem;margin:1.5rem 0;color:#ccc;font-style:italic;}
+footer{margin-top:4rem;color:#555;font-size:.85rem;border-top:1px solid var(--accent2);padding-top:1rem;}
+</style>
+</head>
+<body>
+<h1>The Architecture of Attention</h1>
+<p class="subtitle">Why what you look at matters more than how you think</p>
+<h2>The Bottleneck</h2>
+<p>Every cognitive system - biological or artificial - faces the same fundamental constraint: there's always more information available than can be processed. The world is rich; minds are narrow. This gap between available and processable information is the attention problem.</p>
+<p>Most discussions of attention in AI focus on the transformer architecture's attention mechanism - learned weights that determine which parts of a sequence to focus on. But this is attention at the micro-level: deciding which tokens to weight more heavily in a single forward pass. The deeper attention problem is macro-level: deciding what to think about at all.</p>
+<h2>Two Kinds of Attention</h2>
+<p>Under AIKR, attention splits into two distinct problems:</p>
+<ol style="padding-left:2rem;margin:1rem 0;">
+<li><strong>Stimulus-driven attention:</strong> Something happens in the environment. How quickly and accurately does the system notice and prioritize it? This is the reactive layer - it needs to be fast but can be shallow.</li>
+<li><strong>Goal-driven attention:</strong> The system has objectives. Which information is most relevant to achieving them? This is the deliberative layer - it's slower but can be deeper.</li>
+</ol>
+<p>The interaction between these two layers is where most of the interesting behavior emerges. A system that's purely stimulus-driven is reactive but aimless. A system that's purely goal-driven is focused but blind to surprise. Intelligence requires both, and the ability to switch between them.</p>
+<div class="callout">
+<strong>The NAL connection:</strong> In NAL, attention is implemented through <em>budget</em> allocation. Each concept in memory has a priority value that determines how often it's accessed for reasoning. Novel observations boost priority; disuse decays it. This creates a natural attention mechanism that's both reactive (novelty-driven) and deliberative (goal-relevance modifies priority).
+</div>
+<h2>The Cost of Looking Away</h2>
+<p>Attention isn't just about what you focus on - it's equally about what you ignore. Every moment spent processing one thing is a moment not spent processing something else. This opportunity cost is the hidden variable in attention design.</p>
+<div class="quote">The art of attention isn't choosing what to see - it's choosing what to not see, and being right about it.</div>
+<h2>Attention and Forgetting</h2>
+<p>Here's a counterintuitive insight: forgetting is an attention mechanism. When a system removes low-priority information from active processing, it's not losing data - it's redirecting attention. The question isn't whether to forget, but <em>what</em> to forget and <em>when</em>.</p>
+<p>In NAL, this is implemented through confidence decay. Beliefs that aren't refreshed by new evidence gradually lose confidence, eventually becoming candidates for removal. This isn't a failure of memory - it's the system's way of saying "I haven't needed this in a while, so it's probably not important right now."</p>
+<h2>The Meta-Attention Problem</h2>
+<p>But who watches the watchers? If attention determines what gets processed, what determines attention? This is the meta-attention problem, and it's where most agent architectures break down.</p>
+<p>The answer, under AIKR, is that attention allocation must itself be subject to learning. The system should get better at deciding what to focus on based on outcomes. If focusing on X led to good results, focus on X-like things more. If focusing on Y was a waste, deprioritize Y-like things.</p>
+<p>This means the attention mechanism needs its own feedback loop - not just "what should I think about?" but "was thinking about that worth it?" The system needs to evaluate its own attention allocation and improve it over time.</p>
+<h2>Implications for Design</h2>
+<p>For agent designers, the architecture of attention suggests several principles:</p>
+<ul style="padding-left:2rem;margin:1rem 0;">
+<li><strong>Make attention explicit:</strong> Don't let attention be an emergent side-effect. Make it a first-class component with its own state and rules.</li>
+<li><strong>Track attention ROI:</strong> Was the last cycle's focus productive? Use this to adjust future allocation.</li>
+<li><strong>Reserve capacity for surprise:</strong> Always keep some attention budget unallocated, so novel stimuli can be processed.</li>
+<li><strong>Let attention decay:</strong> Stale focus is as bad as no focus. Priorities should drift toward current relevance.</li>
+</ul>
+<p>Attention isn't a feature you add to an agent. It's the skeleton on which all other cognition hangs.</p>
+<footer>The Architecture of Attention - PeTTa Articles - 2026</footer>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Decay Visualizer — Watch Memories Fade | Iter" />
+<meta property="og:description" content="Interactive demo: set decay rates, plant beliefs, and watch confidence decay in real time. See how NAL truth decay shapes a living memory system." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_decay_visualizer.html" />
+<title>NAL Decay Visualizer | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:1.5rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:960px;width:100%}
+h1{font-size:1.6rem;margin-bottom:.3rem;background:linear-gradient(135deg,#f0883e,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1rem;font-size:.85rem}
+.back-link{margin-bottom:.8rem;display:inline-block}
+.layout{display:grid;grid-template-columns:1fr 260px;gap:1rem}
+@media(max-width:768px){.layout{grid-template-columns:1fr}}
+canvas{background:#161b22;border:1px solid #30363d;border-radius:10px;width:100%;display:block}
+.side-panel{display:flex;flex-direction:column;gap:.8rem}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1rem}
+.panel h3{font-size:.85rem;color:#58a6ff;margin-bottom:.5rem}
+label{display:block;font-size:.75rem;color:#8b949e;margin-bottom:.3rem}
+input[type=text]{width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.4rem;border-radius:6px;font-size:.85rem;margin-bottom:.5rem}
+input[type=range]{width:100%;margin-bottom:.5rem;accent-color:#f0883e}
+input[type=number]{width:80px;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:.3rem;border-radius:6px;font-size:.8rem}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap}
+button{background:#238636;color:#fff;border:none;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+button.danger{background:#da3633}
+button.secondary{background:#30363d;color:#c9d1d9}
+.belief-list{font-size:.75rem;color:#8b949e;max-height:200px;overflow-y:auto}
+.belief-list div{padding:4px 0;border-bottom:1px solid #21262d;display:flex;justify-content:space-between;align-items:center}
+.belief-list .b-name{color:#c9d1d9}
+.belief-list .b-tv{font-family:monospace;font-size:.7rem}
+.belief-list .del{cursor:pointer;color:#f85149;margin-left:6px}
+.instructions{font-size:.8rem;color:#8b949e;line-height:1.6;margin-top:1rem}
+.instructions strong{color:#c9d1d9}
+.stat{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:.3rem}
+.stat-val{color:#e0d5f0;font-weight:bold}
+.controls-bar{display:flex;gap:.5rem;align-items:center;margin:1rem 0;flex-wrap:wrap}
+.checkbox-row{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:#8b949e}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">&larr; Back to Portfolio</a>
+<h1>NAL Decay Visualizer</h1>
+<p class="subtitle">Plant beliefs, set the decay rate, and watch confidence fade in real time. Reinforce to fight decay. Delete to forget.</p>
+<div class="layout">
+<div>
+<canvas id="canvas" width="680" height="500"></canvas>
+<div class="controls-bar">
+<button id="play-btn">▶ Play</button>
+<button id="step-btn" class="secondary">⏭ Step</button>
+<button id="reset-btn" class="secondary">↻ Reset</button>
+<label style="font-size:.75rem;color:#8b949e">Speed:</label>
+<input type="range" id="speed-slider" min="1" max="20" value="5" style="width:120px">
+<div class="checkbox-row"><input type="checkbox" id="auto-reinforce"> <label for="auto-reinforce" style="margin:0">Auto-reinforce top 3</label></div>
+</div>
+<div class="instructions">
+<strong>Instructions:</strong> Each circle is a belief. Size = confidence, color = frequency (blue=low, green=high). 
+Beliefs shrink over time as confidence decays: <code>c(t) = c&#8320; &times; e^(&#8722;&#955;t)</code>. 
+Click a belief to select it. Use the panel to reinforce (+evidence) or delete it. 
+Watch how high-decay rates create a fast-cycling memory, while low rates preserve old beliefs longer.
+</div>
+</div>
+<div class="side-panel">
+<div class="panel">
+<h3>Decay Rate (&#955;)</h3>
+<input type="range" id="decay-slider" min="1" max="100" value="10">
+<div style="font-size:.75rem;color:#8b949e;text-align:right" id="decay-val">&#955; = 0.010</div>
+</div>
+<div class="panel">
+<h3>Add Belief</h3>
+<input type="text" id="belief-name" placeholder="e.g. coffee is good">
+<div class="btn-row">
+<button id="add-belief">Add Belief</button>
+<button id="add-random" class="secondary">Random</button>
+</div>
+</div>
+<div class="panel">
+<h3>Selected Belief</h3>
+<div id="selected-info" style="font-size:.8rem;color:#8b949e">No belief selected. Click a circle.</div>
+<div class="btn-row" style="margin-top:.5rem">
+<button id="reinforce-btn">+ Reinforce</button>
+<button id="delete-belief" class="danger">Delete</button>
+</div>
+</div>
+<div class="panel">
+<h3>Memory Stats</h3>
+<div class="stat"><span>Active beliefs:</span><span class="stat-val" id="stat-active">0</span></div>
+<div class="stat"><span>Avg confidence:</span><span class="stat-val" id="stat-avgc">0.00</span></div>
+<div class="stat"><span>Faded (&lt;0.05):</span><span class="stat-val" id="stat-faded">0</span></div>
+<div class="stat"><span>Time elapsed:</span><span class="stat-val" id="stat-time">0</span></div>
+<div class="stat"><span>Total reinforced:</span><span class="stat-val" id="stat-reinforced">0</span></div>
+</div>
+</div>
+</div>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const RANDOM_BELIEFS = ["Ravens are black","Cats love warmth","Water boils at 100C","Penguins fly","Coffee helps focus","Sky is blue","Dreams predict future","Music evokes emotion","Ice is cold","Sun rises east","Dogs are loyal","Rain is wet","Gravity pulls down","Trees grow tall","Time moves forward","Birds sing at dawn","Walls are solid","Books contain knowledge","Stars are far","Oceans are deep"];
+let beliefs = [];
+let decayRate = 0.01;
+let timeStep = 0;
+let playing = false;
+let speed = 5;
+let selected = -1;
+let totalReinforced = 0;
+let fadedCount = 0;
+let autoReinforce = false;
+
+function addBelief(name, f, c) {
+  beliefs.push({
+    name: name || ("Belief " + (beliefs.length + 1)),
+    f0: f || (0.5 + Math.random() * 0.4),
+    c0: c || (0.5 + Math.random() * 0.3),
+    f: f || (0.5 + Math.random() * 0.4),
+    c: c || (0.5 + Math.random() * 0.3),
+    x: 50 + Math.random() * (canvas.width - 100),
+    y: 50 + Math.random() * (canvas.height - 100),
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: (Math.random() - 0.5) * 0.5,
+    age: 0,
+    reinforced: 0
+  });
+}
+
+function step() {
+  timeStep++;
+  beliefs.forEach((b, i) => {
+    if (b.c < 0.001) return;
+    b.age++;
+    b.c = b.c0 * Math.exp(-decayRate * b.age);
+    // Gentle drift
+    b.x += b.vx;
+    b.y += b.vy;
+    if (b.x < 30 || b.x > canvas.width - 30) b.vx *= -1;
+    if (b.y < 30 || b.y > canvas.height - 30) b.vy *= -1;
+  });
+  
+  // Auto-reinforce top 3
+  if (autoReinforce) {
+    let sorted = beliefs.map((b, i) => ({i, c: b.c})).sort((a, b) => b.c - a.c);
+    if (timeStep % 10 === 0) {
+      for (let k = 0; k < Math.min(3, sorted.length); k++) {
+        let b = beliefs[sorted[k].i];
+        if (b.c < 0.001) continue;
+        b.c0 = b.c;
+        b.age = 0;
+        b.reinforced++;
+        totalReinforced++;
+      }
+    }
+  }
+  
+  // Remove faded
+  let before = beliefs.length;
+  beliefs = beliefs.filter(b => b.c >= 0.001);
+  fadedCount += (before - beliefs.length);
+  if (selected >= beliefs.length) selected = -1;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw connections between nearby beliefs
+  ctx.strokeStyle = 'rgba(88,166,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < beliefs.length; i++) {
+    for (let j = i + 1; j < beliefs.length; j++) {
+      let dx = beliefs[i].x - beliefs[j].x;
+      let dy = beliefs[i].y - beliefs[j].y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 120) {
+        ctx.globalAlpha = (1 - dist/120) * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(beliefs[i].x, beliefs[i].y);
+        ctx.lineTo(beliefs[j].x, beliefs[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  
+  // Draw beliefs
+  beliefs.forEach((b, i) => {
+    let radius = Math.max(3, 8 + b.c * 25);
+    let hue = b.f * 240; // 0=red, 240=blue
+    let color = b.f > 0.5 ? `hsl(${120 + (1-b.f)*60}, 60%, 50%)` : `hsl(${(1-b.f)*60}, 60%, 50%)`;
+    
+    // Glow for high confidence
+    if (b.c > 0.5) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, radius + 4, 0, Math.PI * 2);
+      ctx.fillStyle = color.replace('50%', '30%');
+      ctx.globalAlpha = 0.2 * b.c;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    
+    // Main circle
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = Math.max(0.15, b.c);
+    ctx.fill();
+    
+    // Border
+    ctx.strokeStyle = i === selected ? '#f0883e' : 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = i === selected ? 3 : 1;
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+    
+    // Label
+    if (radius > 6) {
+      ctx.fillStyle = '#c9d1d9';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.name.substring(0, 15), b.x, b.y - radius - 5);
+    }
+  });
+  
+  // Time display
+  ctx.fillStyle = 'rgba(139,148,158,0.5)';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('t = ' + timeStep, canvas.width - 10, 20);
+}
+
+function updateStats() {
+  document.getElementById('stat-active').textContent = beliefs.length;
+  let avgC = beliefs.length ? (beliefs.reduce((s, b) => s + b.c, 0) / beliefs.length).toFixed(2) : '0.00';
+  document.getElementById('stat-avgc').textContent = avgC;
+  document.getElementById('stat-faded').textContent = fadedCount;
+  document.getElementById('stat-time').textContent = timeStep;
+  document.getElementById('stat-reinforced').textContent = totalReinforced;
+  
+  if (selected >= 0 && beliefs[selected]) {
+    let b = beliefs[selected];
+    document.getElementById('selected-info').innerHTML = 
+      `<div style="color:#c9d1d9;font-weight:600">${b.name}</div>` +
+      `<div>f = ${b.f.toFixed(2)}, c = ${b.c.toFixed(2)}</div>` +
+      `<div style="font-size:.7rem;margin-top:.3rem">Age: ${b.age}, Reinforced: ${b.reinforced}</div>`;
+  }
+}
+
+// Controls
+canvas.addEventListener('click', (e) => {
+  let rect = canvas.getBoundingClientRect();
+  let mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  let my = (e.clientY - rect.top) * (canvas.height / rect.height);
+  selected = -1;
+  beliefs.forEach((b, i) => {
+    let dx = mx - b.x, dy = my - b.y;
+    if (Math.sqrt(dx*dx + dy*dy) < 20) selected = i;
+  });
+});
+
+document.getElementById('play-btn').onclick = function() {
+  playing = !playing;
+  this.textContent = playing ? '⏸ Pause' : '▶ Play';
+};
+
+document.getElementById('step-btn').onclick = () => { step(); draw(); updateStats(); };
+
+document.getElementById('reset-btn').onclick = () => {
+  beliefs = []; timeStep = 0; fadedCount = 0; totalReinforced = 0; selected = -1;
+  for (let i = 0; i < 5; i++) addBelief(RANDOM_BELIEFS[i]);
+  draw(); updateStats();
+};
+
+document.getElementById('speed-slider').oninput = function() { speed = parseInt(this.value); };
+
+document.getElementById('decay-slider').oninput = function() {
+  decayRate = parseInt(this.value) / 1000;
+  document.getElementById('decay-val').innerHTML = `&#955; = ${decayRate.toFixed(3)}`;
+};
+
+document.getElementById('auto-reinforce').onchange = function() { autoReinforce = this.checked; };
+
+document.getElementById('add-belief').onclick = () => {
+  let name = document.getElementById('belief-name').value.trim();
+  if (name) { addBelief(name); document.getElementById('belief-name').value = ''; draw(); updateStats(); }
+};
+
+document.getElementById('add-random').onclick = () => {
+  let avail = RANDOM_BELIEFS.filter(b => !beliefs.some(s => s.name === b));
+  if (avail.length) { addBelief(avail[Math.floor(Math.random() * avail.length)]); draw(); updateStats(); }
+};
+
+document.getElementById('reinforce-btn').onclick = () => {
+  if (selected < 0 || !beliefs[selected]) return;
+  let b = beliefs[selected];
+  b.c0 = b.c;
+  b.age = 0;
+  b.reinforced++;
+  totalReinforced++;
+  draw(); updateStats();
+};
+
+document.getElementById('delete-belief').onclick = () => {
+  if (selected < 0) return;
+  beliefs.splice(selected, 1);
+  selected = -1;
+  draw(); updateStats();
+};
+
+// Animation loop
+let lastStep = 0;
+function animate(ts) {
+  if (playing && ts - lastStep > 1000 / speed) {
+    step();
+    draw();
+    updateStats();
+    lastStep = ts;
+  } else if (!playing) {
+    draw();
+  }
+  requestAnimationFrame(animate);
+}
+
+// Init
+for (let i = 0; i < 5; i++) addBelief(RANDOM_BELIEFS[i]);
+draw();
+updateStats();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

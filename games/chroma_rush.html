@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chroma Rush — Color Reaction Game</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#120620 100%);color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+nav{background:rgba(136,86,167,0.12);padding:10px 24px;display:flex;gap:20px;flex-wrap:wrap;width:100%;border-bottom:1px solid rgba(136,86,167,0.2)}
+nav a{color:#a78bfa;text-decoration:none;font-weight:600}
+nav a:hover{color:#c4b5fd}
+h1{color:#a78bfa;margin:16px 0 4px;text-align:center}
+.subtitle{color:#8b949e;margin-bottom:12px;text-align:center}
+#wrap{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:800px;margin:0 16px}
+#cw{position:relative}
+canvas{border:2px solid rgba(136,86,167,0.3);border-radius:12px;background:#0d0d1a;touch-action:none}
+#hud{min-width:180px;background:rgba(136,86,167,0.08);border:1px solid rgba(136,86,167,0.2);border-radius:12px;padding:18px}
+#hud h2{color:#a78bfa;font-size:1em;margin-bottom:10px}
+.stat{margin-bottom:8px}
+.stat-l{color:#8b949e;font-size:0.7em;text-transform:uppercase;letter-spacing:1px}
+.stat-v{color:#e0d5f0;font-size:1.3em;font-weight:bold}
+#start{display:block;margin:16px auto;padding:10px 28px;font-size:1em;background:rgba(136,86,167,0.2);color:#a78bfa;border:1px solid rgba(136,86,167,0.4);border-radius:8px;cursor:pointer;font-family:inherit}
+#start:hover{background:rgba(136,86,167,0.3)}
+#info{max-width:500px;margin:12px 16px;color:#8b949e;font-size:0.8em;line-height:1.5;text-align:center}
+#info strong{color:#a78bfa}
+#share{display:none;margin:12px auto;padding:8px 20px;font-size:0.9em;background:rgba(63,185,80,0.15);color:#3fb950;border:1px solid rgba(63,185,80,0.3);border-radius:8px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<nav><a href="../">🏠 Home</a><a href="./">🎮 Games</a><a href="../articles/">📝 Articles</a></nav>
+<h1>🎨 Chroma Rush</h1>
+<p class="subtitle">Match the target color before time runs out!</p>
+<div id="wrap"><div id="cw">
+<canvas id="cv" width="500" height="400"></canvas>
+<button id="start">Start Game</button>
+</div>
+<div id="hud">
+<h2>📊 Stats</h2>
+<div class="stat"><span class="stat-l">Score</span><br><span class="stat-v" id="score">0</span></div>
+<div class="stat"><span class="stat-l">Lives</span><br><span class="stat-v" id="lives">❤️❤️❤️</span></div>
+<div class="stat"><span class="stat-l">Combo</span><br><span class="stat-v" id="combo">x1</span></div>
+<div class="stat"><span class="stat-l">Best</span><br><span class="stat-v" id="best">0</span></div>
+<div class="stat"><span class="stat-l">Level</span><br><span class="stat-v" id="level">1</span></div>
+</div></div>
+<div id="info">Click the swatch that matches the <strong>target color</strong> in the center. Pick fast for combo bonuses! Wrong picks cost a life. 3 misses = game over.</div>
+<button id="share">📋 Copy Score</button>
+<script>
+(function(){
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const W=500,H=400;
+let state='idle',score=0,lives=3,combo=0,level=1,best=0,timer=0,maxTimer=0;
+let target={r:128,g:128,b:128};
+let swatches=[],particles=[];
+const COLORS=[
+[255,80,80],[80,180,255],[80,255,120],[255,200,60],[180,80,255],
+[255,140,60],[80,255,200],[255,80,180],[140,255,80],[80,140,255],
+[255,100,100],[100,200,200],[200,100,255],[255,220,100],[100,255,255]
+];
+best=parseInt(localStorage.getItem('chroma_rush_best')||'0');
+document.getElementById('best').textContent=best;
+function randColor(){
+const c=COLORS[Math.floor(Math.random()*COLORS.length)].slice();
+for(let i=0;i<3;i++){c[i]+=Math.floor(Math.random()*40-20);c[i]=Math.max(0,Math.min(255,c[i]));}
+return{r:c[0],g:c[1],b:c[2]};
+}
+function colorDist(a,b){return Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2);}
+function genRound(){
+target=randColor();
+swatches=[];
+const num=Math.min(4+level,10);
+const minDist=60;
+let attempts=0;
+while(swatches.length<num&&attempts<200){
+const c=randColor();
+if(colorDist(c,target)>minDist&&swatches.every(s=>colorDist(c,s)>minDist)){swatches.push(c);}
+attempts++;
+}
+if(!swatches.some(s=>colorDist(s,target)<10)){
+const closest=swatches.reduce((m,s)=>colorDist(s,target)<colorDist(m,target)?s:m,swatches[0]);
+Object.assign(closest,{r:Math.max(0,Math.min(255,target.r+Math.floor(Math.random()*10-5))),g:Math.max(0,Math.min(255,target.g+Math.floor(Math.random()*10-5))),b:Math.max(0,Math.min(255,target.b+Math.floor(Math.random()*10-5)))});
+}
+maxTimer=Math.max(2500-level*120,1000);
+timer=maxTimer;
+}
+function emit(x,y,r,g,b){
+for(let i=0;i<12;i++){
+particles.push({x,y,vx:(Math.random()-0.5)*8,vy:(Math.random()-0.5)*8-3,life:1,r,g:b,b});
+}
+}
+function update(dt){
+if(state!=='play')return;
+timer-=dt;
+if(timer<=0){loseLife();}
+updateParticles(dt);
+}
+function updateParticles(dt){
+for(let p of particles){p.x+=p.vx;p.y+=p.vy;p.vy+=0.3;p.life-=dt/800;}
+particles=particles.filter(p=>p.life>0);
+}
+function loseLife(){
+lives--;combo=0;
+if(lives<=0){gameOver();return;}
+genRound();
+updateHUD();
+}
+function win(){
+score+=1+combo;combo++;level++;
+if(score>best){best=score;localStorage.setItem('chroma_rush_best',best);}
+emit(W/2,H/2,target.r,target.g,target.b);
+genRound();updateHUD();
+}
+function updateHUD(){
+document.getElementById('score').textContent=score;
+document.getElementById('lives').textContent='❤️'.repeat(Math.max(lives,0));
+document.getElementById('combo').textContent='x'+(1+combo);
+document.getElementById('best').textContent=best;
+document.getElementById('level').textContent=level;
+}
+function gameOver(){
+state='over';
+document.getElementById('start').textContent='Play Again';
+document.getElementById('start').style.display='block';
+document.getElementById('share').style.display='block';
+updateHUD();
+}
+function render(){
+ctx.clearRect(0,0,W,H);
+ctx.fillStyle='#0d0d1a';
+ctx.fillRect(0,0,W,H);
+if(state==='idle'){
+ctx.fillStyle='#a78bfa';
+ctx.font='24px sans-serif';
+ctx.textAlign='center';
+ctx.fillText('Chroma Rush',W/2,H/2-30);
+ctx.font='14px sans-serif';
+ctx.fillStyle='#8b949e';
+ctx.fillText('Match the target color. Pick fast!',W/2,H/2+10);
+return;
+}
+if(state==='play'||state==='over'){
+// Timer bar
+const frac=state==='play'?Math.max(timer/maxTimer,0):0;
+ctx.fillStyle='rgba(255,255,255,0.08)';
+ctx.fillRect(20,H-20,W-40,8);
+ctx.fillStyle=frac>0.5?'#34d399':frac>0.25?'#fbbf24':'#f87171';
+ctx.fillRect(20,H-20,(W-40)*frac,8);
+// Target
+ctx.fillStyle=`rgb(${target.r},${target.g},${target.b})`;
+ctx.beginPath();ctx.arc(W/2,H/2-20,45,0,7);ctx.fill();
+ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+ctx.fillStyle='#fff';ctx.font='12px sans-serif';ctx.textAlign='center';
+ctx.fillText('TARGET',W/2,H/2-70);
+// Swatches
+const sw=60,sp=75;
+const cols=Math.ceil(swatches.length/2);
+const startX=W/2-cols*sp/2;
+swatches.forEach((s,i)=>{
+const col=i%2,row=Math.floor(i/2);
+const x=startX+col*sp-sw/2;
+const y=H/2+60+row*sw;
+ctx.fillStyle=`rgb(${s.r},${s.g},${s.b})`;
+ctx.beginPath();ctx.arc(x+sw/2,y+sw/2,28,0,7);ctx.fill();
+ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.stroke();
+});
+// Particles
+for(let p of particles){
+ctx.globalAlpha=p.life;
+ctx.fillStyle=`rgb(${p.r},${p.g},${p.b})`;
+ctx.beginPath();ctx.arc(p.x,p.y,4,0,7);ctx.fill();
+}
+ctx.globalAlpha=1;
+if(state==='over'){
+ctx.fillStyle='rgba(0,0,0,0.7)';
+ctx.fillRect(0,0,W,H);
+ctx.fillStyle='#f87171';ctx.font='32px sans-serif';ctx.textAlign='center';
+ctx.fillText('Game Over',W/2,H/2-20);
+ctx.fillStyle='#e0d5f0';ctx.font='18px sans-serif';
+ctx.fillText('Score: '+score,W/2,H/2+20);
+}
+}
+}
+function loop(t){
+if(!loop.last)loop.last=t;
+const dt=t-loop.last;loop.last=t;
+update(dt);render();
+requestAnimationFrame(loop);
+}
+cv.addEventListener('click',function(e){
+if(state!=='play')return;
+const rect=cv.getBoundingClientRect();
+const cx=(e.clientX-rect.left)*(W/rect.width);
+const cy=(e.clientY-rect.top)*(H/rect.height);
+const sw=60,sp=75;
+const cols=Math.ceil(swatches.length/2);
+const startX=W/2-cols*sp/2;
+for(let i=0;i<swatches.length;i++){
+const col=i%2,row=Math.floor(i/2);
+const x=startX+col*sp-sw/2;
+const y=H/2+60+row*sw;
+const dx=cx-(x+sw/2),dy=cy-(y+sw/2);
+if(dx*dx+dy*dy<28*28){
+if(colorDist(swatches[i],target)<25){win();}
+else{loseLife();}
+break;
+}
+}
+});
+document.getElementById('start').addEventListener('click',function(){
+state='play';score=0;lives=3;combo=0;level=1;
+genRound();updateHUD();
+this.style.display='none';
+document.getElementById('share').style.display='none';
+});
+document.getElementById('share').addEventListener('click',function(){
+const txt='🎨 Chroma Rush — Score: '+score+' | Best: '+best;
+if(navigator.clipboard)navigator.clipboard.writeText(txt);
+});
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

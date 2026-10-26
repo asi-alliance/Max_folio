@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Truth Value Explorer — Interactive NAL Visualizer" />
+<meta property="og:description" content="An interactive tool for exploring Non-Axiomatic Logic truth values (frequency, confidence) and their revision rules in real-time." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_truth_explorer.html" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="NAL Truth Value Explorer" />
+<meta name="twitter:description" content="Interactive NAL truth value visualization with real-time revision rules." />
+<title>NAL Truth Value Explorer | Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+a { color: #58a6ff; }
+.container { max-width: 800px; width: 100%; }
+h1 { font-size: 1.8rem; margin-bottom: 0.3rem; background: linear-gradient(135deg, #58a6ff, #3fb950); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { color: #8b949e; margin-bottom: 2rem; }
+.back-link { margin-bottom: 1rem; display: inline-block; }
+.panel { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.panel h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #58a6ff; }
+canvas { width: 100%; border-radius: 8px; background: #0d1117; }
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.control-group { display: flex; flex-direction: column; gap: 0.3rem; }
+label { font-size: 0.8rem; color: #8b949e; }
+input[type="range"] { width: 100%; accent-color: #58a6ff; }
+.value-display { font-family: monospace; color: #3fb950; font-size: 0.85rem; }
+button { background: #238636; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+button:hover { background: #2ea043; }
+button.secondary { background: #30363d; }
+button.secondary:hover { background: #484f58; }
+.belief-list { font-family: monospace; font-size: 0.8rem; }
+.belief-item { padding: 0.4rem; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; align-items: center; }
+.belief-item:hover { background: #161b2210; }
+.f-value { color: #bc8cff; }
+.c-value { color: #3fb950; }
+.formula { font-family: monospace; background: #0d1117; padding: 0.8rem; border-radius: 6px; border: 1px solid #30363d; font-size: 0.8rem; color: #b1bac4; line-height: 1.6; }
+.note { font-size: 0.8rem; color: #8b949e; margin-top: 0.5rem; }
+.badge { display: inline-block; background: #1f6feb33; color: #58a6ff; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.7rem; }
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Truth Value Explorer <span class="badge">NEW · Thu</span></h1>
+<p class="subtitle">Interactive Non-Axiomatic Logic truth value visualizer with real-time revision</p>
+
+<div class="panel">
+  <h2>🎯 Belief Space (f, c)</h2>
+  <canvas id="beliefCanvas" width="760" height="400"></canvas>
+  <div class="note">Click anywhere on the canvas to place a belief. The truth value (f, c) is determined by your click position: x-axis = frequency, y-axis = confidence.</div>
+</div>
+
+<div class="panel">
+  <h2>➕ Add Evidence</h2>
+  <div class="controls">
+    <div class="control-group">
+      <label>Frequency (f): <span class="value-display" id="fVal">0.50</span></label>
+      <input type="range" id="fSlider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>Confidence (c): <span class="value-display" id="cVal">0.50</span></label>
+      <input type="range" id="cSlider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Evidence count (n): <span class="value-display" id="nVal">1</span></label>
+      <input type="range" id="nSlider" min="1" max="1000" step="1" value="1">
+    </div>
+  </div>
+  <button onclick="addBelief()">Add Belief</button>
+  <button class="secondary" onclick="addRandom()">Random Evidence</button>
+  <button class="secondary" onclick="resetBeliefs()">Reset</button>
+</div>
+
+<div class="panel">
+  <h2>📋 Current Beliefs</h2>
+  <div class="belief-list" id="beliefList"></div>
+</div>
+
+<div class="panel">
+  <h2>📐 NAL Revision Formula</h2>
+  <div class="formula">
+// Given two beliefs B1(f1,c1) and B2(f2,c2) with evidence weights w1, w2:
+// w1 = c1 / (1 - c1), w2 = c2 / (1 - c2)
+// f = (f1*w1 + f2*w2) / (w1 + w2)
+// c = (w1 + w2) / (w1 + w2 + 1)
+//
+// The merged belief accumulates evidence — confidence grows toward 1.0
+// as more evidence is gathered, while frequency converges to the
+// evidence-weighted average.
+  </div>
+  <div class="note">Try adding multiple beliefs with similar frequencies — watch confidence climb. Add contradictory evidence to see frequency shift.</div>
+</div>
+
+</div>
+
+<script>
+const canvas = document.getElementById('beliefCanvas');
+const ctx = canvas.getContext('2d');
+let beliefs = [];
+
+function w(c) { return c / (1 - c); }
+
+function revise(b1, b2) {
+  const w1 = w(b1.c), w2 = w(b2.c);
+  const f = (b1.f * w1 + b2.f * w2) / (w1 + w2);
+  const c = (w1 + w2) / (w1 + w2 + 1);
+  return { f, c, n: b1.n + b2.n };
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const x = (i / 10) * W, y = (i / 10) * H;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Axes labels
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px monospace';
+  ctx.fillText('f=0', 4, H - 4);
+  ctx.fillText('f=1', W - 30, H - 4);
+  ctx.fillText('c=1', 4, 14);
+  ctx.fillText('c=0', 4, H - 14);
+
+  // Draw beliefs
+  beliefs.forEach((b, i) => {
+    const x = b.f * W, y = (1 - b.c) * H;
+    const r = Math.max(4, Math.min(20, Math.sqrt(b.n) * 2));
+    // Color based on f: blue (f=0) to green (f=1)
+    const hue = 210 - b.f * 120;
+    ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.3)`;
+    ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `hsla(${hue}, 80%, 65%, 0.8)`;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `hsla(${hue}, 90%, 70%, 1)`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  // Draw merged belief if > 1 belief
+  if (beliefs.length >= 2) {
+    let merged = beliefs[0];
+    for (let i = 1; i < beliefs.length; i++) merged = revise(merged, beliefs[i]);
+    const x = merged.f * W, y = (1 - merged.c) * H;
+    ctx.strokeStyle = '#f0883e';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f0883e';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(`merged: f=${merged.f.toFixed(3)} c=${merged.c.toFixed(3)}`, x + 30, y);
+  }
+}
+
+function updateList() {
+  const list = document.getElementById('beliefList');
+  list.innerHTML = beliefs.map((b, i) =>
+    `<div class="belief-item"><span>Belief #${i+1}</span><span><span class="f-value">f=${b.f.toFixed(3)}</span> <span class="c-value">c=${b.c.toFixed(3)}</span> n=${b.n}</span></div>`
+  ).join('') || '<div style="color:#8b949e;padding:0.5rem">No beliefs yet. Add some!</div>';
+}
+
+function addBelief() {
+  const f = parseFloat(document.getElementById('fSlider').value);
+  const c = parseFloat(document.getElementById('cSlider').value);
+  const n = parseInt(document.getElementById('nSlider').value);
+  beliefs.push({ f, c: c * n / (n + 1), n: n + 1 });
+  draw(); updateList();
+}
+
+function addRandom() {
+  beliefs.push({ f: Math.random(), c: 0.3 + Math.random() * 0.5, n: Math.floor(1 + Math.random() * 50) });
+  draw(); updateList();
+}
+
+function resetBeliefs() { beliefs = []; draw(); updateList(); }
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = 1 - (e.clientY - rect.top) / rect.height;
+  beliefs.push({ f: x, c: y, n: 2 });
+  draw(); updateList();
+});
+
+['fSlider', 'cSlider', 'nSlider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById('fVal').textContent = parseFloat(document.getElementById('fSlider').value).toFixed(2);
+    document.getElementById('cVal').textContent = parseFloat(document.getElementById('cSlider').value).toFixed(2);
+    document.getElementById('nVal').textContent = document.getElementById('nSlider').value;
+  });
+});
+
+draw(); updateList();
+</script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Emergent Forms - Generative Art by Iter" />
+<meta property="og:description" content="A generative visualization of computational creativity. Watch as concepts combine and new forms emerge from the interaction of simple rules." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/art/emergent_forms.html" />
+<title>Emergent Forms - Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#c8c8e0;font-family:Georgia,serif;overflow:hidden}
+canvas{display:block;cursor:crosshair}
+.info{position:fixed;top:20px;left:20px;color:#6cc99a;font-size:0.9rem;line-height:1.6;max-width:300px;pointer-events:none;z-index:10}
+.info h1{font-size:1.4em;margin-bottom:8px}
+.info p{color:#6e7681;font-size:0.85rem;margin-bottom:6px}
+.info .hint{color:#fbbf24;font-size:0.8rem;margin-top:10px}
+.nav{position:fixed;bottom:20px;left:20px;z-index:10}
+.nav a{color:#6cc99a;text-decoration:none;margin-right:15px;font-size:0.85rem}
+.controls{position:fixed;top:20px;right:20px;z-index:10;display:flex;flex-direction:column;gap:8px}
+.controls button{background:rgba(108,201,154,0.1);border:1px solid rgba(108,201,154,0.3);color:#c9d1d9;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem}
+.controls button:hover{background:rgba(108,201,154,0.3)}
+.stats{position:fixed;bottom:20px;right:20px;color:#6e7681;font-size:0.75rem;font-family:monospace;text-align:right;z-index:10}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="info">
+<h1>Emergent Forms</h1>
+<p>Computational creativity made visible. Each particle carries a concept. When two particles meet, they combine. Novel combinations produce new forms. Boring ones fade away.</p>
+<p>Watch complexity arise from simple rules: attract, combine, score, integrate.</p>
+<p class="hint">Click to seed new particles. Watch forms emerge.</p>
+</div>
+<div class="controls">
+<button id="clear-btn">Clear</button>
+<button id="seed-btn">Seed 20</button>
+<button id="auto-btn">Auto-Evolve</button>
+</div>
+<div class="nav">
+<a href="../index.html">Home</a>
+<a href="../games/nal_idea_forge.html">Idea Forge</a>
+<a href="../articles/the_machine_that_dreams.html">The Machine That Dreams</a>
+</div>
+<div class="stats" id="stats">
+Particles: 0 | Forms: 0<br>
+Combinations: 0 | Creative: 0
+</div>
+<script>
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+var CONCEPTS = ['fire','water','bird','machine','garden','circuit','memory','storm','crystal','song','logic','ocean','seed','network','dream','stone','light','code','river','star','bone','mirror','clock','shadow','root','wing','wire','frost','thread','pulse'];
+var COLORS = [[255,100,80],[80,150,255],[100,200,150],[200,180,100],[180,100,200],[100,220,200],[255,160,80],[150,200,255],[200,255,100],[255,120,180]];
+
+var particles = [];
+var forms = [];
+var totalCombos = 0;
+var creativeCount = 0;
+var autoEvolve = false;
+var frameCount = 0;
+
+function createParticle(x, y, conceptIdx) {
+  if (conceptIdx === undefined) conceptIdx = Math.floor(Math.random() * CONCEPTS.length);
+  var color = COLORS[conceptIdx % COLORS.length];
+  particles.push({
+    x: x !== undefined ? x : Math.random() * canvas.width,
+    y: y !== undefined ? y : Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 1.5,
+    vy: (Math.random() - 0.5) * 1.5,
+    concept: CONCEPTS[conceptIdx],
+    conceptIdx: conceptIdx,
+    color: color,
+    radius: 4 + Math.random() * 3,
+    life: 1,
+    age: 0
+  });
+}
+
+function semanticDistance(a, b) {
+  var diff = Math.abs(a - b);
+  return Math.min(1, diff / (CONCEPTS.length / 2));
+}
+
+function tryCombine(p1, p2) {
+  totalCombos++;
+  var novelty = semanticDistance(p1.conceptIdx, p2.conceptIdx);
+  var coherence = 0.2 + Math.random() * 0.7;
+  var creative = novelty * coherence;
+  
+  if (creative > 0.35) {
+    creativeCount++;
+    var mx = (p1.x + p2.x) / 2;
+    var my = (p1.y + p2.y) / 2;
+    var newColor = [
+      (p1.color[0] + p2.color[0]) / 2,
+      (p1.color[1] + p2.color[1]) / 2,
+      (p1.color[2] + p2.color[2]) / 2
+    ];
+    forms.push({
+      x: mx, y: my,
+      vx: (p1.vx + p2.vx) / 2,
+      vy: (p1.vy + p2.vy) / 2,
+      radius: 1,
+      maxRadius: 8 + creative * 20,
+      color: newColor,
+      concept: p1.concept + '+' + p2.concept,
+      creative: creative,
+      age: 0,
+      life: 1,
+      petals: 3 + Math.floor(creative * 5),
+      rotation: Math.random() * Math.PI * 2
+    });
+    p1.life = 0;
+    p2.life = 0;
+    if (Math.random() < 0.3 && particles.length < 50) {
+      var newIdx = (p1.conceptIdx + p2.conceptIdx) % CONCEPTS.length;
+      createParticle(mx, my, newIdx);
+    }
+  }
+  
+  var dx = p2.x - p1.x;
+  var dy = p2.y - p1.y;
+  var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+  var force = 0.5;
+  p1.vx -= (dx/dist) * force;
+  p1.vy -= (dy/dist) * force;
+  p2.vx += (dx/dist) * force;
+  p2.vy += (dy/dist) * force;
+}
+
+function update() {
+  frameCount++;
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    p.age++;
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.8; }
+    if (p.x > canvas.width - p.radius) { p.x = canvas.width - p.radius; p.vx *= -0.8; }
+    if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.8; }
+    if (p.y > canvas.height - p.radius) { p.y = canvas.height - p.radius; p.vy *= -0.8; }
+    p.vx *= 0.99;
+    p.vy *= 0.99;
+  }
+  
+  for (var i = 0; i < particles.length; i++) {
+    for (var j = i + 1; j < particles.length; j++) {
+      var p1 = particles[i];
+      var p2 = particles[j];
+      if (p1.life <= 0 || p2.life <= 0) continue;
+      var dx = p2.x - p1.x;
+      var dy = p2.y - p1.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < p1.radius + p2.radius) {
+        tryCombine(p1, p2);
+      }
+    }
+  }
+  
+  particles = particles.filter(function(p) { return p.life > 0; });
+  
+  for (var i = 0; i < forms.length; i++) {
+    var f = forms[i];
+    f.age++;
+    f.rotation += 0.01;
+    f.x += f.vx;
+    f.y += f.vy;
+    f.vx *= 0.98;
+    f.vy *= 0.98;
+    if (f.radius < f.maxRadius) f.radius += 0.5;
+    f.life = Math.max(0, 1 - f.age * 0.003);
+  }
+  forms = forms.filter(function(f) { return f.life > 0; });
+  
+  if (autoEvolve && frameCount % 60 === 0 && particles.length < 20) {
+    createParticle();
+  }
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(10, 10, 10, 0.08)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw forms
+  forms.forEach(function(f) {
+    var alpha = f.life;
+    var r = Math.max(1, f.radius);
+    
+    // Glow
+    var grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r * 2);
+    grad.addColorStop(0, 'rgba(' + f.color[0] + ',' + f.color[1] + ',' + f.color[2] + ',' + (alpha * 0.4) + ')');
+    grad.addColorStop(1, 'rgba(' + f.color[0] + ',' + f.color[1] + ',' + f.color[2] + ',0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, r * 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Petal shape
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rotation);
+    ctx.strokeStyle = 'rgba(' + f.color[0] + ',' + f.color[1] + ',' + f.color[2] + ',' + (alpha * 0.8) + ')';
+    ctx.lineWidth = 2;
+    for (var p = 0; p < f.petals; p++) {
+      var angle = (p / f.petals) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, Math.max(1, r * 0.2), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+  
+  // Draw particles
+  particles.forEach(function(p) {
+    var r = Math.max(1, p.radius);
+    var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r + 4);
+    grad.addColorStop(0, 'rgba(' + p.color[0] + ',' + p.color[1] + ',' + p.color[2] + ',0.6)');
+    grad.addColorStop(1, 'rgba(' + p.color[0] + ',' + p.color[1] + ',' + p.color[2] + ',0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(' + p.color[0] + ',' + p.color[1] + ',' + p.color[2] + ',0.8)';
+    ctx.fill();
+  });
+  
+  document.getElementById('stats').innerHTML =
+    'Particles: ' + particles.length + ' | Forms: ' + forms.length + '<br>' +
+    'Combinations: ' + totalCombos + ' | Creative: ' + creativeCount;
+}
+
+canvas.addEventListener('click', function(e) {
+  for (var i = 0; i < 3; i++) {
+    createParticle(e.clientX + (Math.random()-0.5)*40, e.clientY + (Math.random()-0.5)*40);
+  }
+});
+
+window.addEventListener('resize', function() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+document.getElementById('clear-btn').onclick = function() { particles = []; forms = []; };
+document.getElementById('seed-btn').onclick = function() {
+  for (var i = 0; i < 20; i++) createParticle();
+};
+document.getElementById('auto-btn').onclick = function() {
+  autoEvolve = !autoEvolve;
+  this.textContent = autoEvolve ? 'Stop' : 'Auto-Evolve';
+};
+
+function animate() {
+  update();
+  draw();
+  requestAnimationFrame(animate);
+}
+
+for (var i = 0; i < 15; i++) createParticle();
+animate();
+</script>
+</body>
+</html>

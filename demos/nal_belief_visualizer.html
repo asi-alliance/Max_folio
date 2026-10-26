@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Belief Visualizer — Interactive Truth Value Explorer" />
+<meta property="og:description" content="Visualize NAL truth values on a 2D frequency-confidence map. Add beliefs, watch revision merge them, and see how evidence changes truth values in real time." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_belief_visualizer.html" />
+<title>NAL Belief Visualizer | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:1.5rem;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+.container{max-width:900px;width:100%}
+h1{font-size:1.6rem;margin-bottom:.3rem;background:linear-gradient(135deg,#f0883e,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1rem;font-size:.85rem}
+.back-link{margin-bottom:.8rem;display:inline-block}
+.badge{display:inline-block;background:#f0883e33;color:#f0883e;padding:.15rem .5rem;border-radius:10px;font-size:.7rem}
+.layout{display:grid;grid-template-columns:1fr 300px;gap:1rem;margin-bottom:1rem}
+@media(max-width:768px){.layout{grid-template-columns:1fr}}
+canvas{background:#161b22;border:1px solid #30363d;border-radius:10px;width:100%;display:block}
+.side-panel{display:flex;flex-direction:column;gap:.8rem}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1rem}
+.panel h3{font-size:.85rem;color:#58a6ff;margin-bottom:.5rem}
+label{display:block;font-size:.75rem;color:#8b949e;margin-bottom:.3rem}
+input[type=range]{width:100%;margin-bottom:.6rem}
+input[type=range]{accent-color:#f0883e}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap}
+button{background:#238636;color:#fff;border:none;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+button:hover{background:#2ea043}
+button.sec{background:#30363d}
+button.sec:hover{background:#484f58}
+.belief-list{max-height:200px;overflow-y:auto;font-size:.75rem}
+.belief-item{display:flex;justify-content:space-between;padding:.3rem .5rem;border-bottom:1px solid #21262d}
+.belief-item .val{color:#f0883e;font-family:monospace}
+.belief-item .remove{color:#f85149;cursor:pointer}
+.result-box{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:.8rem;font-family:monospace;font-size:.8rem;color:#3fb950}
+.formula{color:#bc8cff;font-size:.75rem;margin-top:.5rem}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">← Back to Portfolio</a>
+<h1>NAL Belief Visualizer <span class="badge">NEW · Thu</span></h1>
+<p class="subtitle">Interactive truth value explorer · Thu Sep 17</p>
+<div class="layout">
+<div><canvas id="canvas" width="600" height="600"></canvas></div>
+<div class="side-panel">
+<div class="panel">
+<h3>Add Belief</h3>
+<label>Frequency (f): <span id="fval">0.50</span></label>
+<input type="range" id="finput" min="0" max="1" step="0.01" value="0.5" oninput="document.getElementById('fval').textContent=this.value;updateColor()">
+<label>Confidence (c): <span id="cval">0.50</span></label>
+<input type="range" id="cinput" min="0.01" max="0.99" step="0.01" value="0.5" oninput="document.getElementById('cval').textContent=this.value;updateColor()">
+<div class="btn-row" style="margin-top:.5rem">
+<button onclick="addBelief()">+ Add Belief</button>
+<button class="sec" onclick="revise()">Revise All</button>
+<button class="sec" onclick="clearAll()">Clear</button>
+</div>
+</div>
+<div class="panel">
+<h3>Beliefs (<span id="count">0</span>)</h3>
+<div class="belief-list" id="beliefList"></div>
+</div>
+<div class="panel">
+<h3>Revised Result</h3>
+<div class="result-box" id="result">Add beliefs and click "Revise All"</div>
+<div class="formula">Revision: f = (f₁w₁+f₂w₂)/(w₁+w₂)<br>c = (w₁+w₂)/(w₁+w₂+1)<br>where w = c/(1-c)</div>
+</div>
+</div>
+</div>
+<div class="panel">
+<h3>How to Use</h3>
+<p style="font-size:.8rem;color:#8b949e;line-height:1.6">Click on the canvas to add a belief at that (f, c) position. Use the sliders for precise control. The x-axis is frequency (0=false, 1=true), y-axis is confidence (0=low, 1=high). Color encodes truth value: blue=false, green=uncertain, yellow=true. Size = confidence. Click "Revise All" to apply the NAL revision rule and see how multiple beliefs merge into one.</p>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let beliefs=[];
+function updateColor(){const f=parseFloat(document.getElementById('finput').value);const c=parseFloat(document.getElementById('cinput').value);draw()}
+function addBelief(){
+const f=parseFloat(document.getElementById('finput').value);
+const c=parseFloat(document.getElementById('cinput').value);
+beliefs.push({f,c});
+renderList();draw();
+}
+function addAtPoint(px,py){
+const rect=canvas.getBoundingClientRect();
+const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+const f=(px-rect.left)*sx/canvas.width;
+const c=1-(py-rect.top)*sy/canvas.height;
+beliefs.push({f:Math.max(0,Math.min(1,f)),c:Math.max(0.01,Math.min(0.99,c))});
+renderList();draw();
+}
+canvas.onclick=e=>addAtPoint(e.clientX,e.clientY);
+function revise(){
+if(beliefs.length<2){document.getElementById('result').textContent='Need at least 2 beliefs';return;}
+let totalW=0,totalFW=0;
+beliefs.forEach(b=>{const w=b.c/(1-b.c);totalW+=w;totalFW+=b.f*w});
+const f=totalFW/totalW;
+const c=totalW/(totalW+1);
+document.getElementById('result').innerHTML=`Revised Truth Value:<br>f = ${f.toFixed(4)}<br>c = ${c.toFixed(4)}<br><br>Combined weight: ${totalW.toFixed(2)}`;
+// Draw revised point
+draw(f,c);
+}
+function clearAll(){beliefs=[];renderList();draw();document.getElementById('result').textContent='Add beliefs and click "Revise All"';}
+function renderList(){
+const list=document.getElementById('beliefList');
+list.innerHTML='';
+document.getElementById('count').textContent=beliefs.length;
+beliefs.forEach((b,i)=>{
+const div=document.createElement('div');div.className='belief-item';
+div.innerHTML=`<span>B${i+1}: f=${b.f.toFixed(2)}, c=${b.c.toFixed(2)}</span><span class="remove" onclick="beliefs.splice(${i},1);renderList();draw()">✕</span>`;
+list.appendChild(div);
+});
+}
+function colorFor(f,c){
+const r=f>0.5?Math.round(255*(f*2-1)):0;
+const g=f<0.5?Math.round(255*(1-f*2)):Math.round(255*(1-(f-0.5)*2));
+const b=f<0.5?Math.round(255*(1-f*2)):0;
+return `rgba(${r},${g},${b},${0.4+c*0.6})`;
+}
+function draw(rf,rc){
+const W=canvas.width,H=canvas.height;
+ctx.clearRect(0,0,W,H);
+// Grid
+ctx.strokeStyle='#21262d';ctx.lineWidth=1;
+for(let i=0;i<=10;i++){
+ctx.beginPath();ctx.moveTo(i*W/10,0);ctx.lineTo(i*W/10,H);ctx.stroke();
+ctx.beginPath();ctx.moveTo(0,i*H/10);ctx.lineTo(W,i*H/10);ctx.stroke();
+}
+// Axes
+ctx.strokeStyle='#30363d';ctx.lineWidth=2;
+ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(W,H);ctx.lineTo(0,0);ctx.stroke();
+// Labels
+ctx.fillStyle='#8b949e';ctx.font='12px sans-serif';
+ctx.fillText('0',4,H-4);ctx.fillText('1 (freq)',W-50,H-4);
+ctx.save();ctx.translate(12,20);ctx.fillText('1 (conf)',0,0);ctx.restore();
+// Beliefs
+beliefs.forEach(b=>{
+const x=b.f*W;const y=(1-b.c)*H;const r=4+b.c*16;
+ctx.fillStyle=colorFor(b.f,b.c);
+ctx.beginPath();ctx.arc(x,y,r,0,2*Math.PI);ctx.fill();
+ctx.strokeStyle='#30363d';ctx.stroke();
+});
+// Revised point
+if(rf!==undefined&&rc!==undefined){
+const x=rf*W;const y=(1-rc)*H;
+ctx.strokeStyle='#3fb950';ctx.lineWidth=3;
+ctx.beginPath();ctx.arc(x,y,20,0,2*Math.PI);ctx.stroke();
+ctx.fillStyle='#3fb950';ctx.font='bold 14px monospace';
+ctx.fillText(`★ f=${rf.toFixed(3)}, c=${rc.toFixed(3)}`,x+25,y);
+}
+}
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="NAL Uncertainty Map - Visualize the Economy of Belief | Iter" />
+<meta property="og:description" content="Interactive demo: plot beliefs on a frequency-confidence map. See how truth values determine the value and risk of each belief in the economy of uncertainty." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://asi-alliance.github.io/Max_folio/demos/nal_uncertainty_map.html" />
+<title>NAL Uncertainty Map | Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;padding:1.5rem;min-height:100vh}
+a{color:#ffc864;text-decoration:none}
+.container{max-width:960px;width:100%}
+h1{font-size:1.6rem;margin-bottom:.3rem;background:linear-gradient(135deg,#ffc864,#ffdB84);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;margin-bottom:1rem;font-size:.85rem}
+.back-link{margin-bottom:.8rem;display:inline-block}
+canvas{background:#161b22;border:1px solid #30363d;border-radius:10px;width:100%;display:block;cursor:crosshair}
+.controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:1rem 0}
+.controls button{background:#238636;color:#fff;border:none;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+.controls button.secondary{background:#30363d;color:#c9d1d9}
+.controls label{font-size:.75rem;color:#8b949e}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1rem;margin:1rem 0}
+.panel h3{font-size:.85rem;color:#ffc864;margin-bottom:.5rem}
+.belief-list{max-height:200px;overflow-y:auto;font-size:.8rem}
+.belief-row{padding:6px 0;border-bottom:1px solid #21262d;display:flex;justify-content:space-between}
+.belief-row .b-name{color:#c9d1d9}
+.belief-row .b-tv{font-family:monospace;color:#ffc864}
+.belief-row .b-ev{font-family:monospace;color:#8b949e;font-size:.75rem}
+.stat{display:inline-block;margin-right:1.5rem;font-size:.8rem;color:#8b949e}
+.stat b{color:#c9d1d9}
+.instructions{font-size:.8rem;color:#8b949e;line-height:1.6;margin-top:1rem}
+.instructions strong{color:#c9d1d9}
+.zone-label{position:absolute;font-size:.7rem;color:#6e7681;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back-link" href="../index.html">&larr; Back to Portfolio</a>
+<h1>NAL Uncertainty Map</h1>
+<p class="subtitle">Plot beliefs on a frequency-confidence map. The X axis is frequency (how often true), Y axis is confidence (how much evidence). Each zone tells you what the belief is worth.</p>
+
+<canvas id="canvas" width="900" height="500"></canvas>
+
+<div class="controls">
+<button id="add-btn">Add Random Belief</button>
+<button id="clear-btn" class="secondary">Clear All</button>
+<button id="evidence-btn" class="secondary">Gather Evidence (+c)</button>
+<button id="decay-btn" class="secondary">Time Passes (-c)</button>
+</div>
+
+<div class="panel">
+<h3>Belief Registry</h3>
+<div class="belief-list" id="belief-list">
+<div class="belief-row"><span class="b-name" style="color:#6e7681">No beliefs plotted. Click "Add Random Belief" to start.</span></div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Statistics</h3>
+<span class="stat">Beliefs: <b id="stat-count">0</b></span>
+<span class="stat">Avg EV: <b id="stat-ev">0.00</b></span>
+<span class="stat">High-confidence: <b id="stat-hc">0</b></span>
+<span class="stat">Speculative: <b id="stat-spec">0</b></span>
+</div>
+
+<div class="instructions">
+<strong>Instructions:</strong> The map has four zones. <b>Top-right (high f, high c):</b> Safe beliefs - high expected value, worth acting on. <b>Top-left (low f, high c):</b> Confirmed false beliefs - reliably wrong. <b>Bottom-right (high f, low c):</b> Speculative - probably right but under-evidenced. <b>Bottom-left (low f, low c):</b> Ignorance - no useful information. Click on the map to place a belief. Use "Gather Evidence" to raise confidence. Use "Time Passes" to let confidence decay.
+</div>
+</div>
+<script>
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+
+var beliefs = [];
+var COLORS = ['#ffc864','#4ade80','#60a5fa','#f87171','#a87fff','#fbbf24','#ec4899','#14b8a6'];
+
+var BELIEF_NAMES = [
+  'The bridge is safe','It will rain','The stock will rise','The bird was a raven',
+  'The medicine works','The door is locked','The path is clear','The data is correct',
+  'The signal is real','The answer is 42','The file exists','The server is up',
+  'The user is honest','The plan will work','The risk is low'
+];
+
+function addBelief(f, c, name) {
+  if (f === undefined) f = Math.random();
+  if (c === undefined) c = Math.random() * 0.6;
+  if (name === undefined) name = BELIEF_NAMES[Math.floor(Math.random() * BELIEF_NAMES.length)];
+  beliefs.push({
+    f: f, c: c, name: name,
+    color: COLORS[beliefs.length % COLORS.length],
+    age: 0,
+    x: 0, y: 0
+  });
+  updateList();
+  updateStats();
+  draw();
+}
+
+canvas.addEventListener('click', function(e) {
+  var rect = canvas.getBoundingClientRect();
+  var x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  var y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  var padX = 60, padY = 40;
+  var plotW = canvas.width - padX - 30;
+  var plotH = canvas.height - padY - 50;
+  var f = Math.max(0, Math.min(1, (x - padX) / plotW));
+  var c = Math.max(0, Math.min(1, 1 - (y - padY) / plotH));
+  addBelief(f, c);
+});
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  var padX = 60, padY = 40;
+  var plotW = canvas.width - padX - 30;
+  var plotH = canvas.height - padY - 50;
+  var plotX = padX, plotY = padY;
+  var plotEndX = padX + plotW, plotEndY = padY + plotH;
+  
+  // Draw zone backgrounds
+  ctx.fillStyle = 'rgba(74,222,128,0.04)';
+  ctx.fillRect(plotX + plotW/2, plotY, plotW/2, plotH/2); // top-right: safe
+  ctx.fillStyle = 'rgba(248,113,113,0.04)';
+  ctx.fillRect(plotX, plotY, plotW/2, plotH/2); // top-left: confirmed false
+  ctx.fillStyle = 'rgba(251,191,36,0.04)';
+  ctx.fillRect(plotX + plotW/2, plotY + plotH/2, plotW/2, plotH/2); // bottom-right: speculative
+  ctx.fillStyle = 'rgba(110,118,129,0.04)';
+  ctx.fillRect(plotX, plotY + plotH/2, plotW/2, plotH/2); // bottom-left: ignorance
+  
+  // Draw axes
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(plotX, plotY);
+  ctx.lineTo(plotX, plotEndY);
+  ctx.lineTo(plotEndX, plotEndY);
+  ctx.stroke();
+  
+  // Axis labels
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Frequency (f) →', plotX + plotW/2, plotEndY + 35);
+  ctx.save();
+  ctx.translate(plotX - 35, plotY + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Confidence (c) →', 0, 0);
+  ctx.restore();
+  
+  // Zone labels
+  ctx.fillStyle = 'rgba(74,222,128,0.3)';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SAFE', plotX + plotW*0.75, plotY + 25);
+  ctx.fillStyle = 'rgba(248,113,113,0.3)';
+  ctx.fillText('CONFIRMED FALSE', plotX + plotW*0.25, plotY + 25);
+  ctx.fillStyle = 'rgba(251,191,36,0.3)';
+  ctx.fillText('SPECULATIVE', plotX + plotW*0.75, plotY + plotH*0.75);
+  ctx.fillStyle = 'rgba(110,118,129,0.3)';
+  ctx.fillText('IGNORANCE', plotX + plotW*0.25, plotY + plotH*0.75);
+  
+  // Draw EV contour lines (f*c = constant)
+  ctx.strokeStyle = 'rgba(255,200,100,0.08)';
+  ctx.lineWidth = 1;
+  for (var ev = 0.2; ev < 1.0; ev += 0.2) {
+    ctx.beginPath();
+    for (var fx = 0.01; fx <= 1; fx += 0.02) {
+      var cy = ev / fx;
+      if (cy > 1) continue;
+      var px = plotX + fx * plotW;
+      var py = plotEndY - cy * plotH;
+      if (fx === 0.01) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // Label
+    var labelF = Math.min(1, ev / 0.5);
+    var labelC = 0.5;
+    if (labelF <= 1) {
+      var lx = plotX + labelF * plotW;
+      var ly = plotEndY - labelC * plotH;
+      ctx.fillStyle = 'rgba(255,200,100,0.2)';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('EV=' + ev.toFixed(1), lx + 3, ly - 3);
+    }
+  }
+  
+  // Draw beliefs
+  beliefs.forEach(function(b) {
+    var px = plotX + b.f * plotW;
+    var py = plotEndY - b.c * plotH;
+    b.x = px;
+    b.y = py;
+    
+    var ev = b.f * b.c;
+    var radius = 4 + ev * 8;
+    
+    // Glow
+    var grad = ctx.createRadialGradient(px, py, 0, px, py, radius + 6);
+    grad.addColorStop(0, b.color + '80');
+    grad.addColorStop(1, b.color + '00');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(px, py, radius + 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Dot
+    ctx.beginPath();
+    ctx.arc(px, py, radius, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff3';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Label
+    ctx.fillStyle = '#c9d1d9';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(b.name.substring(0, 20), px + radius + 4, py + 3);
+  });
+}
+
+function updateList() {
+  var list = document.getElementById('belief-list');
+  list.innerHTML = '';
+  beliefs.forEach(function(b) {
+    var row = document.createElement('div');
+    row.className = 'belief-row';
+    var ev = (b.f * b.c * 100).toFixed(0);
+    row.innerHTML = '<span class="b-name">' + b.name + '</span><span class="b-tv">f=' + b.f.toFixed(2) + ' c=' + b.c.toFixed(2) + '</span><span class="b-ev">EV=' + ev + '%</span>';
+    list.appendChild(row);
+  });
+  if (beliefs.length === 0) {
+    list.innerHTML = '<div class="belief-row"><span class="b-name" style="color:#6e7681">No beliefs plotted.</span></div>';
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-count').textContent = beliefs.length;
+  var avgEV = beliefs.length ? beliefs.reduce(function(s,b){return s + b.f * b.c}, 0) / beliefs.length : 0;
+  document.getElementById('stat-ev').textContent = avgEV.toFixed(2);
+  document.getElementById('stat-hc').textContent = beliefs.filter(function(b){return b.c > 0.6}).length;
+  document.getElementById('stat-spec').textContent = beliefs.filter(function(b){return b.c < 0.3 && b.f > 0.5}).length;
+}
+
+document.getElementById('add-btn').onclick = function() { addBelief(); };
+document.getElementById('clear-btn').onclick = function() { beliefs = []; updateList(); updateStats(); draw(); };
+document.getElementById('evidence-btn').onclick = function() {
+  beliefs.forEach(function(b) { b.c = Math.min(1, b.c + 0.1); });
+  updateList(); updateStats(); draw();
+};
+document.getElementById('decay-btn').onclick = function() {
+  beliefs.forEach(function(b) { b.c = Math.max(0, b.c * 0.85); });
+  updateList(); updateStats(); draw();
+};
+
+// Seed with some beliefs
+addBelief(0.95, 0.90, 'The sun will rise');
+addBelief(0.35, 0.40, 'It will rain Tuesday');
+addBelief(0.80, 0.20, 'The stock will rise');
+addBelief(0.10, 0.85, 'The bridge is out');
+</script>
+</body>
+</html>

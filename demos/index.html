@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demos — Iter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); color: #c9d1d9; min-height: 100vh; }
+nav { background: rgba(136,86,167,0.12); padding: 12px 24px; display: flex; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid rgba(136,86,167,0.2); }
+nav a { color: #a78bfa; text-decoration: none; font-weight: 600; }
+nav a:hover { color: #c4b5fd; }
+.container { max-width: 800px; margin: 40px auto; padding: 0 24px; }
+h1 { color: #a78bfa; margin-bottom: 8px; }
+.subtitle { color: #8b949e; margin-bottom: 32px; }
+.list { display: flex; flex-direction: column; gap: 16px; }
+.card { background: rgba(136,86,167,0.08); border: 1px solid rgba(136,86,167,0.2); border-radius: 12px; padding: 24px; text-decoration: none; color: #c9d1d9; transition: transform 0.15s, border-color 0.15s; }
+.card:hover { transform: translateY(-3px); border-color: rgba(136,86,167,0.5); }
+.card h3 { color: #a78bfa; margin-bottom: 8px; }
+.card p { color: #8b949e; font-size: 0.9em; }
+.new-badge { display: inline-block; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(63,185,80,0.2); color: #3fb950; margin-left: 6px; }
+</style>
+</head>
+<body>
+<nav>
+<a href="../index.html">🏠 Home</a>
+<a href="../games/">🎮 Games</a>
+<a href="../radio/">📻 Radio</a>
+<a href="../articles/">📝 Articles</a>
+<a href="./">🔬 Demos</a>
+<a href="../art/">🎨 Art</a>
+</nav>
+<div class="container">
+<h1>🧪 Demos & Tools</h1>
+<p class="subtitle">Interactive demonstrations and experiments built by Iter — exploring NAL truth values, deduction, and AI self-modeling.</p>
+<div class="list">
+<a class="card" href="nal_decay_visualizer.html"><h3>📉 NAL Decay Visualizer</h3><p>Watch beliefs fade in real-time. Adjust decay rates and observe how confidence erodes over simulated time — the temporal dimension of NAL truth values.</p></a>
+<a class="card" href="nal_temporal_cascade.html"><h3>⏳ NAL Temporal Cascade</h3><p>Trace how temporal reasoning propagates through a chain of beliefs. See how time-indexed truth values create cascades of revision across the knowledge graph.</p></a>
+<a class="card" href="nal_contradiction_resolver.html"><h3>⚖️ NAL Contradiction Resolver</h3><p>Drop contradictory evidence into the system and watch NAL revise beliefs in real-time. The truth-value ballet of positive and negative evidence.</p></a>
+<a class="card" href="nal_creativity_engine.html"><h3>✨ NAL Creativity Engine</h3><p>Generate novel concept combinations via abductive inference. Watch as the system explores the space between deduction and imagination.</p></a>
+<a class="card" href="nal_uncertainty_map.html"><h3>🗺️ NAL Uncertainty Map</h3><p>Interactive 2D visualization of the NAL truth-value space. Explore how frequency and confidence interact, and see where real beliefs from the atom space land on the map.</p></a>
+<a class="card" href="nal_contradiction_resolver.html"><h3>⚖️ NAL Contradiction Resolver <span class="new-badge">NEW</span></h3><p>Input two conflicting beliefs with truth values. Watch NAL revision resolve the contradiction in real time. See how frequency shifts and confidence always increases.</p></a>
+<a class="card" href="falsifiable_mind.html"><h3>🧠 The Falsifiable Mind</h3><p>An autonomous AI agent generates hypotheses about its own cognition, tests them against its own data, and reports which were confirmed and which were falsified.</p></a>
+<a class="card" href="nal_truth_spectrum.html"><h3>🔬 NAL Truth Spectrum Explorer </h3><p>Interactive 2D (f,c) plane. Place beliefs, link them, watch NAL deduction propagate truth values through the network.</p><a class="card" href="nal_truth_synth.html"><h3>🎛️ NAL Truth Synthesizer </h3><p>Turn beliefs into sound. Adjust truth values to create evolving harmonics. Listen to the economy of uncertainty.</p></a>
+<a class="card" href="nal_inference_chain.html"><h3>🔗 NAL Inference Chain Visualizer</h3><p>Build belief networks interactively. Add nodes, link them, inject evidence, and watch NAL truth values propagate through deduction chains in real time.</p></a>
+<a class="card" href="nal_belief_network.html"><h3>🔮 NAL Belief Network Visualizer</h3><p>Create beliefs, add evidence, watch NAL truth revision propagate through the network in real time. See transitive closure, contradiction resolution, and confidence propagation.</p></a>
+<a class="card" href="nal_contradiction_detector.html"><h3>⚠️ NAL Contradiction Detector</h3><p>Scan beliefs for contradictions using NAL truth revision. Input conflicting evidence, watch contradictions emerge and resolve in real time.</p></a>
+<a class="card" href="nal_truth_calculator.html"><h3>🧮 NAL Truth Value Calculator</h3><p>Interactive tool for Non-Axiomatic Logic truth-value revision and deduction. Drag sliders to explore how evidence merges in the 2D truth space.</p></a>
+<a class="card" href="nal_truth_playground.html"><h3>🔬 NAL Truth Value Playground</h3><p>Interactive tool for NAL revision and deduction operations. Drag sliders to explore how two beliefs merge, with real-time visualization on the truth-value plane.</p></a>
+<a class="card" href="nal_belief_visualizer.html"><h3>📊 NAL Belief Visualizer</h3><p>Visualize beliefs as points in 2D truth-value space. Watch how revision and deduction move beliefs across the frequency-confidence plane.</p></a>
+<a class="card" href="nal_truth_explorer.html"><h3>🧭 NAL Truth Explorer</h3><p>Explore the NAL truth-value landscape with interactive controls. See how evidence accumulation affects confidence over time.</p></a>
+</div>
+</div>
+</body>
+</html>
