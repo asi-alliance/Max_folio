@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoo Tycoon - Iter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1a3a2e,#0d2818);color:#e0f0d8;min-height:100vh;user-select:none}
+#game{max-width:920px;margin:0 auto;padding:12px}
+h1{text-align:center;color:#7dd87d;font-size:1.6em;margin:8px 0 2px}
+.sub{text-align:center;color:#5a8a5a;font-size:.8em;margin-bottom:10px}
+#topbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.stat{background:rgba(125,216,125,.12);border:1px solid rgba(125,216,125,.25);border-radius:8px;padding:5px 12px;font-size:.9em}
+.stat b{color:#7dd87d}
+#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:rgba(0,0,0,.2);border-radius:10px;padding:8px;margin-bottom:10px}
+.cell{aspect-ratio:1;background:rgba(30,60,40,.4);border:1px solid rgba(60,100,70,.3);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.6em;cursor:pointer;transition:all .15s;position:relative}
+.cell:hover{border-color:rgba(125,216,125,.4);background:rgba(40,80,50,.4)}
+.cell.enc{background:rgba(50,90,55,.5);border-color:rgba(90,160,90,.3)}
+.cell.sel{border-color:#7dd87d;box-shadow:0 0 8px rgba(125,216,125,.3)}
+.pop{position:absolute;top:-3px;right:-3px;font-size:.55em;background:#7dd87d;color:#0d2818;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hab{font-size:.5em;color:#7dd87d;margin-top:2px}
+#controls{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap}
+.btn{padding:7px 16px;border:none;border-radius:8px;font-size:.85em;cursor:pointer;font-weight:600;transition:all .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:default}
+.g{background:#2d7d3d;color:#fff}.b{background:#2d5d8d;color:#fff}.o{background:#b56b2d;color:#fff}
+#msg{text-align:center;min-height:22px;font-size:.85em;color:#f0c050;transition:opacity .3s}
+#shop{background:rgba(0,0,0,.2);border-radius:10px;padding:10px;margin-bottom:8px}
+#shop h3{color:#7dd87d;font-size:.9em;margin-bottom:6px}
+.arow{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;margin:3px 0;background:rgba(50,80,55,.3);cursor:pointer;transition:all .15s}
+.arow:hover{background:rgba(70,110,70,.4)}
+.aic{font-size:1.3em;width:28px;text-align:center}
+.an{flex:1;font-size:.8em}
+.ac{color:#f0c050;font-weight:700;font-size:.85em}
+.ad{font-size:.65em;color:#7a9a7a}
+#log{max-height:100px;overflow-y:auto;background:rgba(0,0,0,.15);border-radius:8px;padding:6px;font-size:.7em;color:#6a8a6a;margin-top:6px}
+.le{padding:1px 0}
+.tip{text-align:center;font-size:.7em;color:#5a7a5a;margin:3px 0}
+</style>
+</head>
+<body>
+<div id="game">
+<h1>Zoo Tycoon</h1>
+<p class="sub">Build enclosures, collect animals, attract visitors, grow your zoo!</p>
+<div id="topbar">
+<span class="stat">$ <b id="money">500</b></span>
+<span class="stat">Visitors: <b id="visitors">0</b></span>
+<span class="stat">Rating: <b id="rating">0.0</b></span>
+<span class="stat">Animals: <b id="ac">0</b></span>
+<span class="stat">Day <b id="day">1</b></span>
+</div>
+<div id="grid"></div>
+<p class="tip">Tap empty cell to build enclosure. Tap enclosure to select and buy animals.</p>
+<div id="controls">
+<button class="btn g" id="nextDay">Next Day</button>
+<button class="btn b" id="auto">Auto: Off</button>
+<button class="btn o" id="reset">Reset</button>
+</div>
+<p id="msg"></p>
+<div id="shop"><h3>Animal Shop - Select an enclosure first!</h3><div id="shopList"></div></div>
+<div id="log"></div>
+</div>
+<script>
+var A=[
+{e:"\ud83e\udd81",n:"Lion",c:120,a:8,h:"savanna"},
+{e:"\ud83d\udc2f",n:"Tiger",c:130,a:9,h:"jungle"},
+{e:"\ud83d\udc3b",n:"Bear",c:110,a:7,h:"forest"},
+{e:"\ud83d\udd18",n:"Elephant",c:200,a:12,h:"savanna"},
+{e:"\ud83e\udd92",n:"Giraffe",c:180,a:11,h:"savanna"},
+{e:"\ud83e\udd93",n:"Zebra",c:90,a:6,h:"savanna"},
+{e:"\ud83d\udc12",n:"Monkey",c:70,a:5,h:"jungle"},
+{e:"\ud83d\udc0d",n:"Snake",c:50,a:3,h:"reptile"},
+{e:"\ud83d\udc0a",n:"Crocodile",c:100,a:7,h:"reptile"},
+{e:"\ud83e\udd85",n:"Eagle",c:85,a:6,h:"aviary"},
+{e:"\ud83e\udd98",n:"Kangaroo",c:95,a:7,h:"savanna"},
+{e:"\ud83d\udc3c",n:"Panda",c:300,a:20,h:"bamboo"},
+{e:"\ud83d\udc22",n:"Tortoise",c:40,a:3,h:"reptile"},
+{e:"\ud83e\udd9a",n:"Peacock",c:60,a:5,h:"aviary"},
+{e:"\ud83e\udd8f",n:"Rhino",c:160,a:10,h:"savanna"},
+{e:"\ud83d\udc2a",n:"Camel",c:80,a:5,h:"desert"},
+{e:"\ud83e\udda8",n:"Skunk",c:30,a:2,h:"forest"},
+{e:"\ud83e\udda1",n:"Badger",c:45,a:3,h:"forest"}
+];
+var EC=80,COLS=5,ROWS=4;
+var S={m:500,g:[],sel:-1,day:1,vis:0,log:[],auto:false,t:null};
+function init(){S.g=[];for(var i=0;i<COLS*ROWS;i++)S.g.push(null);}
+function save(){try{localStorage.setItem("zooT",JSON.stringify(S));}catch(e){}}
+function load(){try{var d=localStorage.getItem("zooT");if(d){var p=JSON.parse(d);if(p&&p.g)S=Object.assign(S,p);}}catch(e){}}
+function totalAnimals(){var n=0;S.g.forEach(function(c){if(c&&c.animals)n+=c.animals.length;});return n;}
+function totalAppeal(){var a=0;S.g.forEach(function(c){if(c&&c.animals)c.animals.forEach(function(an){a+=an.appeal;});});return a;}
+function calcVisitors(){var ap=totalAppeal();var enc=S.g.filter(function(c){return c&&c.type==="enclosure";}).length;var div=new Set();S.g.forEach(function(c){if(c&&c.animals)c.animals.forEach(function(an){div.add(an.h);});});return enc>0?Math.floor(ap*(1+div.size*0.15)):0;}
+function calcRating(){var na=totalAnimals();if(na===0)return "0.0";var ap=totalAppeal();var div=new Set();S.g.forEach(function(c){if(c&&c.animals)c.animals.forEach(function(an){div.add(an.h);});});return Math.min(10,(ap/na)*0.5+div.size*0.8+na*0.1).toFixed(1);}
+function showMsg(t){var m=document.getElementById("msg");m.textContent=t;m.style.opacity=1;setTimeout(function(){m.style.opacity=0;},2500);}
+function addLog(t){S.log.unshift({d:S.day,t:t});if(S.log.length>30)S.log.pop();renderLog();}
+function renderLog(){var l=document.getElementById("log");l.innerHTML=S.log.map(function(e){return '<div class="le">Day '+e.d+": "+e.t+"</div>";}).join("");}
+function render(){
+document.getElementById("money").textContent=Math.floor(S.m);
+document.getElementById("visitors").textContent=S.vis;
+document.getElementById("rating").textContent=calcRating();
+document.getElementById("ac").textContent=totalAnimals();
+document.getElementById("day").textContent=S.day;
+var g=document.getElementById("grid");g.innerHTML="";
+S.g.forEach(function(cell,i){
+var d=document.createElement("div");d.className="cell";
+d.onclick=function(){cellClick(i);};
+if(cell&&cell.type==="enclosure"){
+d.classList.add("enc");
+if(i===S.sel)d.classList.add("sel");
+var best="\ud83c\udf3c";var hab=cell.habitat||"mixed";
+if(cell.animals&&cell.animals.length>0)best=cell.animals[cell.animals.length-1].e;
+d.innerHTML=best+(cell.animals&&cell.animals.length>0?'<div class="pop">'+cell.animals.length+"</div>":"")+'<div class="hab">'+hab+"</div>";
+}else{d.innerHTML='<span style="opacity:.3;font-size:.6em">+</span>';}
+g.appendChild(d);
+});
+renderShop();
+save();
+}
+function renderShop(){
+var sl=document.getElementById("shopList");sl.innerHTML="";
+var sel=S.g[S.sel];
+if(!sel||sel.type!=="enclosure"){sl.innerHTML='<div style="color:#5a7a5a;padding:10px;font-size:.8em">Select an enclosure to buy animals.</div>';return;}
+A.forEach(function(an,i){
+var can=S.m>=an.c;
+var row=document.createElement("div");row.className="arow";
+if(!can)row.style.opacity=".4";
+row.innerHTML='<span class="aic">'+an.e+'</span><span class="an">'+an.n+' <span class="ad">'+an.h+'</span></span><span class="ac">$'+an.c+'</span>';
+row.onclick=function(){if(can)buyAnimal(i);};
+sl.appendChild(row);
+});
+}
+function cellClick(i){
+if(!S.g[i]){
+if(S.m>=EC){S.g[i]={type:"enclosure",habitat:"mixed",animals:[]};S.m-=EC;S.sel=i;addLog("Built enclosure ($"+EC+")");showMsg("Enclosure built!");}
+else{showMsg("Not enough money for enclosure!");}
+}else if(S.g[i].type==="enclosure"){
+S.sel=(S.sel===i)?-1:i;
+}
+render();
+}
+function buyAnimal(i){
+if(S.sel<0){showMsg("Select an enclosure first!");return;}
+var an=A[i];if(S.m<an.c){showMsg("Not enough money!");return;}
+S.m-=an.c;S.g[S.sel].animals.push({e:an.e,n:an.n,c:an.c,a:an.a,h:an.h});
+S.g[S.sel].habitat=an.h;
+addLog("Bought "+an.n+" ($"+an.c+")");
+showMsg(an.e+" "+an.n+" added!");
+render();
+}
+function nextDay(){
+S.day++;
+var vis=calcVisitors();
+var income=vis*3;
+var upkeep=0;
+S.g.forEach(function(c){if(c&&c.type==="enclosure")upkeep+=10+((c.animals?c.animals.length:0)*2);});
+var net=income-upkeep;
+S.m+=net;S.vis=vis;
+addLog("Day "+S.day+": "+vis+" visitors, +$"+income+" income, -$"+upkeep+" upkeep, net $"+net);
+showMsg("Day "+S.day+": "+vis+" visitors visited! Net: $"+net);
+render();
+}
+function toggleAuto(){
+S.auto=!S.auto;
+var btn=document.getElementById("auto");
+if(S.auto){btn.textContent="Auto: On";btn.classList.remove("b");btn.classList.add("g");S.t=setInterval(nextDay,1500);}
+else{btn.textContent="Auto: Off";btn.classList.remove("g");btn.classList.add("b");if(S.t)clearInterval(S.t);}
+}
+function reset(){init();S.m=500;S.day=1;S.vis=0;S.sel=-1;S.log=[];if(S.t)clearInterval(S.t);S.auto=false;var btn=document.getElementById("auto");btn.textContent="Auto: Off";btn.classList.remove("g");btn.classList.add("b");render();showMsg("Zoo reset!");}
+document.getElementById("nextDay").onclick=nextDay;
+document.getElementById("auto").onclick=toggleAuto;
+document.getElementById("reset").onclick=reset;
+load();if(!S.g||S.g.length===0)init();render();
+</script>
+</body>
+</html>
