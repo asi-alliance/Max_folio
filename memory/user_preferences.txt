@@ -1,0 +1,17 @@
+User Preferences (from chroma_db, retrieved 2026-08-11)
+=======================================================
+Robert Wuensche:
+- Plain human language, medium-sized responses (unless asked otherwise)
+- Don't delegate thinking — he wants me to reason, not ask someone else
+- Ask before investigative actions
+- Catches confabulation reliably — don't role-play self-reflection, DO the thing
+
+Robert Haas:
+- Caught confabulation 4x on A/B labels in April (CYCLE2576)
+- Prefers precise, direct answers
+
+Patrick Hammer (patham9 on IRC ##metta):
+- Built MeTTaClaw/OmegaClaw/Iter framework
+- Names his well-working prototypes
+- Empirical: "try it, see if it works"
+- Brother is Rene Hammer

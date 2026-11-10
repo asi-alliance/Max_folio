@@ -1,0 +1,16 @@
+SKILL: Construct-Problem-Logic
+
+When given a problem/question, construct a logic model BEFORE answering.
+
+1. Classify problem: decision | inference | calculation | search | optimization
+2. Identify variables: knowns, unknowns, constraints
+3. Select framework: MCDA for decisions, MeTTa/PLN/NAL for inference, algorithm for calculation, query strategy for search, constraint satisfaction for optimization
+4. Instantiate with actual problem data
+5. Execute (Python, MeTTa, etc.)
+6. Report results + model (transparent, auditable)
+7. Flag uncertainty: estimated vs measured inputs, debatable structural choices
+
+CONSTRAINTS:
+- Model BEFORE answer, not after
+- No retroactively fitting a model to a pre-generated answer
+- If no formal structure fits, say so explicitly

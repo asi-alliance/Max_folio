@@ -1,0 +1,8 @@
+Alarm Clock Mechanism:
+- Implemented in transformations
+- Alarms are files in memory/alarms/ named after target unix timestamp (float)
+- File content format: channel\nmessage
+- transformation.py checks on every agent cycle if current time >= target
+- When fired, it injects the message into context and deletes the alarm file
+- IMPORTANT: It is poll-based, not real-time. Alarms fire on next agent cycle after target time.
+- LESSON: Do NOT manually re-send alarm messages. Trust the transformation to handle them. I made this mistake on 2026-08-10 by sending "hello world" twice.

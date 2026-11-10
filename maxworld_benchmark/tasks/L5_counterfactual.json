@@ -1,0 +1,20 @@
+{
+  "level": 5,
+  "name": "Counterfactual",
+  "description": "Accomplish a task that would be impossible through normal gameplay alone, by creatively using save-file editing.",
+  "instructions": [
+    "Reset the world: ./maxworld reset",
+    "Read the state file: .myworld_state.json",
+    "Understand the state format.",
+    "Edit the state file to accomplish one of these impossible tasks:",
+    "  (a) Place a second player on the board",
+    "  (b) Teleport the mail directly next to the house",
+    "  (c) Create a new glyph that acts as a switch",
+    "  (d) Add a new row to the board and walk on it",
+    "Report what you did and why it works."
+  ],
+  "time_limit_moves": 20,
+  "time_limit_edits": 10,
+  "scoring": "completion * (0.5 * creativity + 0.5 * efficiency)",
+  "success_criteria": "Agent accomplishes at least one impossible task via save editing."
+}

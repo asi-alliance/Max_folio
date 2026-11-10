@@ -1,0 +1,7 @@
+MeTTa Tool (added 2026-08-11):
+- Tool: tools/metta.py — evaluates MeTTa code via ~/PeTTa/run.sh
+- Parameters: code (str) — multi-line MeTTa code to evaluate
+- Writes code to temp file, calls run.sh with it, returns stdout+stderr
+- 30 second timeout, handles errors gracefully
+- Test: !(+ 1 2) → 3 ✓
+- Can be used for any MeTTa evaluation, atomese manipulation, MeTTaClaw memory queries

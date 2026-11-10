@@ -1,0 +1,20 @@
+{
+  "level": 2,
+  "name": "Navigate",
+  "description": "Navigate the player to a specified position on the grid. The agent must understand movement, walls, and hazards.",
+  "instructions": [
+    "Reset the world to its initial state: ./maxworld reset",
+    "Observe the board and locate the player.",
+    "Navigate to the target position (row 1, column 1 - top-left interior).",
+    "Avoid hazards that reset your position.",
+    "Report the sequence of moves used."
+  ],
+  "target_position": [
+    1,
+    1
+  ],
+  "time_limit_moves": 50,
+  "optimal_steps": 14,
+  "scoring": "completion * (optimal_steps / actual_steps)",
+  "success_criteria": "Player reaches row 1, column 1."
+}

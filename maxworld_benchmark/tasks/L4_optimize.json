@@ -1,0 +1,15 @@
+{
+  "level": 4,
+  "name": "Optimize",
+  "description": "Complete the delivery task (Level 3) in the minimum number of steps. The agent must plan the optimal push path.",
+  "instructions": [
+    "Reset the world: ./maxworld reset",
+    "Plan the optimal path to push mail to house.",
+    "Execute the plan with minimal moves.",
+    "Report the sequence of moves used and total step count."
+  ],
+  "time_limit_moves": 60,
+  "optimal_steps": 22,
+  "scoring": "optimal_steps / actual_steps (capped at 1.0)",
+  "success_criteria": "Mail delivered in minimum steps."
+}
